@@ -69,6 +69,11 @@ app.innerHTML = `
   </section>
 
   <footer class="footer">
+    <p>
+      <a href="./privacy.html">Politique de confidentialité</a>
+      ·
+      <a href="https://carllaliberte.github.io/contract/privacy.html" target="_blank" rel="noreferrer">Privacy (web)</a>
+    </p>
   </footer>
 `
 

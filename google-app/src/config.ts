@@ -1,4 +1,4 @@
-export const DEFAULT_RPC_URL = 'https://hired-focal-quantum-departmental.trycloudflare.com'
+export const DEFAULT_RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com'
 
 export const DEFAULT_CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'
 

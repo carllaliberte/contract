@@ -1,24 +1,33 @@
 {
   "name": "google-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:pages": "VITE_BASE_PATH=/contract/ tsc && vite build",
+    "build:android": "tsc && vite build",
     "preview": "vite preview",
     "compile-contract": "node scripts/compile-contract.mjs",
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "cap:sync": "npm run build:android && npx cap sync android",
+    "android:bundle": "cd android && ./gradlew bundleRelease",
     "deploy:hosting": "npm run build && npx firebase deploy --only hosting",
-    "deploy:pages": "VITE_BASE_PATH=/contract/ npm run build && npx gh-pages -d dist -m \"Deploy META dashboard\""
+    "deploy:pages": "npm run build:pages && npx gh-pages -d dist -m \"Deploy META dashboard\""
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
     "firebase-tools": "^15.28.1",
     "gh-pages": "^6.3.0",
+    "sharp": "^0.34.3",
     "solc": "^0.6.12",
     "typescript": "~6.0.2",
     "vite": "^8.2.2"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "ethers": "^6.17.0"
   }
 }

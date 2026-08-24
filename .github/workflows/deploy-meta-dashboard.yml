@@ -39,11 +39,12 @@ jobs:
           VITE_BASE_PATH: /contract/
         run: |
           npm ci
+          npm run generate-icons
           if [ -f deployment.json ]; then
             export VITE_CONTRACT_ADDRESS=$(node -pe "JSON.parse(require('fs').readFileSync('deployment.json')).contractAddress")
             export VITE_RPC_URL=$(node -pe "JSON.parse(require('fs').readFileSync('deployment.json')).rpcUrl")
           fi
-          npm run build
+          npm run build:pages
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
