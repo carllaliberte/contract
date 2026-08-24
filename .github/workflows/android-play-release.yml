@@ -62,14 +62,15 @@ jobs:
           done
           if [ "$missing" -gt 0 ]; then
             echo ""
-            echo "Add secrets at: https://github.com/carllaliberte/contract/settings/secrets/actions"
-            echo "Not Cursor environment secrets — must be GitHub repository secrets."
+            echo "Add repository secrets: https://github.com/carllaliberte/contract/settings/secrets/actions"
+            echo "Cursor Environment secrets do NOT flow to GitHub Actions."
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
               echo "::error::Missing $missing secret(s) — signed build and Play upload skipped"
               exit 1
             fi
           fi
 
+      - name: Decode signing keystore
         working-directory: google-app/android
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
