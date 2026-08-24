@@ -20,18 +20,53 @@ npm run dev
 
 Open the local URL shown by Vite (usually `http://localhost:5173`).
 
+## Current deployment (prefilled)
+
+Demo contract and config are in `google-app/deployment.json`:
+
+| Field | Value |
+| --- | --- |
+| Contract | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
+| Chain | Anvil local (chain ID `31337`) |
+| RPC URL | `https://rendering-parker-mesh-henderson.trycloudflare.com` |
+| Live dashboard | `https://some-turtles-tickle.loca.lt` |
+
+Config is prefilled in:
+
+- `google-app/.env.example`
+- `google-app/src/config.ts`
+- `google-app/apps-script/Code.gs`
+
+**Note:** This demo uses a temporary public tunnel to a local Anvil node. For production, deploy the contract on Sepolia/mainnet and host on Firebase (see below).
+
+### One-command demo redeploy
+
+With Anvil running on `http://127.0.0.1:8545`:
+
+```bash
+npm install
+npm run deploy:demo
+```
+
 ## Deploy to Firebase Hosting
 
 1. Install the Firebase CLI: `npm install -g firebase-tools`
 2. Log in: `firebase login`
 3. Create a Firebase project in the [Firebase console](https://console.firebase.google.com/).
-4. Set your project ID in `.firebaserc`.
+4. Set your project ID in `google-app/.firebaserc` (default: `carllaliberte-meta-dashboard`).
 5. Build and deploy:
 
 ```bash
 cd google-app
 npm run build
-firebase deploy --only hosting
+npx firebase deploy --only hosting
+```
+
+Or with a CI token:
+
+```bash
+export FIREBASE_TOKEN=your_token_from_firebase_login_ci
+cd google-app && npm run build && npx firebase deploy --only hosting
 ```
 
 ## Google Sheets integration

@@ -1,0 +1,31 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "This folder contains a Google-friendly app for the `META` ERC-20 smart contract in [`meta.sol`](https://github.com/carllaliberte/contract/blob/main/meta.sol).",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "deploy:local": "node scripts/deploy-local.mjs",
+    "prefill:config": "node scripts/prefill-config.cjs",
+    "deploy:demo": "node scripts/deploy-local.mjs && node scripts/prefill-config.cjs && cd google-app && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carllaliberte/contract.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/carllaliberte/contract/issues"
+  },
+  "homepage": "https://github.com/carllaliberte/contract#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.15",
+    "ethers": "^6.17.0",
+    "hardhat": "^3.14.0"
+  },
+  "dependencies": {
+    "solc": "^0.6.12"
+  }
+}

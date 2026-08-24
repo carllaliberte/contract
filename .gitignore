@@ -1,0 +1,8 @@
+node_modules/
+cache/
+artifacts/
+.env
+.env.local
+google-app/.env
+google-app/.env.production
+hardhat.config.js
