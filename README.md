@@ -26,10 +26,11 @@ Demo contract and config are in `google-app/deployment.json`:
 
 | Field | Value |
 | --- | --- |
-| Contract | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
+| Contract | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
 | Chain | Anvil local (chain ID `31337`) |
-| RPC URL | `https://rendering-parker-mesh-henderson.trycloudflare.com` |
-| Live dashboard | `https://some-turtles-tickle.loca.lt` |
+| RPC URL | `https://hired-focal-quantum-departmental.trycloudflare.com` |
+| Live dashboard | `https://carllaliberte.github.io/contract/` (after Pages deploy) |
+| Firebase (pending token) | `https://carllaliberte-meta-dashboard.web.app` |
 
 Config is prefilled in:
 
