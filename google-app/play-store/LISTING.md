@@ -73,14 +73,45 @@ Dans [Settings → Secrets → Actions](https://github.com/carllaliberte/contrac
 
 ## Étape 5 — Compte de service Google Play API
 
+### Option A — Cloud Shell (recommandé si vous êtes dans Google Cloud Console)
+
+1. Ouvrir **Cloud Shell** (icône `>_` en haut à droite).
+2. Cloner ou copier le script, puis exécuter :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/carllaliberte/contract/main/scripts/setup-gcp-play-api.sh -o setup-gcp-play-api.sh
+bash setup-gcp-play-api.sh
+```
+
+Ou depuis un clone local : `bash scripts/setup-gcp-play-api.sh`
+
+3. Suivre les instructions affichées pour l’invitation Play Console (étape 3 ci-dessous).
+
+### Option B — Console web
+
 1. [Google Cloud Console](https://console.cloud.google.com/) → créer ou choisir un projet.
 2. **APIs & Services → Library** → activer **Google Play Android Developer API**.
 3. **IAM → Service Accounts** → **Create service account** (ex. `play-upload`).
 4. **Keys** → **Add key** → **JSON** → télécharger le fichier.
-5. Play Console → **Users and permissions** → **Invite new users**.
-6. Ajouter l’email du compte de service (`...@...gserviceaccount.com`).
-7. Permissions minimales : **Release apps to testing tracks** (ou Admin pour la première mise en place).
-8. Coller le JSON entier dans le secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
+
+### Étape 5b — Inviter le compte de service dans Play Console
+
+1. Play Console → **Users and permissions** → **Invite new users**.
+2. Email : `play-upload@VOTRE-PROJECT-ID.iam.gserviceaccount.com`
+3. Permissions : **View app information** + **Release to testing tracks** (ou **Admin** la première fois).
+4. **Send invite**.
+
+### Étape 5c — Secrets GitHub (étape 4 automatisée)
+
+Sur votre machine (avec `gh` connecté en admin du dépôt) :
+
+```bash
+git clone https://github.com/carllaliberte/contract.git && cd contract
+ANDROID_KEYSTORE_PASSWORD='...' ANDROID_KEY_PASSWORD='...' bash scripts/generate-android-keystore.sh
+PLAY_KEY_FILE=play-upload-key.json bash scripts/apply-github-secrets.sh
+```
+
+`play-upload-key.json` = fichier téléchargé depuis Cloud Shell ou Google Cloud.
 
 ## Étape 6 — Téléverser l’AAB (automatique ou manuel)
 
