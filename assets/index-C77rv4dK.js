@@ -63,5 +63,10 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
   </section>
 
   <footer class="footer">
+    <p>
+      <a href="./privacy.html">Politique de confidentialité</a>
+      ·
+      <a href="https://carllaliberte.github.io/contract/privacy.html" target="_blank" rel="noreferrer">Privacy (web)</a>
+    </p>
   </footer>
 `;var hd=document.querySelector(`#rpc-url`),gd=document.querySelector(`#contract-address`),_d=document.querySelector(`#wallet-address`),vd=document.querySelector(`#status`),yd=document.querySelector(`#wallet-result`);hd.value=cd(),gd.value=ld();function bd(e,t=`info`){vd.textContent=e,vd.dataset.type=t}function xd(e,t){let n=document.querySelector(`#${e}`);n&&(n.textContent=t)}document.querySelector(`#connection-form`).addEventListener(`submit`,async e=>{e.preventDefault(),bd(`Loading token data from the blockchain…`);try{let e=await fd(gd.value.trim(),hd.value.trim());xd(`token-name`,e.name),xd(`token-symbol`,e.symbol),xd(`token-decimals`,String(e.decimals)),xd(`token-supply`,e.totalSupply),xd(`token-fees`,e.totalFees),xd(`token-owner`,e.owner),xd(`token-max-tx`,e.maxTxAmount),xd(`token-timeout`,String(e.transferTimeoutSeconds)),xd(`token-pair`,e.uniswapPair||`Not set`),bd(`Loaded ${e.symbol} from ${e.contractAddress}`,`success`)}catch(e){bd(e instanceof Error?e.message:`Failed to load token data`,`error`)}}),document.querySelector(`#wallet-form`).addEventListener(`submit`,async e=>{e.preventDefault(),bd(`Looking up wallet balance…`);try{let e=await pd(_d.value.trim(),gd.value.trim(),hd.value.trim());yd.classList.remove(`hidden`),xd(`wallet-address-result`,e.address),xd(`wallet-balance`,e.balance),xd(`wallet-excluded`,e.isExcluded?`Yes`:`No`),bd(`Balance loaded for ${e.address}`,`success`)}catch(e){bd(e instanceof Error?e.message:`Failed to load wallet data`,`error`)}}),gd.value&&document.querySelector(`#connection-form`).requestSubmit();
