@@ -43,6 +43,33 @@ jobs:
           npm run build:android
           npx cap sync android
 
+      - name: Verify GitHub Actions secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; do
+            if [ -z "${!name}" ]; then
+              echo "::warning::GitHub secret $name is not set (repo Settings → Secrets → Actions)"
+              missing=$((missing + 1))
+            else
+              echo "OK: $name is set"
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo ""
+            echo "Add repository secrets: https://github.com/carllaliberte/contract/settings/secrets/actions"
+            echo "Cursor Environment secrets do NOT flow to GitHub Actions."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::error::Missing $missing secret(s) — signed build and Play upload skipped"
+              exit 1
+            fi
+          fi
+
       - name: Decode signing keystore
         working-directory: google-app/android
         env:
