@@ -7,7 +7,8 @@
   "scripts": {
     "deploy:local": "node scripts/deploy-local.mjs",
     "prefill:config": "node scripts/prefill-config.cjs",
-    "deploy:demo": "node scripts/deploy-local.mjs && node scripts/prefill-config.cjs && cd google-app && npm run build"
+    "deploy:demo": "node scripts/deploy-local.mjs && node scripts/prefill-config.cjs && cd google-app && npm run build",
+    "deploy:all": "node scripts/deploy-all.mjs"
   },
   "repository": {
     "type": "git",
