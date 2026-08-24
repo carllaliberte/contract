@@ -43,7 +43,12 @@ jobs:
 
       - name: Publish to gh-pages branch
         working-directory: google-app
-        run: npx gh-pages -d dist -m "Deploy META dashboard [skip ci]"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          npx gh-pages -d dist -m "Deploy META dashboard [skip ci]" -r "https://x-access-token:${GITHUB_TOKEN}@github.com/carllaliberte/contract.git"
 
       - name: Pages setup reminder
         run: |
