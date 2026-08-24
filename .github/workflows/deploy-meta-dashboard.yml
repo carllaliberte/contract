@@ -11,19 +11,14 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: deploy-meta-dashboard
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy-github-pages:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +28,7 @@ jobs:
           cache: npm
           cache-dependency-path: google-app/package-lock.json
 
-      - name: Install and build
+      - name: Install and build for GitHub Pages
         working-directory: google-app
         env:
           VITE_BASE_PATH: /contract/
@@ -46,19 +41,15 @@ jobs:
           fi
           npm run build:pages
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Publish to gh-pages branch
+        working-directory: google-app
+        run: npx gh-pages -d dist -m "Deploy META dashboard [skip ci]"
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: google-app/dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Pages setup reminder
+        run: |
+          echo "Published to gh-pages branch."
+          echo "Enable GitHub Pages: Settings → Pages → Branch gh-pages / (root)"
+          echo "Live URL: https://carllaliberte.github.io/contract/"
 
   firebase-hosting:
     runs-on: ubuntu-latest
