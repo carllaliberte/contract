@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f3ef;
+  --foreground: #141416;
+  --card: #fffcf8;
+  --card-foreground: #141416;
+  --primary: #2f6fe0;
+  --primary-foreground: #f7f8fc;
+  --secondary: #eceae4;
+  --secondary-foreground: #1c1c20;
+  --muted: #eceae4;
+  --muted-foreground: #5e5e66;
+  --border: oklab(19.2% 0.001 -0.004 / 0.12);
+  --input: oklab(19.2% 0.001 -0.004 / 0.14);
+  --ring: #2f6fe0;
+  --destructive: #c2413b;
+  --status-idea: #6b6d78;
+  --status-script: #2f6fe0;
+  --status-production: #c4891e;
+  --status-ready: #1f9d6a;
+  --status-published: #5f636d;
+  --elev-card: 0 0 0 1px #1414160f, 0 1px 2px #1414160d, 0 10px 24px -16px #1414162e;
+  --elev-card-hover: 0 0 0 1px #1414161a, 0 8px 20px -12px #14141638;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #f2f2f4;
+  --card: #121216;
+  --card-foreground: #f2f2f4;
+  --primary: #4c8dff;
+  --primary-foreground: #071018;
+  --secondary: #1c1c22;
+  --secondary-foreground: #ececf0;
+  --muted: #1c1c22;
+  --muted-foreground: #9a9aa3;
+  --border: oklab(96.2% 0.001 -0.003 / 0.1);
+  --input: oklab(96.2% 0.001 -0.003 / 0.14);
+  --ring: #4c8dff;
+  --destructive: #ef6b63;
+  --status-idea: #8b8d98;
+  --status-script: #4c8dff;
+  --status-production: #e0a54b;
+  --status-ready: #3ddc97;
+  --status-published: #7a7e88;
+  --elev-card: 0 0 0 1px #ffffff0f, 0 10px 28px -18px #000000b3;
+  --elev-card-hover: 0 0 0 1px #ffffff1f, 0 16px 32px -16px #000000bf;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-status-idea: var(--status-idea);
+  --color-status-script: var(--status-script);
+  --color-status-production: var(--status-production);
+  --color-status-ready: var(--status-ready);
+  --color-status-published: var(--status-published);
+  --shadow-card: var(--elev-card);
+  --shadow-card-hover: var(--elev-card-hover);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+.login-wash {
+  background: radial-gradient(
+    ellipse at top,
+    color-mix(in oklab, var(--primary) 18%, transparent),
+    transparent 55%
+  );
+}
+
+.shadow-card {
+  box-shadow: var(--elev-card);
+}
+
+.shadow-card-hover {
+  box-shadow: var(--elev-card-hover);
+}
+
+.video-progress {
+  background: var(--secondary);
+  border-radius: 99px;
+  height: 6px;
+  overflow: hidden;
+}
+
+.video-progress-bar {
+  border-radius: inherit;
+  background: var(--primary);
+  height: 100%;
+  transition: width 0.3s ease-out;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
