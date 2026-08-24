@@ -9,7 +9,7 @@
  */
 
 const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-const RPC_URL = 'https://hired-focal-quantum-departmental.trycloudflare.com';
+const RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com';
 
 const SELECTORS = {
   name: '06fdde03',

@@ -1,0 +1,15 @@
+# Release keystore (do not commit)
+*.keystore
+*.jks
+local.properties
+
+# Build outputs
+.gradle/
+build/
+app/build/
+.capacitor/
+
+# Web bundle copied by cap sync (rebuilt in CI)
+app/src/main/assets/public/
+app/src/main/assets/capacitor.config.json
+app/src/main/assets/capacitor.plugins.json

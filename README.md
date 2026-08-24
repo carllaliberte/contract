@@ -28,25 +28,40 @@ Demo contract and config are in `google-app/deployment.json`:
 | --- | --- |
 | Contract | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
 | Chain | Anvil local (chain ID `31337`) |
-| RPC URL | `https://hired-focal-quantum-departmental.trycloudflare.com` |
-| Live dashboard | `https://carllaliberte.github.io/contract/` (after Pages deploy) |
-| Firebase (pending token) | `https://carllaliberte-meta-dashboard.web.app` |
+| RPC URL | `https://ethereum-sepolia-rpc.publicnode.com` |
+| Live dashboard | https://carllaliberte.github.io/contract/ |
+| Privacy policy | https://carllaliberte.github.io/contract/privacy.html |
+| Google Play package | `com.carllaliberte.meta` |
 
-Config is prefilled in:
+## Google Play (Android)
 
-- `google-app/.env.example`
-- `google-app/src/config.ts`
-- `google-app/apps-script/Code.gs`
-
-**Note:** This demo uses a temporary public tunnel to a local Anvil node. For production, deploy the contract on Sepolia/mainnet and host on Firebase (see below).
-
-### One-command demo redeploy
-
-With Anvil running on `http://127.0.0.1:8545`:
+The Android app is a **Capacitor** wrapper around the same web UI (`google-app/android/`).
 
 ```bash
-npm install
-npm run deploy:demo
+cd google-app
+npm ci
+npm run generate-icons
+npm run cap:sync          # build web + sync to Android
+npm run android:bundle    # requires Android SDK
+```
+
+CI builds a release **AAB** on every push to `main` (workflow `android-play-release.yml`).
+
+### Publish on Play Store
+
+1. [Google Play Console](https://play.google.com/console) developer account (25 USD)
+2. Create app with package `com.carllaliberte.meta`
+3. Add secrets for automated upload (optional):
+   - `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`
+   - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (service account with Play Console API)
+4. Store listing text: `google-app/play-store/LISTING.md`
+5. Privacy URL: https://carllaliberte.github.io/contract/privacy.html
+6. Upload AAB from GitHub Actions artifact `meta-dashboard-aab` or submit via CI
+
+Generate a upload keystore locally:
+
+```bash
+bash scripts/generate-android-keystore.sh
 ```
 
 ## Deploy to Firebase Hosting
