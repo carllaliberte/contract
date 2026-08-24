@@ -8,8 +8,8 @@
  * 4. Run createMenu, then use the "META Token" menu in the sheet.
  */
 
-const CONTRACT_ADDRESS = '0xYourContractAddressHere';
-const RPC_URL = 'https://eth.llamarpc.com';
+const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+const RPC_URL = 'https://hired-focal-quantum-departmental.trycloudflare.com';
 
 const SELECTORS = {
   name: '06fdde03',

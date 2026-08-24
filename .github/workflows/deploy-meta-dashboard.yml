@@ -1,0 +1,87 @@
+name: Deploy META dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'google-app/**'
+      - 'meta.sol'
+      - '.github/workflows/deploy-meta-dashboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: deploy-meta-dashboard
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: google-app/package-lock.json
+
+      - name: Install and build
+        working-directory: google-app
+        env:
+          VITE_BASE_PATH: /contract/
+          VITE_CONTRACT_ADDRESS: ${{ vars.META_CONTRACT_ADDRESS }}
+          VITE_RPC_URL: ${{ vars.META_RPC_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: google-app/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  firebase-hosting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: google-app/package-lock.json
+
+      - name: Build for Firebase
+        working-directory: google-app
+        env:
+          VITE_CONTRACT_ADDRESS: ${{ vars.META_CONTRACT_ADDRESS }}
+          VITE_RPC_URL: ${{ vars.META_RPC_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy Firebase Hosting
+        working-directory: google-app
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ]; then
+            echo "FIREBASE_TOKEN not set — skipping Firebase Hosting"
+            exit 0
+          fi
+          npx firebase deploy --only hosting --project carllaliberte-meta-dashboard --non-interactive
