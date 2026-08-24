@@ -83,11 +83,17 @@ jobs:
         id: play_upload
         env:
           PLAY_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$PLAY_JSON" ]; then
+          if [ -n "$PLAY_JSON" ] && [ -n "$KEYSTORE_B64" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON not set — skipping Play upload"
+            if [ -z "$KEYSTORE_B64" ]; then
+              echo "ANDROID_KEYSTORE_BASE64 not set — Play requires a signed AAB"
+            fi
+            if [ -z "$PLAY_JSON" ]; then
+              echo "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON not set — skipping Play upload"
+            fi
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
