@@ -58,11 +58,15 @@ CI builds a release **AAB** on every push to `main` (workflow `android-play-rele
 5. Privacy URL: https://carllaliberte.github.io/contract/privacy.html
 6. Upload AAB from GitHub Actions artifact `meta-dashboard-aab` or submit via CI
 
-Generate a upload keystore locally:
+Generate an upload keystore and prepare GitHub secrets:
 
 ```bash
-bash scripts/generate-android-keystore.sh
+ANDROID_KEYSTORE_PASSWORD='your-store-pass' ANDROID_KEY_PASSWORD='your-key-pass' \
+  bash scripts/generate-android-keystore.sh
+bash scripts/prepare-play-github-secrets.sh
 ```
+
+Full Play Console checklist (FR): `google-app/play-store/LISTING.md`
 
 ## Deploy to Firebase Hosting
 
