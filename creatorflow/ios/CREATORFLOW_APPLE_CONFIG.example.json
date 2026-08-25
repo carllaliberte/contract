@@ -1,0 +1,9 @@
+{
+  "teamId": "XXXXXXXXXX",
+  "apiKeyId": "XXXXXXXXXX",
+  "apiIssuerId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "apiKeyBase64": "BASE64_OF_AuthKey_XXXXXXXXXX.p8",
+  "certificateBase64": "",
+  "certificatePassword": "",
+  "provisionProfileBase64": ""
+}

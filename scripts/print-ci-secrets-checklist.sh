@@ -73,7 +73,8 @@ dim "    and /contract/creatorflow/ (CreatorFlow); workflows set these paths."
 dim "  Do NOT add OPENAI_API_KEY here — server-side only (Supabase Edge / API host)."
 echo ""
 
-bold "Secrets (private — signing, Play, Firebase)"
+bold "Secrets (private — signing, Play, Firebase, Apple)"
+status_secret CREATORFLOW_APPLE_CONFIG "iOS archive + App Store upload (virtual Mac CI)"
 status_secret META_PLAY_CONFIG "Play upload: keystore + service account JSON (recommended)"
 status_secret FIREBASE_TOKEN "Firebase Hosting deploy (skip if absent)"
 status_secret ANDROID_KEYSTORE_BASE64 "legacy Play signing — prefer META_PLAY_CONFIG"
@@ -88,11 +89,13 @@ echo "  CI CreatorFlow / API CI / Secret scan  → none"
 echo "  Deploy CreatorFlow                     → optional VITE_API_URL (variable)"
 echo "  Deploy META dashboard                  → optional VITE_* variables"
 echo "  Build Android release (Google Play)    → META_PLAY_CONFIG (or upload skipped)"
+echo "  macOS iOS build (virtual Mac)          → CREATORFLOW_APPLE_CONFIG (or archive skipped)"
 echo ""
 
 bold "Configure"
 echo "  bash scripts/setup-github-ci-env.sh              # push VITE_* variables"
 echo "  bash scripts/print-meta-play-config.sh           # build META_PLAY_CONFIG JSON locally"
+echo "  bash scripts/print-creatorflow-apple-config.sh   # build CREATORFLOW_APPLE_CONFIG JSON"
 echo "  bash scripts/apply-github-secrets.sh             # legacy Play keystore secrets"
 echo "  gh secret set META_PLAY_CONFIG --repo $REPO      # paste JSON (admin only)"
 echo ""
@@ -121,5 +124,11 @@ if $has_gh; then
     green "Play upload: META_PLAY_CONFIG is set."
   else
     yellow "Play upload: META_PLAY_CONFIG not set — AAB builds but Play upload is skipped."
+  fi
+
+  if repo_secret_set CREATORFLOW_APPLE_CONFIG || repo_secret_set APPLE_TEAM_ID; then
+    green "iOS: Apple credentials configured (virtual Mac can archive + upload)."
+  else
+    yellow "iOS: CREATORFLOW_APPLE_CONFIG not set — simulator build only, no App Store upload."
   fi
 fi

@@ -55,19 +55,38 @@ jobs:
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Archive + upload (needs GitHub secrets)
+      - name: Load CREATORFLOW_APPLE_CONFIG (one secret)
+        id: apple_config
         env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
-          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
+          CREATORFLOW_APPLE_CONFIG: ${{ secrets.CREATORFLOW_APPLE_CONFIG }}
+        run: node ../scripts/load-creatorflow-apple-config.cjs
+
+      - name: Resolve Apple credentials (bundle or legacy secrets)
+        shell: bash
+        env:
+          LEGACY_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          LEGACY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          LEGACY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          LEGACY_KEY_B64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          LEGACY_CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          LEGACY_CERT_PASS: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          LEGACY_PROFILE_B64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
+        run: |
+          set_env() { [ -n "${2:-}" ] && echo "$1=$2" >> "$GITHUB_ENV"; }
+          set_env APPLE_TEAM_ID "${APPLE_TEAM_ID:-$LEGACY_TEAM_ID}"
+          set_env APP_STORE_CONNECT_API_KEY_ID "${APP_STORE_CONNECT_API_KEY_ID:-$LEGACY_KEY_ID}"
+          set_env APP_STORE_CONNECT_API_ISSUER_ID "${APP_STORE_CONNECT_API_ISSUER_ID:-$LEGACY_ISSUER_ID}"
+          set_env APP_STORE_CONNECT_API_KEY_BASE64 "${APP_STORE_CONNECT_API_KEY_BASE64:-$LEGACY_KEY_B64}"
+          set_env APPLE_CERTIFICATE_BASE64 "${APPLE_CERTIFICATE_BASE64:-$LEGACY_CERT_B64}"
+          set_env APPLE_CERTIFICATE_PASSWORD "${APPLE_CERTIFICATE_PASSWORD:-$LEGACY_CERT_PASS}"
+          set_env APPLE_PROVISION_PROFILE_BASE64 "${APPLE_PROVISION_PROFILE_BASE64:-$LEGACY_PROFILE_B64}"
+
+      - name: Archive + upload (virtual Mac → App Store Connect)
         run: |
           if [ -z "$APPLE_TEAM_ID" ]; then
-            echo "::warning::APPLE_TEAM_ID not set — skipping App Store archive/upload."
-            echo "Run: bash scripts/prepare-apple-github-secrets.sh"
+            echo "::warning::Apple credentials missing — skipping App Store archive/upload."
+            echo "Set GitHub secret CREATORFLOW_APPLE_CONFIG (recommended) or individual APPLE_* secrets."
+            echo "Generate JSON: bash scripts/print-creatorflow-apple-config.sh"
             exit 0
           fi
           if [ -n "$APPLE_CERTIFICATE_BASE64" ]; then
