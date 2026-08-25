@@ -1,6 +1,7 @@
 import './style.css'
 import { fetchTokenSnapshot, fetchWalletSnapshot } from './contract'
 import { getContractAddress, getRpcUrl } from './config'
+import { getChainName, getChainRpcUrl } from './wallet/chains'
 import { initWalletUi } from './wallet/ui'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -20,6 +21,7 @@ app.innerHTML = `
 
   <section class="panel">
     <h2>Wallet</h2>
+    <p class="panel-lead">Multi-chain EVM connection via WalletConnect (non-custodial).</p>
     <div id="wallet-bar" class="wallet-bar" aria-live="polite"></div>
     <p id="wallet-status" class="status hidden" aria-live="polite"></p>
   </section>
@@ -113,16 +115,33 @@ function setText(id: string, value: string) {
   if (element) element.textContent = value
 }
 
+function applyWalletChain(chainId: number) {
+  const rpcUrl = getChainRpcUrl(chainId)
+  if (rpcUrl) {
+    rpcInput.value = rpcUrl
+    setWalletStatus(`RPC URL set for ${getChainName(chainId)}`, 'info')
+  }
+}
+
 window.addEventListener('wallet-status', (event) => {
   const detail = (event as CustomEvent<{ message: string; type: 'info' | 'error' | 'success' }>).detail
   setWalletStatus(detail.message, detail.type)
 })
 
-initWalletUi(walletBar, (address) => {
-  if (address) {
-    walletInput.value = address
-  }
+window.addEventListener('wallet-chain-changed', (event) => {
+  const { chainId } = (event as CustomEvent<{ chainId: number }>).detail
+  applyWalletChain(chainId)
 })
+
+initWalletUi(
+  walletBar,
+  (address) => {
+    if (address) {
+      walletInput.value = address
+    }
+  },
+  applyWalletChain,
+)
 
 document.querySelector<HTMLFormElement>('#connection-form')!.addEventListener('submit', async (event) => {
   event.preventDefault()
