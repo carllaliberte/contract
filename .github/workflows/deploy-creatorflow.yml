@@ -1,0 +1,50 @@
+name: Deploy CreatorFlow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'creatorflow/**'
+      - '.github/workflows/deploy-creatorflow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-creatorflow
+  cancel-in-progress: true
+
+jobs:
+  deploy-github-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: creatorflow/package-lock.json
+
+      - name: Build CreatorFlow
+        working-directory: creatorflow
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish to gh-pages/creatorflow (keep META dashboard at root)
+        working-directory: creatorflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          npx gh-pages@6.3.0 -d dist \
+            --dest creatorflow \
+            --add \
+            -m "Deploy CreatorFlow [skip ci]" \
+            -r "https://x-access-token:${GITHUB_TOKEN}@github.com/carllaliberte/contract.git"
+
+      - name: Live URL
+        run: echo "https://carllaliberte.github.io/contract/creatorflow/"
