@@ -8,8 +8,10 @@ on:
       - '.github/workflows/android-play-release.yml'
   workflow_dispatch:
 
-# Secrets required: ANDROID_KEYSTORE_* and GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (repo Settings → Actions)
+permissions:
   contents: read
+
+# Secrets: ANDROID_KEYSTORE_* and GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (repo Settings → Actions)
 
 jobs:
   build-aab:
