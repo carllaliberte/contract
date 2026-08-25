@@ -122,8 +122,15 @@ Les workflows Play écrivent les secrets dans `GITHUB_ENV` via heredoc (`<<EOF`)
 4. **Local** : copier les `.env.example` → `.env` ou `.env.local` ; ne jamais `git add` ces fichiers.
 5. **CI CreatorFlow** (web/android/ios) : pas de secrets requis ; le déploiement injecte les `vars` au build SEO.
 
+## Scripts & checklist CI
+
+- `bash scripts/setup-github-ci-env.sh` — pousse les variables `VITE_*` publiques via `gh variable set` (skip si vide)
+- `bash scripts/print-ci-secrets-checklist.sh` — état vars/secrets sans afficher de valeurs
+- Guide détaillé : [CI_SECRETS_SETUP.md](./CI_SECRETS_SETUP.md)
+
 ## Voir aussi
 
+- [CI_SECRETS_SETUP.md](./CI_SECRETS_SETUP.md) — configuration pas-à-pas GitHub Actions
 - [GHA_ORCHESTRATION.md](./GHA_ORCHESTRATION.md) — enchaînement CI → deploy CreatorFlow
 - `creatorflow/README.md` — API scripts IA côté client
 - `api/README.md` — variables serveur API
