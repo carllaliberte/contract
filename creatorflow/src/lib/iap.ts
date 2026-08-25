@@ -44,7 +44,6 @@ export async function purchaseProduct(productId: IapProductId): Promise<Purchase
     return {
       ok: false,
       reason: "unavailable",
-      message: "StoreKit bridge not connected",
     };
   }
 
@@ -80,7 +79,6 @@ export async function restorePurchases(): Promise<RestoreResult> {
     return {
       ok: false,
       reason: "unavailable",
-      message: "StoreKit bridge not connected",
     };
   }
 
