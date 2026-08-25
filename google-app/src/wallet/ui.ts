@@ -1,4 +1,10 @@
 import {
+  metaEntitlements,
+  tierDescription,
+  tierLabel,
+  type MetaTier,
+} from '../../../shared/meta-entitlements'
+import {
   connectWallet,
   disconnectWallet,
   getConnectedAccount,
@@ -15,8 +21,56 @@ import { defaultChain, getChainName, isSupportedChainId, supportedChains } from 
 const DISCLAIMER =
   'Connexion non-custodiale — nous ne détenons jamais vos clés. / Non-custodial — we never hold your keys.'
 
+export type WalletEntitlementsView = {
+  balance?: string
+  symbol?: string
+  tier?: MetaTier
+  loading: boolean
+  error?: string
+}
+
+let entitlementsView: WalletEntitlementsView | null = null
+let walletBarElement: HTMLElement | null = null
+
+export function setWalletEntitlements(view: WalletEntitlementsView | null): void {
+  entitlementsView = view
+  if (walletBarElement) {
+    renderWalletBar(walletBarElement)
+  }
+}
+
 function renderDisclaimer(): string {
   return `<p class="wallet-bar__disclaimer" role="note">${DISCLAIMER}</p>`
+}
+
+function renderEntitlements(): string {
+  if (!entitlementsView) return ''
+
+  if (entitlementsView.loading) {
+    return `<p class="wallet-bar__meta wallet-bar__meta--loading">Loading META balance…</p>`
+  }
+
+  if (entitlementsView.error) {
+    return `<p class="wallet-bar__meta wallet-bar__meta--error" role="alert">${entitlementsView.error}</p>`
+  }
+
+  if (!entitlementsView.balance || !entitlementsView.tier) return ''
+
+  const label = tierLabel(entitlementsView.tier)
+  const description = tierDescription(entitlementsView.tier)
+
+  return `
+    <div class="wallet-bar__meta">
+      <p class="wallet-bar__balance">
+        <span class="wallet-bar__balance-label">META balance</span>
+        <strong>${entitlementsView.balance} ${entitlementsView.symbol ?? metaEntitlements.symbol}</strong>
+      </p>
+      <p class="wallet-bar__tier-row">
+        <span class="wallet-tier wallet-tier--${entitlementsView.tier}">${label}</span>
+        <span class="wallet-bar__tier-hint">${description}</span>
+      </p>
+    </div>
+  `
 }
 
 function renderDisconnected(walletBar: HTMLElement) {
@@ -116,6 +170,7 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
         <p class="wallet-bar__label">Connected</p>
         <p class="wallet-bar__address mono" title="${address}">${shortenAddress(address)}</p>
         <p class="wallet-bar__chain">${getChainName(displayChainId)}</p>
+        ${renderEntitlements()}
       </div>
       <div class="wallet-bar__actions">
         <label class="wallet-chain-select">
@@ -196,6 +251,7 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
 
     try {
       await disconnectWallet()
+      setWalletEntitlements(null)
       window.dispatchEvent(
         new CustomEvent('wallet-status', { detail: { message: 'Wallet disconnected', type: 'info' } }),
       )
@@ -222,6 +278,7 @@ export function initWalletUi(
   onAddressChange: (address: string | null) => void,
   onChainChange?: (chainId: number) => void,
 ): void {
+  walletBarElement = walletBar
   renderWalletBar(walletBar)
 
   onAccountChange((account) => {
