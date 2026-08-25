@@ -12,6 +12,7 @@ import {
   Code2,
   Server,
   Terminal,
+  Github,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +39,8 @@ const devCards = [
   { titleKey: "dev.demo.title", bodyKey: "dev.demo.body", icon: Terminal },
   { titleKey: "dev.build.title", bodyKey: "dev.build.body", icon: Zap },
 ] as const;
+
+const GITHUB_REPO_URL = "https://github.com/carllaliberte/contract";
 
 const pipelineSteps = [
   { key: "idea", icon: Lightbulb, color: "text-status-idea", bg: "bg-status-idea/15" },
@@ -123,6 +126,15 @@ export function LandingPage() {
           </a>
           <a href="#faq" className="transition-colors hover:text-foreground">
             {tr("nav.faq")}
+          </a>
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+          >
+            <Github className="size-4" />
+            {tr("nav.github")}
           </a>
         </nav>
         <div className="flex items-center gap-2.5">
@@ -511,6 +523,15 @@ export function LandingPage() {
           <nav className="flex flex-wrap items-center justify-center gap-4">
             <a href="#dev" className="transition-colors hover:text-foreground">
               {tr("dev.footerLink")}
+            </a>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+            >
+              <Github className="size-3.5" />
+              {tr("nav.github")}
             </a>
           </nav>
           <p>{tr("footer.rights")}</p>
