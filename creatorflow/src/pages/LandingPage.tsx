@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
+import { AppleSignInButton } from "../components/AppleSignInButton";
 import { Button, Input, Label, Logo } from "../components/ui";
 import {
   demoVideoPoster,
@@ -112,7 +113,7 @@ export function LandingPage() {
     <div className="min-h-dvh bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 login-wash" />
 
-      <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6">
+      <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 safe-top safe-x sm:px-6">
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href="#pipeline" className="transition-colors hover:text-foreground">
@@ -212,6 +213,7 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-col gap-2">
+              <AppleSignInButton onSuccess={enterDemo} />
               <Button variant="outline" type="button" className="h-11" onClick={enterDemo}>
                 <svg className="size-4" viewBox="0 0 24 24" aria-hidden>
                   <path

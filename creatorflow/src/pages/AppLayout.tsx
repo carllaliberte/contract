@@ -47,7 +47,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
+      <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md safe-top safe-x">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Logo size="sm" />
           <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -67,7 +67,7 @@ export function AppLayout() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:py-8">
+      <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6 safe-x sm:px-6 lg:py-8">
         <aside className="hidden w-52 shrink-0 lg:block">
           <nav className="flex flex-col gap-1">
             {navItems.map(({ to, icon: Icon, label, end }) => (
@@ -90,12 +90,12 @@ export function AppLayout() {
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1 pb-24 lg:pb-8">
+        <main className="min-w-0 flex-1 pb-[calc(6rem+var(--safe-bottom))] lg:pb-8">
           <Outlet context={{ statusIcons }} />
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md safe-x lg:hidden">
         <div className="grid grid-cols-4">
           {navItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink

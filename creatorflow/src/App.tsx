@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { IdeasProvider } from "./context/IdeasContext";
 import { I18nProvider } from "./i18n/context";
+import { ROUTER_BASENAME } from "./lib/router";
 import { AppLayout } from "./pages/AppLayout";
 import { LandingPage } from "./pages/LandingPage";
 
@@ -35,7 +36,7 @@ function AppRouteFallback() {
 export default function App() {
   return (
     <I18nProvider>
-      <BrowserRouter basename="/contract/creatorflow">
+      <BrowserRouter basename={ROUTER_BASENAME}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route
