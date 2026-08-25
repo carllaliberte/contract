@@ -159,6 +159,32 @@ https://your-api.example.com/iap/apple/notifications
 cd creatorflow
 npm ci
 VITE_API_URL=https://your-api.example.com npm run build:ios
-npm run cap:open:ios
-# Product → Archive → Distribute App → App Store Connect
+
+# Automated archive + upload (recommended)
+export APPLE_TEAM_ID=XXXXXXXXXX
+export APP_STORE_CONNECT_API_KEY_ID=XXXXXXXXXX
+export APP_STORE_CONNECT_API_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export APP_STORE_CONNECT_API_KEY_PATH=~/AuthKey_XXXXXXXXXX.p8
+bash ../scripts/ios-archive-and-upload.sh
 ```
+
+Or all-in-one:
+
+```bash
+bash scripts/force-app-store-release.sh https://your-api.example.com
+```
+
+### GitHub Actions (CI archive)
+
+Workflow: `.github/workflows/ios-app-store-release.yml`
+
+Secrets required:
+- `APPLE_TEAM_ID`
+- `APP_STORE_CONNECT_API_KEY_ID`
+- `APP_STORE_CONNECT_API_ISSUER_ID`
+- `APP_STORE_CONNECT_API_KEY_BASE64` (contents of `.p8` file, base64)
+- Optional: `APPLE_CERTIFICATE_BASE64`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_PROVISION_PROFILE_BASE64`
+
+Trigger: Actions → **iOS App Store release** → Run workflow
+
+Or push tag: `git tag ios-release/1.0.0 && git push origin ios-release/1.0.0`
