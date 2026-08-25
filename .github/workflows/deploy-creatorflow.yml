@@ -46,7 +46,7 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_BASE_PATH: /contract/creatorflow/
-          VITE_ROUTER_BASENAME: /contract/creatorflow/
+          VITE_ROUTER_BASENAME: /contract/creatorflow
         run: npm run build:seo
 
       - name: Publish to gh-pages/creatorflow (keep META dashboard at root)
