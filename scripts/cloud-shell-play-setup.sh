@@ -9,6 +9,7 @@ STORE_PASS="${STORE_PASS:-MetaCarl2026}"
 KEY_PASS="${KEY_PASS:-$STORE_PASS}"
 ALIAS="${ALIAS:-meta-upload}"
 OUT_JSON="${OUT_JSON:-META_PLAY_CONFIG.json}"
+SA_NAME="${SA_NAME:-play-upload}"
 
 PROJECT_ID="$(gcloud config get-value project 2>/dev/null)"
 if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "(unset)" ]]; then
