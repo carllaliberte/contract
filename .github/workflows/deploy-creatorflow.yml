@@ -35,13 +35,11 @@ jobs:
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
 
-      - name: Install dependencies
+      - name: Install deps & Playwright Chromium
         working-directory: creatorflow
-        run: npm ci
-
-      - name: Install Playwright Chromium
-        working-directory: creatorflow
-        run: npx playwright install --with-deps chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
       - name: Build CreatorFlow (SEO prerender)
         working-directory: creatorflow
