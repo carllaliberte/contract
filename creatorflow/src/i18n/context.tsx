@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -16,17 +17,52 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function readLocaleFromUrl(): Locale | null {
+  const lang = new URLSearchParams(window.location.search).get("lang");
+  if (lang === "en" || lang === "fr") return lang;
+  return null;
+}
+
+function readInitialLocale(): Locale {
+  const fromUrl = readLocaleFromUrl();
+  if (fromUrl) return fromUrl;
+
+  const saved = localStorage.getItem("cf-locale");
+  if (saved === "fr" || saved === "en") return saved;
+
+  return navigator.language.startsWith("fr") ? "fr" : "en";
+}
+
+function syncDocumentLocale(locale: Locale) {
+  document.documentElement.lang = locale;
+}
+
+function syncLangQueryParam(locale: Locale) {
+  const url = new URL(window.location.href);
+  if (locale === "en") {
+    url.searchParams.set("lang", "en");
+  } else {
+    url.searchParams.delete("lang");
+  }
+  const query = url.searchParams.toString();
+  const nextUrl = `${url.pathname}${query ? `?${query}` : ""}${url.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextUrl !== currentUrl) {
+    history.replaceState(null, "", nextUrl);
+  }
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(() => {
-    const saved = localStorage.getItem("cf-locale");
-    if (saved === "fr" || saved === "en") return saved;
-    return navigator.language.startsWith("fr") ? "fr" : "en";
-  });
+  const [locale, setLocale] = useState<Locale>(readInitialLocale);
+
+  useEffect(() => {
+    syncDocumentLocale(locale);
+    localStorage.setItem("cf-locale", locale);
+    syncLangQueryParam(locale);
+  }, [locale]);
 
   const handleSetLocale = useCallback((next: Locale) => {
     setLocale(next);
-    localStorage.setItem("cf-locale", next);
-    document.documentElement.lang = next;
   }, []);
 
   const tr = useCallback(
