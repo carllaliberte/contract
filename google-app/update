@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Applique toutes les améliorations CreatorFlow + page téléchargement pro
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+echo "→ Application des améliorations..."
+
+cp "$ROOT/creatorflow/src/index.css"                    creatorflow/src/index.css
+cp "$ROOT/creatorflow/src/components/ui.tsx"            creatorflow/src/components/ui.tsx
+cp "$ROOT/creatorflow/src/pages/PipelinePage.tsx"       creatorflow/src/pages/PipelinePage.tsx
+cp "$ROOT/creatorflow/src/pages/DashboardPage.tsx"      creatorflow/src/pages/DashboardPage.tsx
+cp "$ROOT/google-app/public/install-android.html"       google-app/public/install-android.html
+
+echo "→ Fichiers remplacés avec succès."
+echo ""
+echo "Maintenant exécute :"
+echo "  git add creatorflow/src/index.css creatorflow/src/components/ui.tsx creatorflow/src/pages/PipelinePage.tsx creatorflow/src/pages/DashboardPage.tsx google-app/public/install-android.html"
+echo "  git commit -m \"feat: CreatorFlow international-class polish + pro APK download page\""
+echo "  git push origin main"
