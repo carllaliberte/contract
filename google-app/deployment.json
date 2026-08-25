@@ -12,5 +12,5 @@
   "playStoreReleasePending": false,
   "deployedAt": "2026-08-24T21:21:58.843Z",
   "environment": "github-pages",
-  "notes": "Web on GitHub Pages. Android app bundles the same UI via Capacitor. Configure RPC/contract in deployment.json for your chain."
+  "notes": "Web on GitHub Pages. Android via Capacitor. Play upload via META_PLAY_CONFIG."
 }
