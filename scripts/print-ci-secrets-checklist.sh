@@ -1,96 +1,125 @@
 #!/usr/bin/env bash
-# Print a checklist of GitHub Actions variables & secrets for carllaliberte/contract.
-# Safe to run anytime — does not print secret values.
+# Checklist: GitHub Actions Variables vs Secrets for carllaliberte/contract.
+# Safe to run anytime — never prints secret values.
 set -euo pipefail
 
 REPO="${GITHUB_REPO:-carllaliberte/contract}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-have_gh=false
+bold() { printf '\033[1m%s\033[0m\n' "$*"; }
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
+red() { printf '\033[31m%s\033[0m\n' "$*"; }
+dim() { printf '\033[2m%s\033[0m\n' "$*"; }
+
+has_gh=false
 if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
-  have_gh=true
+  has_gh=true
 fi
 
-var_status() {
+repo_var_set() {
   local name="$1"
-  if [[ "$have_gh" != true ]]; then
-    echo "?"
-    return
-  fi
-  if gh variable list --repo "$REPO" --json name -q ".[] | select(.name==\"$name\") | .name" 2>/dev/null | grep -qx "$name"; then
-    echo "set"
-  else
-    echo "missing"
-  fi
+  $has_gh && gh variable list --repo "$REPO" --json name -q ".[] | select(.name==\"$name\") | .name" 2>/dev/null | grep -qx "$name"
 }
 
-secret_status() {
+repo_var_value() {
   local name="$1"
-  if [[ "$have_gh" != true ]]; then
-    echo "?"
-    return
-  fi
-  if gh secret list --repo "$REPO" --json name -q ".[] | select(.name==\"$name\") | .name" 2>/dev/null | grep -qx "$name"; then
-    echo "set"
+  $has_gh && gh variable get "$name" --repo "$REPO" 2>/dev/null || true
+}
+
+repo_secret_set() {
+  local name="$1"
+  $has_gh && gh secret list --repo "$REPO" --json name -q ".[] | select(.name==\"$name\") | .name" 2>/dev/null | grep -qx "$name"
+}
+
+status_var() {
+  local name="$1"
+  if repo_var_set "$name"; then
+    green "  [set]     $name"
   else
-    echo "missing"
+    dim "  [optional] $name"
   fi
 }
 
-print_row() {
-  local kind="$1" name="$2" required="$3" note="$4" status="$5"
-  printf "  %-8s %-36s %-11s [%s] %s\n" "$kind" "$name" "$required" "$status" "$note"
+status_secret() {
+  local name="$1" note="$2"
+  if repo_secret_set "$name"; then
+    green "  [set]     $name"
+  else
+    dim "  [optional] $name — $note"
+  fi
 }
 
-echo "=== CI variables & secrets checklist — $REPO ==="
+bold "=== GitHub Actions — Variables vs Secrets ($REPO) ==="
 echo ""
-echo "Settings: https://github.com/$REPO/settings/secrets/actions"
-echo "Apply public vars:  bash scripts/setup-github-ci-env.sh"
-echo "Apply Play secrets: bash scripts/apply-github-secrets.sh"
+echo "Settings → Secrets and variables → Actions:"
+echo "  https://github.com/$REPO/settings/secrets/actions"
+echo "Docs: docs/CI_SECRETS_SETUP.md"
 echo ""
 
-if [[ "$have_gh" != true ]]; then
-  echo "(Install and authenticate gh CLI to see live set/missing status.)"
+if ! $has_gh; then
+  yellow "gh CLI not authenticated — cannot detect remote state."
   echo ""
 fi
 
-echo "--- Variables (public at build — use vars, not secrets) ---"
-print_row "var" "VITE_API_URL" "optional" "CreatorFlow AI endpoint" "$(var_status VITE_API_URL)"
-print_row "var" "VITE_WALLETCONNECT_PROJECT_ID" "optional" "META WalletConnect project ID" "$(var_status VITE_WALLETCONNECT_PROJECT_ID)"
-print_row "var" "VITE_CONTRACT_ADDRESS" "optional" "META contract (or deployment.json)" "$(var_status VITE_CONTRACT_ADDRESS)"
-print_row "var" "VITE_RPC_URL" "optional" "META JSON-RPC URL" "$(var_status VITE_RPC_URL)"
-print_row "var" "VITE_BASE_PATH" "optional" "META Pages base (workflow default /contract/)" "$(var_status VITE_BASE_PATH)"
+bold "Variables (public VITE_* — injected at build, visible in client bundle)"
+status_var VITE_API_URL
+status_var VITE_WALLETCONNECT_PROJECT_ID
+status_var VITE_CONTRACT_ADDRESS
+status_var VITE_RPC_URL
 echo ""
-echo "  Note: CreatorFlow deploy hard-codes VITE_BASE_PATH=/contract/creatorflow/ in its workflow."
-echo "  Do not set VITE_BASE_PATH=/ globally — it would break GitHub Pages routing."
-echo ""
-
-echo "--- Secrets (never in client bundle) ---"
-print_row "secret" "FIREBASE_TOKEN" "optional" "Firebase Hosting deploy (skip if absent)" "$(secret_status FIREBASE_TOKEN)"
-print_row "secret" "META_PLAY_CONFIG" "optional" "Play upload JSON bundle" "$(secret_status META_PLAY_CONFIG)"
-print_row "secret" "ANDROID_KEYSTORE_BASE64" "optional" "Android signing" "$(secret_status ANDROID_KEYSTORE_BASE64)"
-print_row "secret" "ANDROID_KEYSTORE_PASSWORD" "optional" "Android signing" "$(secret_status ANDROID_KEYSTORE_PASSWORD)"
-print_row "secret" "ANDROID_KEY_ALIAS" "optional" "Android signing" "$(secret_status ANDROID_KEY_ALIAS)"
-print_row "secret" "ANDROID_KEY_PASSWORD" "optional" "Android signing" "$(secret_status ANDROID_KEY_PASSWORD)"
-print_row "secret" "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" "optional" "Play API (or WIF)" "$(secret_status GOOGLE_PLAY_SERVICE_ACCOUNT_JSON)"
-print_row "secret" "VITE_WALLETCONNECT_PROJECT_ID" "legacy" "prefer variable — migrate if present" "$(secret_status VITE_WALLETCONNECT_PROJECT_ID)"
+dim "  Do NOT set VITE_BASE_PATH=/ — GitHub Pages needs /contract/ (META)"
+dim "    and /contract/creatorflow/ (CreatorFlow); workflows set these paths."
+dim "  Do NOT add OPENAI_API_KEY here — server-side only (Supabase Edge / API host)."
 echo ""
 
-echo "--- Local env templates (copy, fill, never commit) ---"
-for f in \
-  "$ROOT/creatorflow/.env.example" \
-  "$ROOT/google-app/.env.example" \
-  "$ROOT/api/.env.example"; do
-  if [[ -f "$f" ]]; then
-    echo "  $f"
+bold "Secrets (private — signing, Play, Firebase)"
+status_secret META_PLAY_CONFIG "Play upload: keystore + service account JSON (recommended)"
+status_secret FIREBASE_TOKEN "Firebase Hosting deploy (skip if absent)"
+status_secret ANDROID_KEYSTORE_BASE64 "legacy Play signing — prefer META_PLAY_CONFIG"
+status_secret GOOGLE_PLAY_SERVICE_ACCOUNT_JSON "legacy Play API — prefer META_PLAY_CONFIG or WIF"
+echo ""
+dim "  Play: prefer META_PLAY_CONFIG over legacy ANDROID_KEYSTORE_* / GOOGLE_PLAY_SERVICE_ACCOUNT_JSON."
+dim "  OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY → Supabase / API host, not GitHub Actions."
+echo ""
+
+bold "Workflows — secrets required?"
+echo "  CI CreatorFlow / API CI / Secret scan  → none"
+echo "  Deploy CreatorFlow                     → optional VITE_API_URL (variable)"
+echo "  Deploy META dashboard                  → optional VITE_* variables"
+echo "  Build Android release (Google Play)    → META_PLAY_CONFIG (or upload skipped)"
+echo ""
+
+bold "Configure"
+echo "  bash scripts/setup-github-ci-env.sh              # push VITE_* variables"
+echo "  bash scripts/print-meta-play-config.sh           # build META_PLAY_CONFIG JSON locally"
+echo "  bash scripts/apply-github-secrets.sh             # legacy Play keystore secrets"
+echo "  gh secret set META_PLAY_CONFIG --repo $REPO      # paste JSON (admin only)"
+echo ""
+
+if $has_gh; then
+  bad_base=""
+  if repo_var_set VITE_BASE_PATH; then
+    val="$(repo_var_value VITE_BASE_PATH)"
+    if [[ "$val" == "/" ]]; then
+      bad_base=yes
+    fi
   fi
-done
-echo ""
+  if [[ -n "$bad_base" ]]; then
+    red "Warning: VITE_BASE_PATH=/ breaks GitHub Pages asset paths — remove or set /contract/."
+  fi
 
-echo "--- CI without secrets ---"
-echo "  api-ci.yml          MEMORY_STORE + MOCK_LLM (no API keys required)"
-echo "  ci-creatorflow.yml  no repository secrets required"
-echo "  deploy-creatorflow  only VITE_API_URL var optional"
-echo ""
+  if repo_secret_set OPENAI_API_KEY; then
+    red "Warning: OPENAI_API_KEY should not be a GitHub Actions secret — use Supabase/API host."
+  fi
 
-echo "Full reference: docs/CI_SECRETS_SETUP.md"
+  if repo_secret_set VITE_WALLETCONNECT_PROJECT_ID; then
+    yellow "Legacy: VITE_WALLETCONNECT_PROJECT_ID is a secret — migrate to a variable (public WC project ID)."
+  fi
+
+  if repo_secret_set META_PLAY_CONFIG; then
+    green "Play upload: META_PLAY_CONFIG is set."
+  else
+    yellow "Play upload: META_PLAY_CONFIG not set — AAB builds but Play upload is skipped."
+  fi
+fi
