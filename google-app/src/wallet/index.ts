@@ -9,9 +9,18 @@ import {
   type GetAccountReturnType,
 } from '@wagmi/core'
 import { isWalletConnectConfigured, wagmiConfig } from './config'
-import { getChainName, supportedChains, type SupportedChain } from './chains'
+import { supportedChains, type SupportedChain } from './chains'
 
-export { supportedChains, getChainName, isWalletConnectConfigured, wagmiConfig }
+export {
+  chainEntries,
+  defaultChain,
+  getChainName,
+  getChainRpcUrl,
+  isSupportedChainId,
+  supportedChains,
+  WALLETCONNECT_APP_URL,
+} from './chains'
+export { isWalletConnectConfigured, wagmiConfig }
 
 export type WalletAccount = GetAccountReturnType
 
@@ -19,10 +28,17 @@ function getConnector(id: 'walletConnect' | 'injected') {
   return getConnectors(wagmiConfig).find((connector) => connector.id === id)
 }
 
-export async function connectWallet(): Promise<void> {
+export function hasInjectedWallet(): boolean {
+  return typeof window !== 'undefined' && Boolean(window.ethereum)
+}
+
+export async function connectWallet(preferInjected = false): Promise<void> {
   const walletConnectConnector = getConnector('walletConnect')
   const injectedConnector = getConnector('injected')
-  const connector = walletConnectConnector ?? injectedConnector
+
+  const connector = preferInjected
+    ? (injectedConnector ?? walletConnectConnector)
+    : (walletConnectConnector ?? injectedConnector)
 
   if (!connector) {
     throw new Error(

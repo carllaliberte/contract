@@ -1,8 +1,12 @@
-import { createConfig, http } from '@wagmi/core'
+import { createConfig, http, type Transport } from '@wagmi/core'
 import { injected, walletConnect } from '@wagmi/connectors'
-import { mainnet, sepolia } from '@wagmi/core/chains'
-import { getRpcUrl, getWalletConnectProjectId } from '../config'
-import { supportedChains } from './chains'
+import { getWalletConnectProjectId } from '../config'
+import {
+  chainEntries,
+  getChainRpcUrl,
+  getWalletConnectMetadata,
+  supportedChains,
+} from './chains'
 
 const projectId = getWalletConnectProjectId()
 
@@ -11,16 +15,9 @@ const connectors = [
     ? [
         walletConnect({
           projectId,
-          metadata: {
-            name: 'META Token Dashboard',
-            description: 'Read-only dashboard for the META ERC-20 contract',
-            url: typeof window !== 'undefined' ? window.location.origin : 'https://carllaliberte.github.io/contract/',
-            icons: [
-              typeof window !== 'undefined'
-                ? `${window.location.origin}${import.meta.env.BASE_URL}favicon.svg`
-                : 'https://carllaliberte.github.io/contract/favicon.svg',
-            ],
-          },
+          metadata: getWalletConnectMetadata(
+            typeof window !== 'undefined' ? window.location.origin : undefined,
+          ),
           showQrModal: true,
         }),
       ]
@@ -28,13 +25,18 @@ const connectors = [
   injected({ shimDisconnect: true }),
 ]
 
+const transports = Object.fromEntries(
+  chainEntries.map((entry) => {
+    const rpcUrl = getChainRpcUrl(entry.chain.id)
+    const transport: Transport = rpcUrl ? http(rpcUrl) : http()
+    return [entry.chain.id, transport]
+  }),
+) as Record<(typeof supportedChains)[number]['id'], Transport>
+
 export const wagmiConfig = createConfig({
   chains: supportedChains,
   connectors,
-  transports: {
-    [sepolia.id]: http(getRpcUrl()),
-    [mainnet.id]: http(),
-  },
+  transports,
 })
 
 export function isWalletConnectConfigured(): boolean {
