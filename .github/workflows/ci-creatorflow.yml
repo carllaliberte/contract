@@ -1,0 +1,117 @@
+name: CI CreatorFlow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "creatorflow/**"
+      - ".github/workflows/ci-creatorflow.yml"
+  pull_request:
+    paths:
+      - "creatorflow/**"
+      - ".github/workflows/ci-creatorflow.yml"
+
+concurrency:
+  group: ci-creatorflow-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: creatorflow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: creatorflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Playwright e2e
+        run: npm run test:e2e
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: creatorflow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: creatorflow/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build web and sync Android
+        run: npm ci && npm run build:android
+
+      - name: Assemble debug APK
+        working-directory: creatorflow/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: creatorflow-debug-apk
+          path: creatorflow/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: creatorflow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: creatorflow/package-lock.json
+
+      - name: Build web and sync iOS
+        run: npm ci && npm run build:ios
+
+      - name: Build for iOS Simulator
+        working-directory: creatorflow/ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
