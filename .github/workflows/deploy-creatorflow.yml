@@ -1,11 +1,10 @@
 name: Deploy CreatorFlow
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI CreatorFlow"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'creatorflow/**'
-      - '.github/workflows/deploy-creatorflow.yml'
   workflow_dispatch:
 
 permissions:
@@ -17,9 +16,18 @@ concurrency:
 
 jobs:
   deploy-github-pages:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event != 'pull_request'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
 
       - uses: actions/setup-node@v4
         with:

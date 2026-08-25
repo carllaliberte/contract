@@ -10,6 +10,7 @@ on:
     paths:
       - "creatorflow/**"
       - ".github/workflows/ci-creatorflow.yml"
+  workflow_dispatch:
 
 concurrency:
   group: ci-creatorflow-${{ github.ref }}
@@ -50,6 +51,7 @@ jobs:
         run: npm run test:e2e
 
   android:
+    needs: web
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -87,6 +89,7 @@ jobs:
           if-no-files-found: error
 
   ios:
+    needs: web
     runs-on: macos-latest
     continue-on-error: true
     defaults:
