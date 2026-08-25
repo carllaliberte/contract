@@ -7,7 +7,7 @@
     "type": "service_account",
     "project_id": "votre-projet",
     "private_key_id": "...",
-    "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+    "private_key": "<PEM from service account JSON — never commit>",
     "client_email": "play-upload@votre-projet.iam.gserviceaccount.com",
     "client_id": "...",
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",

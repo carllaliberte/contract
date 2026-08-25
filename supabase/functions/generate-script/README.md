@@ -9,7 +9,7 @@ supabase functions deploy generate-script --no-verify-jwt
 Set secrets in Supabase (never commit):
 
 ```bash
-supabase secrets set OPENAI_API_KEY=sk-...
+supabase secrets set OPENAI_API_KEY=<your-openai-api-key>
 # optional
 supabase secrets set OPENAI_MODEL=gpt-4o-mini
 ```

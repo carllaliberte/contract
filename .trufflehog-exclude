@@ -1,0 +1,32 @@
+# TruffleHog path exclusions (newline-separated regexes).
+# See docs/TRUFFLEHOG.md — do not add source paths here to hide real leaks.
+
+# Lockfiles (high noise, no authored secrets)
+.*package-lock\.json$
+.*yarn\.lock$
+.*pnpm-lock\.yaml$
+.*composer\.lock$
+.*requirements\.lock$
+
+# Dependencies & build outputs
+.*/node_modules/.*
+.*/\.gradle/.*
+.*/build/.*
+.*/dist/.*
+.*/cache/.*
+.*/artifacts/.*
+
+# Binary / asset noise
+.*\.svg$
+.*\.css$
+.*\.png$
+.*\.jpg$
+.*\.jpeg$
+.*\.gif$
+.*\.webp$
+.*\.woff2?$
+.*\.ico$
+
+# Documented examples (use placeholders, not PEM / sk- patterns)
+.*META_PLAY_CONFIG\.example\.json$
+.*secrets-a-remplir\.env\.example$
