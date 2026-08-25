@@ -41,10 +41,10 @@ async function waitForServer(url, timeoutMs = 120_000) {
 }
 
 function startPreview() {
-  const child = spawn("npm", ["run", "preview", "--", "--port", String(PORT), "--strictPort"], {
+  const child = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
     cwd: ROOT,
     stdio: "pipe",
-    shell: true,
+    shell: false,
     env: {
       ...process.env,
       VITE_BASE_PATH: BASE_PATH,
