@@ -9,8 +9,8 @@
   "appUrl": "https://carllaliberte.github.io/contract/",
   "privacyUrl": "https://carllaliberte.github.io/contract/privacy.html",
   "playStorePackage": "com.carllaliberte.meta",
-  "playStoreReleasePending": false,
+  "playStoreReleasePending": true,
   "deployedAt": "2026-08-24T21:21:58.843Z",
   "environment": "github-pages",
-  "notes": "Web on GitHub Pages. Android via Capacitor. Play upload via META_PLAY_CONFIG."
+  "notes": "Play upload: run cloud-shell-fix-and-upload.sh in Google Cloud Shell OR add META_PLAY_CONFIG / github-wif.json"
 }

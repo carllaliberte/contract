@@ -1,0 +1,7 @@
+{
+  "projectId": "carllaliberte-meta-dashboard",
+  "projectNumber": "REMPLACER",
+  "workloadIdentityProvider": "projects/REMPLACER/locations/global/workloadIdentityPools/github-pool/providers/github-provider",
+  "serviceAccount": "play-upload@carllaliberte-meta-dashboard.iam.gserviceaccount.com",
+  "repository": "carllaliberte/contract"
+}

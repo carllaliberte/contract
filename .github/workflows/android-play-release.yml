@@ -7,16 +7,35 @@ on:
       - 'google-app/**'
       - '.github/workflows/android-play-release.yml'
       - 'scripts/load-meta-play-config.cjs'
+      - 'scripts/upload-play-aab.sh'
+      - 'google-app/play-store/github-wif.json'
   workflow_dispatch:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build-aab:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Detect WIF config
+        id: wif
+        run: |
+          WIF_FILE="google-app/play-store/github-wif.json"
+          if [ -f "$WIF_FILE" ] && ! grep -q 'REMPLACER' "$WIF_FILE"; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            PROVIDER="$(node -pe "JSON.parse(require('fs').readFileSync('$WIF_FILE')).workloadIdentityProvider")"
+            SA="$(node -pe "JSON.parse(require('fs').readFileSync('$WIF_FILE')).serviceAccount")"
+            echo "provider=$PROVIDER" >> "$GITHUB_OUTPUT"
+            echo "service_account=$SA" >> "$GITHUB_OUTPUT"
+            echo "WIF config found — Play upload without JSON secret"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "No WIF config — use META_PLAY_CONFIG secret or run cloud-shell-wif-setup.sh"
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -82,8 +101,26 @@ jobs:
               -Pandroid.injected.signing.key.alias="${ANDROID_KEY_ALIAS:-meta-upload}" \
               -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
           else
-            echo "Building unsigned bundle — add secret META_PLAY_CONFIG"
+            echo "Building unsigned bundle — will use signed AAB from GitHub Release if needed"
             ./gradlew bundleRelease
+          fi
+
+      - name: Download signed AAB from GitHub Release (fallback)
+        id: release_aab
+        run: |
+          SIGNED_AAB="google-app/android/app/build/outputs/bundle/release/app-release.aab"
+          if [ -f google-app/android/release.keystore ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "path=$SIGNED_AAB" >> "$GITHUB_OUTPUT"
+            echo "source=ci-build" >> "$GITHUB_OUTPUT"
+          else
+            mkdir -p "$(dirname "$SIGNED_AAB")"
+            TAG="play-internal-20250825"
+            curl -fsSL \
+              "https://github.com/${{ github.repository }}/releases/download/${TAG}/app-release.aab" \
+              -o "$SIGNED_AAB"
+            echo "path=$SIGNED_AAB" >> "$GITHUB_OUTPUT"
+            echo "source=release-${TAG}" >> "$GITHUB_OUTPUT"
+            ls -la "$SIGNED_AAB"
           fi
 
       - name: Upload AAB artifact
@@ -93,39 +130,62 @@ jobs:
           path: google-app/android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
 
-      - name: Check Play upload credentials
-        id: play_upload
+      - name: Check Play upload credentials (JSON secret path)
+        id: play_json
         run: |
-          HAS_KEYSTORE=false
           HAS_PLAY_JSON=false
-          if [ -f google-app/android/release.keystore ]; then HAS_KEYSTORE=true; fi
           if [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then HAS_PLAY_JSON=true; fi
-          echo "keystore=$HAS_KEYSTORE" >> "$GITHUB_OUTPUT"
           echo "play_json=$HAS_PLAY_JSON" >> "$GITHUB_OUTPUT"
-          if [ "$HAS_KEYSTORE" = true ] && [ "$HAS_PLAY_JSON" = true ]; then
+          if [ "$HAS_PLAY_JSON" = true ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Play upload skipped — add repository secret META_PLAY_CONFIG (Actions → Repository secrets, not Codespaces)"
-            echo "https://github.com/${{ github.repository }}/settings/secrets/actions"
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload to Google Play (internal testing)
-        if: steps.play_upload.outputs.enabled == 'true'
+      - name: Authenticate to Google Cloud (WIF)
+        if: steps.wif.outputs.enabled == 'true' && steps.play_json.outputs.enabled != 'true'
+        id: google_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ steps.wif.outputs.provider }}
+          service_account: ${{ steps.wif.outputs.service_account }}
+          create_credentials_file: true
+
+      - name: Upload to Google Play (internal testing) via WIF
+        if: steps.wif.outputs.enabled == 'true' && steps.play_json.outputs.enabled != 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ steps.google_auth.outputs.credentials_file_path }}
+          packageName: com.carllaliberte.meta
+          releaseFiles: ${{ steps.release_aab.outputs.path }}
+          track: internal
+          status: completed
+
+      - name: Upload to Google Play (internal testing) via JSON secret
+        if: steps.play_json.outputs.enabled == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.carllaliberte.meta
-          releaseFiles: google-app/android/app/build/outputs/bundle/release/*.aab
+          releaseFiles: ${{ steps.release_aab.outputs.path }}
           track: internal
           status: completed
 
+      - name: Play upload skipped
+        if: steps.wif.outputs.enabled != 'true' && steps.play_json.outputs.enabled != 'true'
+        run: |
+          echo "::warning::Play upload skipped."
+          echo "Option A — Cloud Shell (1 command, connecté Google) :"
+          echo "  curl -fsSL https://raw.githubusercontent.com/carllaliberte/contract/main/scripts/cloud-shell-fix-and-upload.sh | bash"
+          echo "Option B — Secret GitHub : META_PLAY_CONFIG"
+          echo "  https://github.com/${{ github.repository }}/settings/secrets/actions"
+
       - name: Publish signed AAB to GitHub Release (manual Play fallback)
-        if: steps.play_upload.outputs.enabled != 'true' && steps.play_config.outputs.loaded == 'true'
+        if: steps.wif.outputs.enabled != 'true' && steps.play_json.outputs.enabled != 'true' && steps.play_config.outputs.loaded == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          AAB="$(ls -1 google-app/android/app/build/outputs/bundle/release/*.aab | head -1)"
+          AAB="${{ steps.release_aab.outputs.path }}"
           gh release create "play-internal-$(date +%Y%m%d-%H%M)" \
             --repo "${{ github.repository }}" \
             --title "META Dashboard AAB (signed)" \

@@ -2,7 +2,7 @@
 # Google Cloud Shell — API Play + keystore + fichier META_PLAY_CONFIG (1 secret GitHub)
 set -euo pipefail
 
-SA_NAME="${SA_NAME:-play-upload}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KEY_FILE="${KEY_FILE:-play-upload-key.json}"
 KEYSTORE="${KEYSTORE:-meta-release.keystore}"
 STORE_PASS="${STORE_PASS:-MetaCarl2026}"
@@ -74,4 +74,7 @@ echo "4. Secret: copier TOUT le fichier $OUT_JSON (menu Cloud Shell → Download
 echo "   Mot de passe keystore: $STORE_PASS"
 echo ""
 echo "Fichier créé: $OUT_JSON"
+echo ""
+echo "UPLOAD RAPIDE (tout en un) :"
+echo "  bash $ROOT/scripts/cloud-shell-fix-and-upload.sh"
 echo "=============================================="
