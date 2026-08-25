@@ -13,4 +13,4 @@
   "deployedAt": "2026-08-24T21:21:58.843Z",
   "environment": "github-pages",
   "notes": "Play upload: run cloud-shell-fix-and-upload.sh in Google Cloud Shell OR add META_PLAY_CONFIG / github-wif.json"
-}
+} 
