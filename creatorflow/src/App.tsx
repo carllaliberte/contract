@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { IdeasProvider } from "./context/IdeasContext";
 import { I18nProvider } from "./i18n/context";
 import { AppLayout } from "./pages/AppLayout";
 import { ContentsPage } from "./pages/ContentsPage";
@@ -16,14 +17,16 @@ function DemoGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <I18nProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/contract/creatorflow">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route
             path="/app"
             element={
               <DemoGuard>
-                <AppLayout />
+                <IdeasProvider>
+                  <AppLayout />
+                </IdeasProvider>
               </DemoGuard>
             }
           >

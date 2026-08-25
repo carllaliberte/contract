@@ -1,5 +1,20 @@
-import { demoIdeas, type Idea, type IdeaStatus } from "../data/demo";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { useState } from "react";
+import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
+import { useIdeas } from "../context/IdeasContext";
+import type { Idea, IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { canUseAiGeneration, getAiUsage, recordAiGeneration } from "../lib/aiUsage";
+import { generateScript } from "../lib/generateScript";
 
 const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
 
@@ -19,22 +34,97 @@ const headerStyles: Record<IdeaStatus, string> = {
   published: "text-status-published",
 };
 
-const platformLabel: Record<string, string> = {
-  youtube: "YouTube",
-  tiktok: "TikTok",
-  reels: "Reels",
-};
+function DroppableColumn({
+  status,
+  children,
+  className,
+}: {
+  status: IdeaStatus;
+  children: React.ReactNode;
+  className: string;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: status });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${className} transition-colors duration-200 ${
+        isOver ? "bg-primary/10 ring-2 ring-primary/45 ring-inset" : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
 
 export function PipelinePage() {
   const { tr } = useI18n();
+  const { ideas, moveIdea, updateIdea } = useIdeas();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
 
   const grouped = columns.reduce(
     (acc, col) => {
-      acc[col] = demoIdeas.filter((i) => i.status === col);
+      acc[col] = ideas.filter((i) => i.status === col);
       return acc;
     },
     {} as Record<IdeaStatus, Idea[]>,
   );
+
+  const activeIdea = activeId ? ideas.find((i) => i.id === activeId) : null;
+  const aiUsage = getAiUsage();
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const overId = String(over.id);
+    const ideaId = String(active.id);
+    const idea = ideas.find((i) => i.id === ideaId);
+    if (!idea) return;
+
+    let targetStatus: IdeaStatus | null = null;
+    if (columns.includes(overId as IdeaStatus)) {
+      targetStatus = overId as IdeaStatus;
+    } else {
+      const overIdea = ideas.find((i) => i.id === overId);
+      if (overIdea) targetStatus = overIdea.status;
+    }
+
+    if (targetStatus && targetStatus !== idea.status) {
+      moveIdea(ideaId, targetStatus);
+    }
+  }
+
+  async function handleGenerateScript(idea: Idea) {
+    if (!canUseAiGeneration()) {
+      setAiNotice(tr("script.limitReached"));
+      return;
+    }
+    setGeneratingId(idea.id);
+    setAiNotice(null);
+    await new Promise((r) => setTimeout(r, 480));
+    if (!recordAiGeneration()) {
+      setAiNotice(tr("script.limitReached"));
+      setGeneratingId(null);
+      return;
+    }
+    const script = generateScript(idea);
+    updateIdea(idea.id, {
+      script,
+      status: idea.status === "idea" ? "script" : idea.status,
+    });
+    setGeneratingId(null);
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -43,52 +133,62 @@ export function PipelinePage() {
           <h1 className="text-2xl font-semibold tracking-tight">{tr("pipeline.titlePage")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{tr("pipeline.subtitlePage")}</p>
         </div>
-        <p className="text-xs text-muted-foreground">{demoIdeas.length} contenus · mode démo</p>
+        <p className="text-xs text-muted-foreground">
+          {ideas.length} contenus · {tr("script.aiRemaining", { n: String(aiUsage.remaining) })}
+        </p>
       </header>
 
-      <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1">
-        {columns.map((col) => (
-          <div key={col} className={`w-[280px] shrink-0 rounded-2xl border bg-card/40 p-3.5 ${columnStyles[col]}`}>
-            <div className="mb-3.5 flex items-center justify-between">
-              <h2 className={`text-[13px] font-semibold uppercase tracking-wide ${headerStyles[col]}`}>
-                {tr(`status.${col}`)}
-              </h2>
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1.5 text-[11px] font-semibold tabular-nums">
-                {grouped[col].length}
-              </span>
-            </div>
+      {aiNotice && (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {aiNotice}
+        </p>
+      )}
 
-            <div className="flex flex-col gap-2.5">
-              {grouped[col].length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border/60 py-8 text-center text-xs text-muted-foreground">
-                  Aucun contenu
-                </div>
-              ) : (
-                grouped[col].map((idea) => (
-                  <article key={idea.id} className="pipeline-card group overflow-hidden rounded-xl border border-border bg-card">
-                    <div className="relative aspect-[16/10] overflow-hidden">
-                      <img
-                        src={idea.thumbnail}
-                        alt=""
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
-                      <span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
-                        {platformLabel[idea.platform] ?? idea.platform}
-                      </span>
-                    </div>
-                    <div className="p-3">
-                      <p className="line-clamp-2 text-[13px] font-medium leading-snug">{idea.title}</p>
-                      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{idea.description}</p>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1">
+          {columns.map((col) => (
+            <DroppableColumn
+              key={col}
+              status={col}
+              className={`w-[280px] shrink-0 rounded-2xl border bg-card/40 p-3.5 ${columnStyles[col]}`}
+            >
+              <div className="mb-3.5 flex items-center justify-between">
+                <h2
+                  className={`text-[13px] font-semibold uppercase tracking-wide ${headerStyles[col]}`}
+                >
+                  {tr(`status.${col}`)}
+                </h2>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1.5 text-[11px] font-semibold tabular-nums">
+                  {grouped[col].length}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-2.5 min-h-[120px]">
+                {grouped[col].length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/60 py-8 text-center text-xs text-muted-foreground">
+                    {tr("pipeline.empty")}
+                  </div>
+                ) : (
+                  grouped[col].map((idea) => (
+                    <DraggableIdeaCard
+                      key={idea.id}
+                      idea={idea}
+                      onGenerateScript={handleGenerateScript}
+                      isGenerating={generatingId === idea.id}
+                    />
+                  ))
+                )}
+              </div>
+            </DroppableColumn>
+          ))}
+        </div>
+
+        <DragOverlay dropAnimation={{ duration: 200, easing: "ease-out" }}>
+          {activeIdea ? (
+            <IdeaCard idea={activeIdea} dragOverlay />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

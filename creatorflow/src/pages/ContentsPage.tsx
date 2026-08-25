@@ -1,10 +1,39 @@
-import { Play } from "lucide-react";
-import { demoIdeas } from "../data/demo";
+import { Play, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Button } from "../components/ui";
+import { useIdeas } from "../context/IdeasContext";
+import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { canUseAiGeneration, recordAiGeneration } from "../lib/aiUsage";
+import { generateScript } from "../lib/generateScript";
 
 export function ContentsPage() {
   const { tr } = useI18n();
-  const withMedia = demoIdeas.filter((i) => i.videoUrl || i.script);
+  const { ideas, updateIdea } = useIdeas();
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const withMedia = ideas.filter((i) => i.videoUrl || i.script || i.status === "idea" || i.status === "script");
+
+  async function handleGenerate(idea: Idea) {
+    if (!canUseAiGeneration()) {
+      setNotice(tr("script.limitReached"));
+      return;
+    }
+    setGeneratingId(idea.id);
+    setNotice(null);
+    await new Promise((r) => setTimeout(r, 480));
+    if (!recordAiGeneration()) {
+      setNotice(tr("script.limitReached"));
+      setGeneratingId(null);
+      return;
+    }
+    updateIdea(idea.id, {
+      script: generateScript(idea),
+      status: idea.status === "idea" ? "script" : idea.status,
+    });
+    setGeneratingId(null);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -12,6 +41,12 @@ export function ContentsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">{tr("contents.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{tr("contents.subtitle")}</p>
       </header>
+
+      {notice && (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {notice}
+        </p>
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2">
         {withMedia.map((item) => (
@@ -50,9 +85,21 @@ export function ContentsPage() {
                 )}
               </div>
               {item.script && (
-                <p className="mt-3 line-clamp-3 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-3 line-clamp-4 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
                   {item.script}
                 </p>
+              )}
+              {(item.status === "idea" || item.status === "script") && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-3 h-9 w-full text-xs"
+                  disabled={generatingId === item.id}
+                  onClick={() => handleGenerate(item)}
+                >
+                  <Sparkles className="size-3.5" />
+                  {generatingId === item.id ? tr("script.generating") : tr("script.generate")}
+                </Button>
               )}
             </div>
           </article>
