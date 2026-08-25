@@ -20,7 +20,14 @@ import {
   exampleGallery,
 } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { applyLandingRobots } from "../lib/seo";
+import { applyLandingRobots, setFaqJsonLd } from "../lib/seo";
+
+const faqItems = [
+  { q: "faq.q1", a: "faq.a1" },
+  { q: "faq.q2", a: "faq.a2" },
+  { q: "faq.q3", a: "faq.a3" },
+  { q: "faq.q4", a: "faq.a4" },
+] as const;
 
 const pipelineSteps = [
   { key: "idea", icon: Lightbulb, color: "text-status-idea", bg: "bg-status-idea/15" },
@@ -61,7 +68,7 @@ const heroBullets = [
 ] as const;
 
 export function LandingPage() {
-  const { tr } = useI18n();
+  const { tr, locale } = useI18n();
   const navigate = useNavigate();
   const [authTab, setAuthTab] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -70,7 +77,13 @@ export function LandingPage() {
 
   useEffect(() => {
     applyLandingRobots();
-  }, []);
+    setFaqJsonLd(
+      faqItems.map((item) => ({
+        question: tr(item.q),
+        answer: tr(item.a),
+      })),
+    );
+  }, [locale, tr]);
 
   function enterDemo() {
     localStorage.setItem("cf-demo", "1");
@@ -97,6 +110,9 @@ export function LandingPage() {
           </a>
           <a href="#examples" className="transition-colors hover:text-foreground">
             {tr("nav.examples")}
+          </a>
+          <a href="#faq" className="transition-colors hover:text-foreground">
+            {tr("nav.faq")}
           </a>
         </nav>
         <div className="flex items-center gap-2.5">
@@ -408,6 +424,27 @@ export function LandingPage() {
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
               {tr("why.body")}
             </p>
+          </div>
+        </section>
+
+        <section id="faq" className="border-t border-border py-16 sm:py-20">
+          <div className="mx-auto max-w-3xl px-5 sm:px-6">
+            <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+              {tr("faq.title")}
+            </h2>
+            <dl className="mt-10 space-y-6">
+              {faqItems.map((item) => (
+                <div
+                  key={item.q}
+                  className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6"
+                >
+                  <dt className="text-base font-semibold">{tr(item.q)}</dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {tr(item.a)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 

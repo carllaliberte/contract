@@ -1,17 +1,35 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { IdeasProvider } from "./context/IdeasContext";
 import { I18nProvider } from "./i18n/context";
 import { AppLayout } from "./pages/AppLayout";
-import { ContentsPage } from "./pages/ContentsPage";
-import { DashboardPage } from "./pages/DashboardPage";
 import { LandingPage } from "./pages/LandingPage";
-import { PipelinePage } from "./pages/PipelinePage";
-import { SettingsPage } from "./pages/SettingsPage";
+
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const PipelinePage = lazy(() =>
+  import("./pages/PipelinePage").then((m) => ({ default: m.PipelinePage })),
+);
+const ContentsPage = lazy(() =>
+  import("./pages/ContentsPage").then((m) => ({ default: m.ContentsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
 
 function DemoGuard({ children }: { children: React.ReactNode }) {
   const isDemo = localStorage.getItem("cf-demo") === "1";
   if (!isDemo) return <Navigate to="/" replace />;
   return children;
+}
+
+function AppRouteFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+      Loading…
+    </div>
+  );
 }
 
 export default function App() {
@@ -30,10 +48,38 @@ export default function App() {
               </DemoGuard>
             }
           >
-            <Route index element={<DashboardPage />} />
-            <Route path="pipeline" element={<PipelinePage />} />
-            <Route path="contenus" element={<ContentsPage />} />
-            <Route path="parametres" element={<SettingsPage />} />
+            <Route
+              index
+              element={
+                <Suspense fallback={<AppRouteFallback />}>
+                  <DashboardPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="pipeline"
+              element={
+                <Suspense fallback={<AppRouteFallback />}>
+                  <PipelinePage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="contenus"
+              element={
+                <Suspense fallback={<AppRouteFallback />}>
+                  <ContentsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="parametres"
+              element={
+                <Suspense fallback={<AppRouteFallback />}>
+                  <SettingsPage />
+                </Suspense>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
