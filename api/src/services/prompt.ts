@@ -44,6 +44,20 @@ const TIKTOK_FR_STRUCTURE = [
   "- Pas de « dans cette vidéo on va parler de… »",
 ].join("\n");
 
+const REELS_FR_STRUCTURE = [
+  "Produis :",
+  "HOOK VISUEL + TEXTE (0–3s): ce qui s’affiche à l’écran + phrase dite",
+  "DÉROULÉ: 3 à 5 beats (chaque beat = 1 plan / 1 phrase)",
+  "TEXTE À L’ÉCRAN: suggestions de captions courtes par beat",
+  "AUDIO: ambiance suggérée (voix off / trend / silence + texte)",
+  "CTA: suivi ou sauvegarde",
+  "",
+  "Contraintes :",
+  "- 20–40 secondes",
+  "- Pensé vertical 9:16",
+  "- Hook compréhensible sans le son",
+].join("\n");
+
 export type PromptInput = {
   title: string;
   description: string;
@@ -111,6 +125,35 @@ function buildTikTokFrPrompt(input: PromptInput): { system: string; user: string
   return { system, user };
 }
 
+function buildReelsFrPrompt(input: PromptInput): { system: string; user: string } {
+  const system =
+    "Tu es scénariste Instagram Reels (FR-CA). Esthétique + clarté. Réponds uniquement avec le script structuré, sans méta-commentaire.";
+
+  if (input.mode === "improve" && input.existingScript?.trim()) {
+    const user = [
+      `Titre: ${input.title}`,
+      `Description: ${input.description}`,
+      "",
+      "Améliore le script actuel en gardant la structure ci-dessous. Renforce le hook visuel, les beats et la lisibilité sans son.",
+      "",
+      REELS_FR_STRUCTURE,
+      "",
+      "Script actuel :",
+      input.existingScript,
+    ].join("\n");
+    return { system, user };
+  }
+
+  const user = [
+    `Titre: ${input.title}`,
+    `Description: ${input.description}`,
+    "",
+    REELS_FR_STRUCTURE,
+  ].join("\n");
+
+  return { system, user };
+}
+
 export function buildScriptPrompt(input: PromptInput): {
   system: string;
   user: string;
@@ -121,6 +164,10 @@ export function buildScriptPrompt(input: PromptInput): {
 
   if (input.platform === "tiktok" && input.language === "fr") {
     return buildTikTokFrPrompt(input);
+  }
+
+  if (input.platform === "reels" && input.language === "fr") {
+    return buildReelsFrPrompt(input);
   }
 
   const lang = input.language;
@@ -198,6 +245,26 @@ export function buildMockScript(input: PromptInput): string {
       "SCÈNE 3 (25–40s): Démo ultra courte ou preuve en 10 secondes.",
       "",
       "CTA (dernières 5s): Suis pour plus — commente si tu veux la suite.",
+    ].join("\n");
+  }
+
+  if (input.platform === "reels" && input.language === "fr") {
+    return [
+      `HOOK VISUEL + TEXTE (0–3s): [Plan: gros texte « ${input.title} »] + « ${input.title} »`,
+      "",
+      "DÉROULÉ:",
+      `Beat 1: ${input.description}`,
+      "Beat 2: Détail clé en une phrase.",
+      "Beat 3: Preuve ou démo visuelle rapide.",
+      "",
+      "TEXTE À L'ÉCRAN:",
+      `Beat 1: « ${input.title} »`,
+      "Beat 2: « L'essentiel »",
+      "Beat 3: « Preuve »",
+      "",
+      "AUDIO: Voix off calme + beat léger en fond",
+      "",
+      "CTA: Suis pour plus — sauvegarde si c'est utile.",
     ].join("\n");
   }
 

@@ -72,6 +72,41 @@ describe("buildScriptPrompt", () => {
     expect(user).toContain("SCÈNE 2");
   });
 
+  it("builds Reels FR-CA structured prompt", () => {
+    const { system, user } = buildScriptPrompt({
+      title: "Reel esthétique",
+      description: "Une idée visuelle",
+      platform: "reels",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(system).toContain("scénariste Instagram Reels (FR-CA)");
+    expect(system).toContain("Esthétique + clarté");
+    expect(user).toContain("Titre: Reel esthétique");
+    expect(user).toContain("HOOK VISUEL + TEXTE (0–3s)");
+    expect(user).toContain("DÉROULÉ:");
+    expect(user).toContain("TEXTE À L’ÉCRAN:");
+    expect(user).toContain("AUDIO:");
+    expect(user).toContain("CTA:");
+    expect(user).toContain("20–40 secondes");
+    expect(user).toContain("vertical 9:16");
+    expect(user).toContain("sans le son");
+  });
+
+  it("includes existing script for Reels FR improve mode", () => {
+    const { user } = buildScriptPrompt({
+      title: "Beat",
+      description: "Desc",
+      platform: "reels",
+      language: "fr",
+      mode: "improve",
+      existingScript: "Script Reels existant",
+    });
+    expect(user).toContain("hook visuel");
+    expect(user).toContain("Script Reels existant");
+    expect(user).toContain("DÉROULÉ:");
+  });
+
   it("builds an improve prompt for TikTok in English", () => {
     const { user } = buildScriptPrompt({
       title: "Hook",
@@ -115,5 +150,20 @@ describe("buildMockScript", () => {
     expect(script).toContain("SCÈNE 2 (10–25s)");
     expect(script).toContain("SCÈNE 3 (25–40s)");
     expect(script).toContain("CTA (dernières 5s)");
+  });
+
+  it("returns beat-based structure for Reels FR", () => {
+    const script = buildMockScript({
+      title: "Hook visuel",
+      description: "Plan serré",
+      platform: "reels",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(script).toMatch(/^HOOK VISUEL \+ TEXTE/);
+    expect(script).toContain("DÉROULÉ:");
+    expect(script).toContain("TEXTE À L'ÉCRAN:");
+    expect(script).toContain("AUDIO:");
+    expect(script).toContain("CTA:");
   });
 });
