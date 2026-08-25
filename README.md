@@ -1,3 +1,14 @@
+# Contract monorepo
+
+Ce dépôt regroupe le contrat **META** (ERC-20) et **deux applications** front distinctes :
+
+| App | Dossier | Plateformes | Déploiement |
+| --- | --- | --- | --- |
+| **META Dashboard** | [`google-app/`](google-app/) | Web, Android (Play Store) | GitHub Pages (`/contract/`), Firebase, Google Play (`com.carllaliberte.meta`) |
+| **CreatorFlow** | [`creatorflow/`](creatorflow/) | Web, iOS, Android | GitHub Pages (`/contract/creatorflow/`), builds natifs Capacitor |
+
+---
+
 # META Google App
 
 This folder contains a Google-friendly app for the `META` ERC-20 smart contract in [`meta.sol`](https://github.com/carllaliberte/contract/blob/main/meta.sol).
@@ -67,6 +78,23 @@ bash scripts/prepare-play-github-secrets.sh
 ```
 
 Full Play Console checklist (FR): `google-app/play-store/LISTING.md`
+
+## CreatorFlow (créateurs de contenu)
+
+Pipeline Idée → Script → Production → Publié. Web + apps natives iOS/Android (Capacitor).
+
+```bash
+cd creatorflow
+npm ci
+npm run dev
+```
+
+- Web live : https://carllaliberte.github.io/contract/creatorflow/
+- Doc détaillée : [`creatorflow/README.md`](creatorflow/README.md)
+- Builds mobiles : [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
+- CI : `.github/workflows/ci-creatorflow.yml` (web + Android APK debug + iOS simulateur)
+
+---
 
 ## Deploy to Firebase Hosting
 

@@ -49,3 +49,5 @@ Build SEO (prerender landing pour GitHub Pages) :
 ```bash
 npm run build:seo
 ```
+
+Builds mobiles (iOS / Android) : voir [README-MOBILE.md](./README-MOBILE.md).

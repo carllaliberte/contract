@@ -9,6 +9,7 @@
     "build:ios": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync ios",
     "build:android": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync android",
     "cap:sync": "npm run build:ios",
+    "cap:sync:android": "npm run build:android",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",
     "postbuild": "cp dist/index.html dist/404.html",
