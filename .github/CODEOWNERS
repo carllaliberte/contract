@@ -1,0 +1,18 @@
+# CODEOWNERS — default reviewers for carllaliberte/contract
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @carllaliberte
+
+# CI / secrets / deploy
+.github/workflows/ @carllaliberte
+.github/CODEOWNERS @carllaliberte
+docs/SECRETS.md @carllaliberte
+docs/TRUFFLEHOG.md @carllaliberte
+SECURITY.md @carllaliberte
+
+# Mobile signing & Play / App Store surfaces
+google-app/android/ @carllaliberte
+google-app/play-store/ @carllaliberte
+creatorflow/ios/ @carllaliberte
+creatorflow/android/ @carllaliberte
+creatorflow/SECURITY.md @carllaliberte

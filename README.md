@@ -1,108 +1,105 @@
-# Contract monorepo
+# contract
 
-Ce dépôt regroupe le contrat **META** (ERC-20) et **deux applications** front distinctes :
+[![CI CreatorFlow](https://github.com/carllaliberte/contract/actions/workflows/ci-creatorflow.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/ci-creatorflow.yml)
+[![Secret scan](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-| App | Dossier | Plateformes | Déploiement |
+Monorepo for the **META** ERC-20 surface and **CreatorFlow** (content pipeline) — web, Android, and iOS.
+
+| App | Path | Platforms | Live |
 | --- | --- | --- | --- |
-| **META Dashboard** | [`google-app/`](google-app/) | Web, Android (Play Store) | GitHub Pages (`/contract/`), Firebase, Google Play (`com.carllaliberte.meta`) |
-| **CreatorFlow** | [`creatorflow/`](creatorflow/) | Web, iOS, Android | GitHub Pages (`/contract/creatorflow/`), builds natifs Capacitor |
+| **META Dashboard** | [`google-app/`](google-app/) | Web, Android (Play) | [GitHub Pages](https://carllaliberte.github.io/contract/) |
+| **CreatorFlow** | [`creatorflow/`](creatorflow/) | Web, iOS, Android | [GitHub Pages](https://carllaliberte.github.io/contract/creatorflow/) |
+| **API** | [`api/`](api/) | Node | Deploy separately / Supabase Edge |
+| **Contract** | [`meta.sol`](meta.sol) | Solidity | Read-only from the META dashboard |
 
----
+## Repository layout
 
-# META Google App
+```
+.
+├── google-app/     # META web + Capacitor Android + Play listing
+├── creatorflow/    # CreatorFlow web + Capacitor iOS/Android
+├── api/            # Backend for scripts / auth helpers
+├── shared/         # Shared plans / constants
+├── supabase/       # Edge functions (e.g. generate-script)
+├── scripts/        # Local deploy / keystore helpers
+└── docs/           # Ops: secrets, GHA, TruffleHog, GitHub Pro setup
+```
 
-This folder contains a Google-friendly app for the `META` ERC-20 smart contract in [`meta.sol`](https://github.com/carllaliberte/contract/blob/main/meta.sol).
+## Quick start
 
-## What is included
-
-1. **Web dashboard** (`google-app/`) — Vite + TypeScript app that reads token and wallet data from the blockchain.
-2. **Firebase Hosting config** — deploy the dashboard to Google Firebase.
-3. **Google Apps Script** (`google-app/apps-script/`) — sync contract data into Google Sheets.
-
-## Quick start (local dashboard)
+### CreatorFlow
 
 ```bash
-cd google-app
-npm install
+cd creatorflow
+npm ci
 cp .env.example .env
-# Edit .env with your deployed contract address and RPC URL
 npm run dev
 ```
 
-Open the local URL shown by Vite (usually `http://localhost:5173`).
+- Docs: [`creatorflow/README.md`](creatorflow/README.md) · Mobile: [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
+- CI: `.github/workflows/ci-creatorflow.yml` (web + Android debug APK + iOS simulator)
 
-## Current deployment (prefilled)
+### META dashboard
 
-Demo contract and config are in `google-app/deployment.json`:
+```bash
+cd google-app
+npm ci
+cp .env.example .env
+npm run dev
+```
 
-| Field | Value |
+Open the URL printed by Vite (usually `http://localhost:5173`).
+
+Demo config lives in `google-app/deployment.json` (contract address, Sepolia RPC, privacy URL, package `com.carllaliberte.meta`).
+
+### API
+
+```bash
+cd api
+npm ci
+cp .env.example .env
+```
+
+See [`api/README.md`](api/README.md). Never put LLM keys in client `VITE_*` env.
+
+## Documentation
+
+| Doc | Topic |
 | --- | --- |
-| Contract | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
-| Chain | Anvil local (chain ID `31337`) |
-| RPC URL | `https://ethereum-sepolia-rpc.publicnode.com` |
-| Live dashboard | https://carllaliberte.github.io/contract/ |
-| Privacy policy | https://carllaliberte.github.io/contract/privacy.html |
-| Google Play package | `com.carllaliberte.meta` |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute, PR expectations |
+| [`SECURITY.md`](SECURITY.md) | Vulnerability reporting |
+| [`docs/SECRETS.md`](docs/SECRETS.md) | Public `VITE_*` vs secrets, GitHub Actions |
+| [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | CreatorFlow CI → deploy control plane |
+| [`docs/TRUFFLEHOG.md`](docs/TRUFFLEHOG.md) | Secret scan policy |
+| [`docs/GITHUB_PRO_SETUP.md`](docs/GITHUB_PRO_SETUP.md) | Branch protection, Security, CODEOWNERS checklist |
 
-## Google Play (Android)
+## META — Google Play & Firebase
 
-The Android app is a **Capacitor** wrapper around the same web UI (`google-app/android/`).
+Android is a Capacitor wrapper (`google-app/android/`).
 
 ```bash
 cd google-app
 npm ci
 npm run generate-icons
-npm run cap:sync          # build web + sync to Android
-npm run android:bundle    # requires Android SDK
+npm run cap:sync
+npm run android:bundle   # requires Android SDK
 ```
 
-CI builds a release **AAB** on every push to `main` (workflow `android-play-release.yml`).
+CI builds a release AAB on pushes to `main` (`.github/workflows/android-play-release.yml`).
 
-### Publish on Play Store
-
-1. [Google Play Console](https://play.google.com/console) developer account (25 USD)
-2. Create app with package `com.carllaliberte.meta`
-3. Add secrets for automated upload (optional):
-   - `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`
-   - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (service account with Play Console API)
-4. Store listing text: `google-app/play-store/LISTING.md`
-5. Privacy URL: https://carllaliberte.github.io/contract/privacy.html
-6. Upload AAB from GitHub Actions artifact `meta-dashboard-aab` or submit via CI
+Play Console checklist (FR): `google-app/play-store/LISTING.md`.  
+Privacy: https://carllaliberte.github.io/contract/privacy.html
 
 Generate an upload keystore and prepare GitHub secrets:
 
 ```bash
-ANDROID_KEYSTORE_PASSWORD='your-store-pass' ANDROID_KEY_PASSWORD='your-key-pass' \
+ANDROID_KEYSTORE_PASSWORD='…' ANDROID_KEY_PASSWORD='…' \
   bash scripts/generate-android-keystore.sh
 bash scripts/prepare-play-github-secrets.sh
 ```
 
-Full Play Console checklist (FR): `google-app/play-store/LISTING.md`
-
-## CreatorFlow (créateurs de contenu)
-
-Pipeline Idée → Script → Production → Publié. Web + apps natives iOS/Android (Capacitor).
-
-```bash
-cd creatorflow
-npm ci
-npm run dev
-```
-
-- Web live : https://carllaliberte.github.io/contract/creatorflow/
-- Doc détaillée : [`creatorflow/README.md`](creatorflow/README.md)
-- Builds mobiles : [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
-- CI : `.github/workflows/ci-creatorflow.yml` (web + Android APK debug + iOS simulateur)
-
----
-
-## Deploy to Firebase Hosting
-
-1. Install the Firebase CLI: `npm install -g firebase-tools`
-2. Log in: `firebase login`
-3. Create a Firebase project in the [Firebase console](https://console.firebase.google.com/).
-4. Set your project ID in `google-app/.firebaserc` (default: `carllaliberte-meta-dashboard`).
-5. Build and deploy:
+### Firebase Hosting
 
 ```bash
 cd google-app
@@ -110,64 +107,44 @@ npm run build
 npx firebase deploy --only hosting
 ```
 
-Or with a CI token:
+Set the project ID in `google-app/.firebaserc`. Optional CI secret: `FIREBASE_TOKEN`.
 
-```bash
-export FIREBASE_TOKEN=your_token_from_firebase_login_ci
-cd google-app && npm run build && npx firebase deploy --only hosting
-```
+### WalletConnect
 
-## Google Sheets integration
-
-1. Create a new Google Sheet.
-2. Go to **Extensions → Apps Script**.
-3. Copy `google-app/apps-script/Code.gs` into the script editor.
-4. Set `CONTRACT_ADDRESS` and `RPC_URL` at the top of the file.
-5. Save and reload the sheet. Use the **META Token** menu to refresh data.
-6. On the **Wallet Balances** sheet, put wallet addresses in column A starting at row 2.
-
-## Environment variables
-
-| Variable | Description |
-| --- | --- |
-| `VITE_CONTRACT_ADDRESS` | Deployed `META` contract address |
-| `VITE_RPC_URL` | JSON-RPC endpoint for Sepolia (overrides default in `chains.ts`) |
-| `VITE_WALLETCONNECT_PROJECT_ID` | WalletConnect Cloud project ID (public; no private keys in the app) |
-
-### WalletConnect (multi-chain, non-custodial)
-
-The META dashboard (`google-app/`) connects wallets via **wagmi + viem + WalletConnect** (plus injected browser wallets). Supported EVM chains are defined in a single file: `google-app/src/wallet/chains.ts` (Ethereum, Sepolia, Polygon, Arbitrum, Base). To add a chain, append one entry there.
-
-**No private keys** are stored in the app. The UI shows a non-custodial disclaimer.
-
-#### WalletConnect Cloud setup
+The META dashboard uses **wagmi + viem + WalletConnect** (non-custodial). Chains: `google-app/src/wallet/chains.ts`.
 
 1. Create a project at [WalletConnect Cloud](https://cloud.walletconnect.com).
-2. Set `VITE_WALLETCONNECT_PROJECT_ID` in `google-app/.env` (or as a GitHub Actions secret for CI).
-3. **Whitelist these origins** in the WalletConnect project settings:
-   - `https://carllaliberte.github.io` (GitHub Pages — META dashboard at `/contract/`)
-   - `http://localhost:5173` (local `npm run dev`)
-   - Your Firebase Hosting domain if used (e.g. `https://carllaliberte-meta-dashboard.web.app`)
-4. Without a project ID, WalletConnect is disabled (clear message in UI, no crash). Browser extension wallets may still connect locally.
+2. Set `VITE_WALLETCONNECT_PROJECT_ID` in `google-app/.env` (or Actions **vars**).
+3. Whitelist origins: `https://carllaliberte.github.io`, `http://localhost:5173`, and your Firebase domain if used.
 
-Custom RPC endpoints per chain can be added later via env keys in `chains.ts`; MVP uses public `http()` defaults.
+### Google Sheets
 
-## Regenerate contract ABI
+Copy `google-app/apps-script/Code.gs` into a sheet’s Apps Script editor; set `CONTRACT_ADDRESS` and `RPC_URL`.
 
-After changing `meta.sol` at the repo root:
+### Regenerate ABI
+
+After editing `meta.sol`:
 
 ```bash
 cd google-app
 npm run compile-contract
 ```
 
-## Contract notes
+The on-chain token is a reflection-style ERC-20 (`METAVERSE` / `META`) with transfer fee, max tx, and sell lock. The Google app is **read-only**.
 
-The GitHub contract is a reflection-style ERC-20 token (`METAVERSE` / `META`) with:
+## Environment variables (summary)
 
-- 2% transfer fee
-- max transaction limit
-- 20-second sell lock after buys from the Uniswap pair
-- owner-only admin functions
+| Variable | App | Notes |
+| --- | --- | --- |
+| `VITE_API_URL` | CreatorFlow | Public API base (empty = demo / relative) |
+| `VITE_BASE_PATH` / `VITE_ROUTER_BASENAME` | CreatorFlow / META | Pages vs native `/` |
+| `VITE_CONTRACT_ADDRESS` / `VITE_RPC_URL` | META | Contract + RPC |
+| `VITE_WALLETCONNECT_PROJECT_ID` | META | Public WalletConnect project ID |
 
-This Google app is **read-only**. It does not deploy or transact with the contract.
+Full matrix: [`docs/SECRETS.md`](docs/SECRETS.md).
+
+## Contributing & license
+
+- Contributions: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Security: [`SECURITY.md`](SECURITY.md)
+- License: [MIT](LICENSE)

@@ -1,0 +1,65 @@
+name: Bug report
+description: Unexpected behavior in META, CreatorFlow, API, or CI
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. For **security** issues, use [Security Advisories](https://github.com/carllaliberte/contract/security/advisories/new) instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CreatorFlow (web)
+        - CreatorFlow (iOS / Android)
+        - META dashboard (google-app)
+        - API / Supabase
+        - CI / GitHub Actions
+        - Docs / other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong in one or two sentences?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser / OS / app version / branch commit if known
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste relevant console or CI logs (redact secrets).
+    validations:
+      required: false
