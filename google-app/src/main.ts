@@ -70,6 +70,8 @@ app.innerHTML = `
 
   <footer class="footer">
     <p>
+      <a href="./install-android.html">Installer l’app Android (APK)</a>
+      ·
       <a href="./privacy.html">Politique de confidentialité</a>
       ·
       <a href="https://carllaliberte.github.io/contract/privacy.html" target="_blank" rel="noreferrer">Privacy (web)</a>

@@ -8,9 +8,11 @@
   "localRpcUrl": "http://127.0.0.1:8545",
   "appUrl": "https://carllaliberte.github.io/contract/",
   "privacyUrl": "https://carllaliberte.github.io/contract/privacy.html",
+  "androidApkUrl": "https://carllaliberte.github.io/contract/meta-dashboard.apk",
+  "androidInstallUrl": "https://carllaliberte.github.io/contract/install-android.html",
   "playStorePackage": "com.carllaliberte.meta",
   "playStoreReleasePending": true,
   "deployedAt": "2026-08-24T21:21:58.843Z",
   "environment": "github-pages",
-  "notes": "Play upload: run cloud-shell-fix-and-upload.sh in Google Cloud Shell OR add META_PLAY_CONFIG / github-wif.json"
-} 
+  "notes": "Web + APK live on GitHub Pages. Play internal: auto-retry every 15 min when credentials available."
+}

@@ -1,0 +1,100 @@
+name: Play upload retry (scheduled)
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  retry-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect WIF config
+        id: wif
+        run: |
+          WIF_FILE="google-app/play-store/github-wif.json"
+          if [ -f "$WIF_FILE" ] && ! grep -q 'REMPLACER' "$WIF_FILE"; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            PROVIDER="$(node -pe "JSON.parse(require('fs').readFileSync('$WIF_FILE')).workloadIdentityProvider")"
+            SA="$(node -pe "JSON.parse(require('fs').readFileSync('$WIF_FILE')).serviceAccount")"
+            echo "provider=$PROVIDER" >> "$GITHUB_OUTPUT"
+            echo "service_account=$SA" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Load META_PLAY_CONFIG
+        id: play_config
+        env:
+          META_PLAY_CONFIG: ${{ secrets.META_PLAY_CONFIG }}
+        run: node scripts/load-meta-play-config.cjs
+
+      - name: Check JSON secret path
+        id: play_json
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip — no Play credentials yet
+        if: steps.wif.outputs.enabled != 'true' && steps.play_config.outputs.loaded != 'true' && steps.play_json.outputs.enabled != 'true'
+        run: |
+          echo "No Play credentials — waiting for META_PLAY_CONFIG, WIF config, or GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+          exit 0
+
+      - name: Download signed AAB
+        run: |
+          mkdir -p aab
+          curl -fsSL \
+            "https://github.com/${{ github.repository }}/releases/download/play-internal-20250825/app-release.aab" \
+            -o aab/app-release.aab
+          ls -la aab/
+
+      - name: Authenticate to Google Cloud (WIF)
+        if: steps.wif.outputs.enabled == 'true' && steps.play_config.outputs.loaded != 'true' && steps.play_json.outputs.enabled != 'true'
+        id: google_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ steps.wif.outputs.provider }}
+          service_account: ${{ steps.wif.outputs.service_account }}
+          create_credentials_file: true
+
+      - name: Upload via WIF
+        if: steps.wif.outputs.enabled == 'true' && steps.play_config.outputs.loaded != 'true' && steps.play_json.outputs.enabled != 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ steps.google_auth.outputs.credentials_file_path }}
+          packageName: com.carllaliberte.meta
+          releaseFiles: aab/app-release.aab
+          track: internal
+          status: completed
+
+      - name: Upload via META_PLAY_CONFIG
+        if: steps.play_config.outputs.loaded == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.carllaliberte.meta
+          releaseFiles: aab/app-release.aab
+          track: internal
+          status: completed
+
+      - name: Upload via legacy JSON secret
+        if: steps.play_json.outputs.enabled == 'true' && steps.play_config.outputs.loaded != 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.carllaliberte.meta
+          releaseFiles: aab/app-release.aab
+          track: internal
+          status: completed
