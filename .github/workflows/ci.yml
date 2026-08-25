@@ -37,5 +37,14 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run CI (typecheck, unit tests, build, e2e)
-        run: npm run ci
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Playwright e2e
+        run: npm run test:e2e
