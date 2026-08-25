@@ -29,7 +29,17 @@ Fonctionnalités :
 
 Captures d’écran : prendre 2–4 screenshots du dashboard sur un téléphone ou émulateur (1080×1920 ou 1080×2340).
 
-## Étape 1 — Compte développeur
+## Fork GitHub (important)
+
+Ce dépôt est un **fork** de `metaverse-eth/contract`. GitHub **ne transmet pas les secrets** aux workflows d’un fork (sécurité).
+
+Pour que l’upload Play automatique fonctionne :
+1. https://github.com/carllaliberte/contract/settings
+2. Section **Danger Zone** → **Leave fork network** (quitter le réseau de fork)
+3. Relancer le workflow Android
+
+Sans cela, ajoutez les secrets ne suffit pas — le CI ne les verra jamais.
+
 
 1. [Google Play Console](https://play.google.com/console) — inscription **25 USD** (une fois).
 2. Compléter le profil développeur (identité, contact).
