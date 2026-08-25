@@ -85,7 +85,7 @@ export function LandingPage() {
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href="#pipeline" className="transition-colors hover:text-foreground">
-            Pipeline
+            {tr("nav.pipelineSection")}
           </a>
           <a href="#features" className="transition-colors hover:text-foreground">
             {tr("nav.features")}
