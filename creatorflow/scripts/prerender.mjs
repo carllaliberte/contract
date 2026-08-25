@@ -52,6 +52,7 @@ async function prerenderLanding() {
 
     await page.goto(PREVIEW_URL, { waitUntil: "networkidle" });
     await page.waitForSelector("h1", { timeout: 30_000 });
+    await page.waitForSelector("#faq", { timeout: 30_000 });
 
     const pathname = await page.evaluate(() => window.location.pathname);
     const onLanding =

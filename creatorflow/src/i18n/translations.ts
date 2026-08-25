@@ -15,6 +15,8 @@ export const translations: Record<Locale, Translations> = {
     "nav.pipelineSection": "Parcours de création",
     "nav.features": "Fonctionnalités",
     "nav.examples": "Exemples",
+    "nav.faq": "FAQ",
+    "nav.github": "GitHub",
     "nav.signIn": "Connexion",
     "login.signIn": "Connexion",
     "login.signUp": "Inscription",
@@ -66,6 +68,35 @@ export const translations: Record<Locale, Translations> = {
     "why.title": "Pourquoi CreatorFlow ?",
     "why.body":
       "Moins de chaos mental. Plus de publications. Un seul endroit pour vos idées, scripts et statuts de production.",
+    "faq.title": "Questions fréquentes",
+    "faq.q1": "Qu'est-ce que CreatorFlow ?",
+    "faq.a1":
+      "CreatorFlow est une application web pour créateurs : organisez vos idées vidéo, générez des scripts avec l'IA et suivez chaque contenu jusqu'à la publication.",
+    "faq.q2": "CreatorFlow est-il gratuit ?",
+    "faq.a2":
+      "Vous pouvez explorer la démo sans compte ni carte bancaire. Les comptes offrent des quotas de génération IA selon le plan choisi.",
+    "faq.q3": "Quelles plateformes sont supportées ?",
+    "faq.a3":
+      "Les scripts et le parcours de création ciblent YouTube, TikTok et Instagram Reels, avec une interface en français et en anglais.",
+    "faq.q4": "Comment fonctionnent les scripts IA ?",
+    "faq.a4":
+      "Depuis une idée, CreatorFlow génère un script structuré (accroche, sections, appel à l'action) adapté au format choisi, dans la limite de votre quota mensuel.",
+    "dev.title": "Pour les développeurs",
+    "dev.subtitle":
+      "Stack, API et commandes utiles pour vos démos techniques et intégrations.",
+    "dev.stack.title": "Stack front-end",
+    "dev.stack.body":
+      "React 19, Vite 6, TypeScript, Tailwind CSS v4, React Router. Tests avec Vitest et Playwright.",
+    "dev.api.title": "API scripts IA",
+    "dev.api.body":
+      "POST vers VITE_API_URL (/ai/generate-script). Authentification JWT ou en-tête x-demo-id en mode démo.",
+    "dev.demo.title": "Mode démo",
+    "dev.demo.body":
+      "cf-demo=1 dans localStorage ouvre /app sans OAuth. Idées et quotas démo persistés côté client.",
+    "dev.build.title": "Build & SEO",
+    "dev.build.body":
+      "npm run build:seo — build Vite + prerender Playwright pour GitHub Pages (base /contract/creatorflow/).",
+    "dev.footerLink": "Pour les développeurs",
     "cta.title": "Téléchargez CreatorFlow et publiez plus régulièrement.",
     "cta.subtitle": "Explorez la démo interactive. Aucun compte requis.",
     "footer.rights": "© 2026 CreatorFlow. Tous droits réservés.",
@@ -130,6 +161,8 @@ export const translations: Record<Locale, Translations> = {
     "nav.pipelineSection": "Creation workflow",
     "nav.features": "Features",
     "nav.examples": "Examples",
+    "nav.faq": "FAQ",
+    "nav.github": "GitHub",
     "nav.signIn": "Sign in",
     "login.signIn": "Sign in",
     "login.signUp": "Sign up",
@@ -181,6 +214,35 @@ export const translations: Record<Locale, Translations> = {
     "why.title": "Why CreatorFlow?",
     "why.body":
       "Less mental chaos. More publishing. One place for ideas, scripts, and production status.",
+    "faq.title": "Frequently asked questions",
+    "faq.q1": "What is CreatorFlow?",
+    "faq.a1":
+      "CreatorFlow is a web app for creators: organize video ideas, generate AI scripts, and track each piece until you publish.",
+    "faq.q2": "Is CreatorFlow free?",
+    "faq.a2":
+      "You can explore the demo without an account or credit card. Accounts include monthly AI generation quotas depending on your plan.",
+    "faq.q3": "Which platforms are supported?",
+    "faq.a3":
+      "Scripts and the creation workflow target YouTube, TikTok, and Instagram Reels, with a French and English interface.",
+    "faq.q4": "How do AI scripts work?",
+    "faq.a4":
+      "From an idea, CreatorFlow generates a structured script (hook, sections, call to action) for your chosen format, within your monthly quota.",
+    "dev.title": "For developers",
+    "dev.subtitle":
+      "Stack, API, and commands for technical demos and integrations.",
+    "dev.stack.title": "Front-end stack",
+    "dev.stack.body":
+      "React 19, Vite 6, TypeScript, Tailwind CSS v4, React Router. Tests with Vitest and Playwright.",
+    "dev.api.title": "AI scripts API",
+    "dev.api.body":
+      "POST to VITE_API_URL (/ai/generate-script). JWT auth or x-demo-id header in demo mode.",
+    "dev.demo.title": "Demo mode",
+    "dev.demo.body":
+      "cf-demo=1 in localStorage opens /app without OAuth. Demo ideas and quotas persist on the client.",
+    "dev.build.title": "Build & SEO",
+    "dev.build.body":
+      "npm run build:seo — Vite build plus Playwright prerender for GitHub Pages (base /contract/creatorflow/).",
+    "dev.footerLink": "For developers",
     "cta.title": "Get CreatorFlow and publish more consistently.",
     "cta.subtitle": "Try the interactive demo. No account required.",
     "footer.rights": "© 2026 CreatorFlow. All rights reserved.",

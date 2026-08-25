@@ -9,8 +9,12 @@ import {
   Sparkles,
   Check,
   Zap,
+  Code2,
+  Server,
+  Terminal,
+  Github,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { Button, Input, Label, Logo } from "../components/ui";
@@ -20,6 +24,23 @@ import {
   exampleGallery,
 } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { applyLandingRobots, setFaqJsonLd } from "../lib/seo";
+
+const faqItems = [
+  { q: "faq.q1", a: "faq.a1" },
+  { q: "faq.q2", a: "faq.a2" },
+  { q: "faq.q3", a: "faq.a3" },
+  { q: "faq.q4", a: "faq.a4" },
+] as const;
+
+const devCards = [
+  { titleKey: "dev.stack.title", bodyKey: "dev.stack.body", icon: Code2 },
+  { titleKey: "dev.api.title", bodyKey: "dev.api.body", icon: Server },
+  { titleKey: "dev.demo.title", bodyKey: "dev.demo.body", icon: Terminal },
+  { titleKey: "dev.build.title", bodyKey: "dev.build.body", icon: Zap },
+] as const;
+
+const GITHUB_REPO_URL = "https://github.com/carllaliberte/contract";
 
 const pipelineSteps = [
   { key: "idea", icon: Lightbulb, color: "text-status-idea", bg: "bg-status-idea/15" },
@@ -60,12 +81,22 @@ const heroBullets = [
 ] as const;
 
 export function LandingPage() {
-  const { tr } = useI18n();
+  const { tr, locale } = useI18n();
   const navigate = useNavigate();
   const [authTab, setAuthTab] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+
+  useEffect(() => {
+    applyLandingRobots();
+    setFaqJsonLd(
+      faqItems.map((item) => ({
+        question: tr(item.q),
+        answer: tr(item.a),
+      })),
+    );
+  }, [locale, tr]);
 
   function enterDemo() {
     localStorage.setItem("cf-demo", "1");
@@ -92,6 +123,18 @@ export function LandingPage() {
           </a>
           <a href="#examples" className="transition-colors hover:text-foreground">
             {tr("nav.examples")}
+          </a>
+          <a href="#faq" className="transition-colors hover:text-foreground">
+            {tr("nav.faq")}
+          </a>
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+          >
+            <Github className="size-4" />
+            {tr("nav.github")}
           </a>
         </nav>
         <div className="flex items-center gap-2.5">
@@ -406,6 +449,58 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section id="dev" className="border-t border-border bg-card/25 py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-5 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                {tr("dev.title")}
+              </h2>
+              <p className="mt-3 text-muted-foreground sm:text-lg">{tr("dev.subtitle")}</p>
+            </div>
+
+            <div className="mt-12 grid gap-5 sm:grid-cols-2">
+              {devCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.titleKey}
+                    className="rounded-2xl border border-border bg-card p-6 shadow-card"
+                  >
+                    <span className="grid size-11 place-items-center rounded-xl bg-primary/12 text-primary">
+                      <Icon className="size-5" />
+                    </span>
+                    <h3 className="mt-4 text-base font-semibold">{tr(card.titleKey)}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {tr(card.bodyKey)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="border-t border-border py-16 sm:py-20">
+          <div className="mx-auto max-w-3xl px-5 sm:px-6">
+            <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+              {tr("faq.title")}
+            </h2>
+            <dl className="mt-10 space-y-6">
+              {faqItems.map((item) => (
+                <div
+                  key={item.q}
+                  className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6"
+                >
+                  <dt className="text-base font-semibold">{tr(item.q)}</dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {tr(item.a)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
         <section className="py-16 sm:py-20">
           <div className="mx-auto max-w-3xl px-5 text-center sm:px-6">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -425,6 +520,20 @@ export function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 text-sm text-muted-foreground sm:flex-row sm:px-6">
           <Logo size="sm" />
+          <nav className="flex flex-wrap items-center justify-center gap-4">
+            <a href="#dev" className="transition-colors hover:text-foreground">
+              {tr("dev.footerLink")}
+            </a>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+            >
+              <Github className="size-3.5" />
+              {tr("nav.github")}
+            </a>
+          </nav>
           <p>{tr("footer.rights")}</p>
         </div>
       </footer>
