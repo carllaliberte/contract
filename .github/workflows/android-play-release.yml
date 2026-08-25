@@ -55,7 +55,7 @@ jobs:
         run: node scripts/load-meta-play-config.cjs
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install and build web + Android
         working-directory: google-app
