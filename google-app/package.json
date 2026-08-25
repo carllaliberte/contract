@@ -28,6 +28,9 @@
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
-    "ethers": "^6.17.0"
+    "@wagmi/connectors": "^8.1.0",
+    "@wagmi/core": "^3.6.4",
+    "ethers": "^6.17.0",
+    "viem": "^2.55.19"
   }
 }

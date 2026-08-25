@@ -1,6 +1,7 @@
 import './style.css'
 import { fetchTokenSnapshot, fetchWalletSnapshot } from './contract'
 import { getContractAddress, getRpcUrl } from './config'
+import { initWalletUi } from './wallet/ui'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -16,6 +17,12 @@ app.innerHTML = `
       </p>
     </div>
   </header>
+
+  <section class="panel">
+    <h2>Wallet</h2>
+    <div id="wallet-bar" class="wallet-bar" aria-live="polite"></div>
+    <p id="wallet-status" class="status hidden" aria-live="polite"></p>
+  </section>
 
   <section class="panel">
     <h2>Connection</h2>
@@ -83,7 +90,9 @@ const rpcInput = document.querySelector<HTMLInputElement>('#rpc-url')!
 const contractInput = document.querySelector<HTMLInputElement>('#contract-address')!
 const walletInput = document.querySelector<HTMLInputElement>('#wallet-address')!
 const statusEl = document.querySelector<HTMLParagraphElement>('#status')!
+const walletStatusEl = document.querySelector<HTMLParagraphElement>('#wallet-status')!
 const walletResult = document.querySelector<HTMLDivElement>('#wallet-result')!
+const walletBar = document.querySelector<HTMLDivElement>('#wallet-bar')!
 
 rpcInput.value = getRpcUrl()
 contractInput.value = getContractAddress()
@@ -93,10 +102,27 @@ function setStatus(message: string, type: 'info' | 'error' | 'success' = 'info')
   statusEl.dataset.type = type
 }
 
+function setWalletStatus(message: string, type: 'info' | 'error' | 'success' = 'info') {
+  walletStatusEl.textContent = message
+  walletStatusEl.dataset.type = type
+  walletStatusEl.classList.remove('hidden')
+}
+
 function setText(id: string, value: string) {
   const element = document.querySelector<HTMLElement>(`#${id}`)
   if (element) element.textContent = value
 }
+
+window.addEventListener('wallet-status', (event) => {
+  const detail = (event as CustomEvent<{ message: string; type: 'info' | 'error' | 'success' }>).detail
+  setWalletStatus(detail.message, detail.type)
+})
+
+initWalletUi(walletBar, (address) => {
+  if (address) {
+    walletInput.value = address
+  }
+})
 
 document.querySelector<HTMLFormElement>('#connection-form')!.addEventListener('submit', async (event) => {
   event.preventDefault()

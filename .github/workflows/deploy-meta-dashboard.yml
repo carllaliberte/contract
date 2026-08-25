@@ -32,6 +32,7 @@ jobs:
         working-directory: google-app
         env:
           VITE_BASE_PATH: /contract/
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
         run: |
           npm ci
           npm run generate-icons
@@ -69,6 +70,8 @@ jobs:
 
       - name: Build for Firebase
         working-directory: google-app
+        env:
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
         run: |
           npm ci
           if [ -f deployment.json ]; then
