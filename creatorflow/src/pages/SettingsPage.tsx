@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { ExternalLink, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { PaywallSheet } from "../components/PaywallSheet";
 import { Button, Card } from "../components/ui";
 import { useI18n } from "../i18n/context";
 import { useAiUsage } from "../hooks/useAiUsage";
+import { useAuth } from "../hooks/useAuth";
 import { usePlan } from "../hooks/usePlan";
+import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
+import { getAppleProfile } from "../lib/auth/session";
+import { restorePurchases } from "../lib/iap";
 import { PLAN_LIMITS } from "../lib/plans";
 import { META_HOLDER_BONUS_AI } from "../lib/limits";
 import { metaEntitlements } from "../../../shared/meta-entitlements";
@@ -13,7 +18,12 @@ export function SettingsPage() {
   const { tr } = useI18n();
   const plan = usePlan();
   const usage = useAiUsage();
+  const { isAuthenticated, isDemo } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
 
   const limits = PLAN_LIMITS[plan];
   const shortPct = limits.short
@@ -22,6 +32,49 @@ export function SettingsPage() {
   const longPct = limits.long
     ? Math.min(100, Math.round((usage.long.count / limits.long) * 100))
     : 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (isAuthenticated) {
+        const profile = await getAppleProfile();
+        if (cancelled) return;
+        setProfileName(profile.displayName ?? tr("settings.appleUser"));
+        setProfileEmail(profile.email ?? tr("settings.appleEmailHidden"));
+        return;
+      }
+      if (isDemo) {
+        setProfileName(tr("settings.demoName"));
+        setProfileEmail(tr("settings.demoEmail"));
+        return;
+      }
+      setProfileName(tr("settings.guestName"));
+      setProfileEmail("");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isDemo, tr]);
+
+  async function handleRestore() {
+    setRestoreBusy(true);
+    setRestoreNotice(null);
+    const result = await restorePurchases();
+    setRestoreBusy(false);
+    if (result.ok) {
+      setRestoreNotice(
+        result.activeProductId ? tr("paywall.restoreSuccess") : tr("paywall.restoreEmpty"),
+      );
+      return;
+    }
+    setRestoreNotice(
+      result.reason === "unavailable"
+        ? tr("paywall.nativeUnavailable")
+        : result.message ?? tr("paywall.error"),
+    );
+  }
+
+  const profileInitial = profileName.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -41,11 +94,20 @@ export function SettingsPage() {
         <h2 className="text-sm font-semibold">{tr("settings.profile")}</h2>
         <div className="mt-4 flex items-center gap-4">
           <span className="grid size-14 place-items-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
-            A
+            {profileInitial}
           </span>
           <div>
-            <p className="font-medium">Alex Créateur</p>
-            <p className="text-sm text-muted-foreground">alex@demo.creatorflow.app</p>
+            <p className="font-medium">{profileName}</p>
+            {profileEmail ? (
+              <p className="text-sm text-muted-foreground">{profileEmail}</p>
+            ) : null}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {isAuthenticated
+                ? tr("session.badge.apple")
+                : isDemo
+                  ? tr("demo.badge")
+                  : tr("settings.guestName")}
+            </p>
           </div>
         </div>
       </Card>
@@ -91,6 +153,52 @@ export function SettingsPage() {
           <p className="text-xs text-muted-foreground">
             {tr("plan.longMaxHint", { minutes: String(limits.maxLongMinutes) })}
           </p>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10"
+            disabled={restoreBusy}
+            onClick={() => void handleRestore()}
+          >
+            {restoreBusy ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                {tr("paywall.restoring")}
+              </>
+            ) : (
+              tr("paywall.restore")
+            )}
+          </Button>
+          {restoreNotice ? (
+            <p className="text-xs text-muted-foreground">{restoreNotice}</p>
+          ) : null}
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold">{tr("settings.legalTitle")}</h2>
+        <div className="mt-3 flex flex-col gap-2">
+          <a
+            href={PRIVACY_POLICY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            {tr("settings.privacy")}
+            <ExternalLink className="size-3.5" aria-hidden />
+          </a>
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            {tr("settings.support")}
+            <ExternalLink className="size-3.5" aria-hidden />
+          </a>
         </div>
       </Card>
 

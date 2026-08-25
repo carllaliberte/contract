@@ -55,9 +55,15 @@ export function useAppleSignIn() {
       };
 
       const session = await exchangeAppleSession(payload);
+      const displayName = [payload.givenName, payload.familyName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       await establishAppleSession({
         accessToken: session.accessToken,
-        userId: session.userId,
+        userId: session.userId ?? payload.user,
+        displayName: displayName || null,
+        email: payload.email,
       });
 
       setStatus("idle");

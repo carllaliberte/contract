@@ -3,6 +3,8 @@ import { secureClear, secureGet, secureSet } from "../secureStorage";
 export const SESSION_KEYS = {
   AUTH_TOKEN: "cf-auth-token",
   APPLE_USER: "cf-apple-user",
+  APPLE_DISPLAY_NAME: "cf-apple-display-name",
+  APPLE_EMAIL: "cf-apple-email",
   SESSION_KIND: "cf-session-kind",
 } as const;
 
@@ -27,17 +29,44 @@ export async function getAuthToken(): Promise<string | null> {
   return cachedAuthToken;
 }
 
+export type AppleProfile = {
+  userId: string | null;
+  displayName: string | null;
+  email: string | null;
+};
+
 export async function establishAppleSession(input: {
   accessToken: string;
   userId: string | null;
+  displayName?: string | null;
+  email?: string | null;
 }): Promise<void> {
   await secureSet(SESSION_KEYS.AUTH_TOKEN, input.accessToken);
   await secureSet(SESSION_KEYS.SESSION_KIND, "apple");
   if (input.userId) {
     await secureSet(SESSION_KEYS.APPLE_USER, input.userId);
   }
+  if (input.displayName) {
+    await secureSet(SESSION_KEYS.APPLE_DISPLAY_NAME, input.displayName);
+  } else {
+    await secureClear([SESSION_KEYS.APPLE_DISPLAY_NAME]);
+  }
+  if (input.email) {
+    await secureSet(SESSION_KEYS.APPLE_EMAIL, input.email);
+  } else {
+    await secureClear([SESSION_KEYS.APPLE_EMAIL]);
+  }
   cachedAuthToken = input.accessToken;
   localStorage.removeItem(DEMO_FLAG);
+}
+
+export async function getAppleProfile(): Promise<AppleProfile> {
+  const [userId, displayName, email] = await Promise.all([
+    secureGet(SESSION_KEYS.APPLE_USER),
+    secureGet(SESSION_KEYS.APPLE_DISPLAY_NAME),
+    secureGet(SESSION_KEYS.APPLE_EMAIL),
+  ]);
+  return { userId, displayName, email };
 }
 
 export async function establishDemoSession(): Promise<void> {
@@ -48,7 +77,12 @@ export async function establishDemoSession(): Promise<void> {
 }
 
 async function secureRemoveTokenOnly(): Promise<void> {
-  await secureClear([SESSION_KEYS.AUTH_TOKEN, SESSION_KEYS.APPLE_USER]);
+  await secureClear([
+    SESSION_KEYS.AUTH_TOKEN,
+    SESSION_KEYS.APPLE_USER,
+    SESSION_KEYS.APPLE_DISPLAY_NAME,
+    SESSION_KEYS.APPLE_EMAIL,
+  ]);
 }
 
 export async function clearSession(): Promise<void> {

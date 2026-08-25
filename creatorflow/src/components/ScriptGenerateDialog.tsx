@@ -42,6 +42,9 @@ export function ScriptGenerateDialog({
   const [duration, setDuration] = useState<LongDuration>(() => defaultLongDuration(plan));
 
   const durations = allowedLongDurations(plan);
+  const shortAtQuota = usage.short.remaining <= 0;
+  const longAtQuota = usage.long.remaining <= 0;
+  const formatAtQuota = format === "short" ? shortAtQuota : longAtQuota;
 
   useEffect(() => {
     if (!open) return;
@@ -56,6 +59,14 @@ export function ScriptGenerateDialog({
   }, [duration, durations]);
 
   if (!open || !idea) return null;
+
+  function selectFormat(value: ScriptFormat) {
+    if (!canUseAiGeneration(value)) {
+      onPaywall?.(value);
+      return;
+    }
+    setFormat(value);
+  }
 
   async function handleSubmit() {
     if (!canUseAiGeneration(format)) {
@@ -97,20 +108,25 @@ export function ScriptGenerateDialog({
           <div>
             <p className="mb-2 text-sm font-medium">{tr("script.formatLabel")}</p>
             <div className="grid grid-cols-2 gap-2">
-              {(["short", "long"] as const).map((value) => (
+              {(["short", "long"] as const).map((value) => {
+                const disabled = value === "short" ? shortAtQuota : longAtQuota;
+                return (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setFormat(value)}
+                  onClick={() => selectFormat(value)}
                   className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
                     format === value
                       ? "border-primary bg-primary/15 text-primary"
-                      : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary"
+                      : disabled
+                        ? "cursor-not-allowed border-border/60 bg-secondary/20 text-muted-foreground/60"
+                        : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary"
                   }`}
                 >
                   {tr(value === "short" ? "script.formatShort" : "script.formatLong")}
                 </button>
-              ))}
+              );
+              })}
             </div>
           </div>
 
@@ -159,7 +175,7 @@ export function ScriptGenerateDialog({
           <Button
             type="button"
             className="flex-1"
-            disabled={isGenerating}
+            disabled={isGenerating || formatAtQuota}
             onClick={() => void handleSubmit()}
           >
             {isGenerating ? (

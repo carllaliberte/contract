@@ -1,4 +1,5 @@
 import { useAppleSignIn } from "../hooks/useAppleSignIn";
+import { useAuth } from "../hooks/useAuth";
 import { useI18n } from "../i18n/context";
 import { Button } from "./ui";
 
@@ -9,13 +10,16 @@ interface AppleSignInButtonProps {
 
 export function AppleSignInButton({ onSuccess, className }: AppleSignInButtonProps) {
   const { tr } = useI18n();
+  const { refresh } = useAuth();
   const { signIn, available, isLoading } = useAppleSignIn();
 
   if (!available) return null;
 
   async function handleClick() {
     const ok = await signIn();
-    if (ok) onSuccess?.();
+    if (!ok) return;
+    await refresh();
+    onSuccess?.();
   }
 
   return (
