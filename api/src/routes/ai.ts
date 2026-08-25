@@ -6,15 +6,19 @@ import { env } from "../env.js";
 import { logAiGeneration } from "../services/aiGenerations.js";
 import {
   assertCanGenerate,
+  validateDurationForPlan,
   type UsageStore,
 } from "../services/aiUsage.js";
 import { generateScriptWithLlm } from "../services/llm.js";
 import {
   isGenerateMode,
   isLanguage,
+  isLongDuration,
   isPlatform,
+  isScriptFormat,
   type GenerateScriptErrorBody,
   type GenerateScriptRequest,
+  type ScriptFormat,
 } from "../types.js";
 
 type AppEnv = { Variables: AuthVariables };
@@ -26,6 +30,14 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
   if (typeof b.title !== "string" || !b.title.trim()) return null;
   if (typeof b.description !== "string") return null;
   if (typeof b.platform !== "string" || !isPlatform(b.platform)) return null;
+
+  const format =
+    typeof b.format === "string" && isScriptFormat(b.format) ? b.format : "short";
+  const durationMinutes =
+    typeof b.durationMinutes === "number" && isLongDuration(b.durationMinutes)
+      ? b.durationMinutes
+      : undefined;
+
   return {
     ideaId: b.ideaId.trim(),
     title: b.title.trim(),
@@ -39,15 +51,19 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
       typeof b.mode === "string" && isGenerateMode(b.mode) ? b.mode : "generate",
     existingScript:
       typeof b.existingScript === "string" ? b.existingScript : undefined,
+    format,
+    durationMinutes,
   };
 }
 
 function limitError(
-  usage: { count: number; limit: number; remaining: number },
+  usage: NonNullable<GenerateScriptErrorBody["usage"]>,
+  format: ScriptFormat,
 ): GenerateScriptErrorBody {
+  const quota = format === "long" ? usage.long : usage.short;
   return {
     error: "LIMIT_REACHED",
-    message: "Monthly AI generation limit reached",
+    message: `Monthly ${format} script limit reached (${quota.count}/${quota.limit})`,
     usage,
   };
 }
@@ -89,21 +105,28 @@ export function createAiRoutes() {
       );
     }
 
+    const format: ScriptFormat = payload.format ?? "short";
     const userId = c.get("userId");
     const usageStore = c.get("usageStore") as UsageStore;
 
-  try {
-      // 2. Lire quota user (table ai_usage)
-      // 3. Si count >= limit → 429 LIMIT_REACHED
-      await assertCanGenerate(usageStore, userId);
+    try {
+      const usage = await usageStore.getUsage(userId);
+      const durationError = validateDurationForPlan(
+        usage.plan,
+        format,
+        payload.durationMinutes,
+      );
+      if (durationError) {
+        return c.json({ error: "BAD_REQUEST", message: durationError }, 400);
+      }
+
+      await assertCanGenerate(usageStore, userId, format);
 
       const mode =
         payload.mode === "improve" && payload.existingScript?.trim()
           ? "improve"
           : "generate";
 
-      // 4. Construire prompt selon platform
-      // 5. Appeler LLM
       const { script, model } = await generateScriptWithLlm({
         title: payload.title,
         description: payload.description,
@@ -111,12 +134,13 @@ export function createAiRoutes() {
         language: payload.language ?? "fr",
         mode,
         existingScript: payload.existingScript,
+        format,
+        durationMinutes: payload.durationMinutes,
       });
 
-      // 6. Incrémenter quota
-      let usage;
+      let finalUsage;
       try {
-        usage = await usageStore.incrementUsage(userId);
+        finalUsage = await usageStore.incrementUsage(userId, format);
       } catch (incrementError) {
         if (
           incrementError instanceof Error &&
@@ -124,9 +148,9 @@ export function createAiRoutes() {
         ) {
           const snap =
             (incrementError as Error & {
-              usage?: { count: number; limit: number; remaining: number };
+              usage?: NonNullable<GenerateScriptErrorBody["usage"]>;
             }).usage ?? (await usageStore.getUsage(userId));
-          return c.json(limitError(snap), 429);
+          return c.json(limitError(snap, format), 429);
         }
         throw incrementError;
       }
@@ -140,14 +164,14 @@ export function createAiRoutes() {
         });
       }
 
-      // 7. Retourner { script, usage, model }
-      return c.json({ script, usage, model });
+      return c.json({ script, usage: finalUsage, model });
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
         const usage =
-          (error as Error & { usage?: { count: number; limit: number; remaining: number } })
-            .usage ?? (await usageStore.getUsage(userId));
-        return c.json(limitError(usage), 429);
+          (error as Error & {
+            usage?: NonNullable<GenerateScriptErrorBody["usage"]>;
+          }).usage ?? (await usageStore.getUsage(userId));
+        return c.json(limitError(usage, format), 429);
       }
 
       console.error("generate-script error:", error);

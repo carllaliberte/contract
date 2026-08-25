@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { LIMITS } from "./limits";
+import { PLAN_LIMITS } from "./plans";
 import { canUseAiGeneration, getAiUsage, syncAiUsage } from "./aiUsage";
 
 describe("aiUsage", () => {
@@ -7,25 +7,39 @@ describe("aiUsage", () => {
     localStorage.clear();
   });
 
-  it("starts with the free-plan monthly quota", () => {
+  it("starts with the free-plan monthly quotas", () => {
     const usage = getAiUsage();
-    expect(usage.limit).toBe(LIMITS.free);
-    expect(usage.count).toBe(0);
-    expect(usage.remaining).toBe(LIMITS.free);
-    expect(canUseAiGeneration()).toBe(true);
+    expect(usage.plan).toBe("free");
+    expect(usage.short.limit).toBe(PLAN_LIMITS.free.short);
+    expect(usage.long.limit).toBe(PLAN_LIMITS.free.long);
+    expect(usage.short.count).toBe(0);
+    expect(canUseAiGeneration("short")).toBe(true);
+    expect(canUseAiGeneration("long")).toBe(true);
   });
 
   it("syncs usage from API snapshot", () => {
-    syncAiUsage({ count: 3, limit: LIMITS.pro });
+    syncAiUsage({
+      plan: "pro",
+      short: { count: 3, limit: 100, remaining: 97 },
+      long: { count: 1, limit: 50, remaining: 49 },
+    });
     const usage = getAiUsage();
-    expect(usage.count).toBe(3);
-    expect(usage.limit).toBe(LIMITS.pro);
-    expect(usage.remaining).toBe(LIMITS.pro - 3);
+    expect(usage.plan).toBe("pro");
+    expect(usage.short.count).toBe(3);
+    expect(usage.long.count).toBe(1);
   });
 
-  it("blocks usage after the monthly limit", () => {
-    syncAiUsage({ count: LIMITS.free, limit: LIMITS.free });
-    expect(canUseAiGeneration()).toBe(false);
-    expect(getAiUsage().remaining).toBe(0);
+  it("blocks usage after the short monthly limit", () => {
+    syncAiUsage({
+      plan: "free",
+      short: {
+        count: PLAN_LIMITS.free.short,
+        limit: PLAN_LIMITS.free.short,
+        remaining: 0,
+      },
+      long: { count: 0, limit: PLAN_LIMITS.free.long, remaining: PLAN_LIMITS.free.long },
+    });
+    expect(canUseAiGeneration("short")).toBe(false);
+    expect(canUseAiGeneration("long")).toBe(true);
   });
 });

@@ -1,9 +1,25 @@
+import { useState } from "react";
 import { LanguageSelector } from "../components/LanguageSelector";
-import { Card } from "../components/ui";
+import { PaywallSheet } from "../components/PaywallSheet";
+import { Button, Card } from "../components/ui";
 import { useI18n } from "../i18n/context";
+import { useAiUsage } from "../hooks/useAiUsage";
+import { usePlan } from "../hooks/usePlan";
+import { PLAN_LIMITS } from "../lib/plans";
 
 export function SettingsPage() {
   const { tr } = useI18n();
+  const plan = usePlan();
+  const usage = useAiUsage();
+  const [paywallOpen, setPaywallOpen] = useState(false);
+
+  const limits = PLAN_LIMITS[plan];
+  const shortPct = limits.short
+    ? Math.min(100, Math.round((usage.short.count / limits.short) * 100))
+    : 0;
+  const longPct = limits.long
+    ? Math.min(100, Math.round((usage.long.count / limits.long) * 100))
+    : 0;
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -20,7 +36,7 @@ export function SettingsPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="text-sm font-semibold">Profil</h2>
+        <h2 className="text-sm font-semibold">{tr("settings.profile")}</h2>
         <div className="mt-4 flex items-center gap-4">
           <span className="grid size-14 place-items-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
             A
@@ -33,15 +49,50 @@ export function SettingsPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="text-sm font-semibold">Plan</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Gratuit — 8 générations IA / mois
-        </p>
-        <div className="video-progress mt-3">
-          <div className="video-progress-bar" style={{ width: "37%" }} />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold">{tr("settings.planTitle")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {plan === "pro" ? tr("plan.proName") : tr("plan.freeName")}
+            </p>
+          </div>
+          {plan === "free" && (
+            <Button type="button" className="h-9 px-3 text-xs" onClick={() => setPaywallOpen(true)}>
+              {tr("paywall.upgrade")}
+            </Button>
+          )}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">3 / 8 générations utilisées</p>
+
+        <div className="mt-4 space-y-4">
+          <div>
+            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+              <span>{tr("script.formatShort")}</span>
+              <span className="tabular-nums">
+                {usage.short.count} / {limits.short}
+              </span>
+            </div>
+            <div className="video-progress">
+              <div className="video-progress-bar" style={{ width: `${shortPct}%` }} />
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+              <span>{tr("script.formatLong")}</span>
+              <span className="tabular-nums">
+                {usage.long.count} / {limits.long}
+              </span>
+            </div>
+            <div className="video-progress">
+              <div className="video-progress-bar" style={{ width: `${longPct}%` }} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tr("plan.longMaxHint", { minutes: String(limits.maxLongMinutes) })}
+          </p>
+        </div>
       </Card>
+
+      <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </div>
   );
 }

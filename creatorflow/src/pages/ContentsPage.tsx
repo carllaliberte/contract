@@ -1,10 +1,16 @@
 import { Play, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
+import { PaywallSheet } from "../components/PaywallSheet";
+import {
+  ScriptGenerateDialog,
+  type ScriptGenerateOptions,
+} from "../components/ScriptGenerateDialog";
 import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { useAiUsage } from "../hooks/useAiUsage";
 
@@ -13,29 +19,43 @@ export function ContentsPage() {
   const { ideas, generateScript } = useIdeas();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const aiUsage = useAiUsage();
 
   const withMedia = ideas.filter((i) => i.videoUrl || i.script || i.status === "idea" || i.status === "script");
 
-  async function handleGenerate(idea: Idea) {
-    if (!canUseAiGeneration()) {
-      setNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
+  function handlePaywall(format: ScriptFormat) {
+    setDialogIdea(null);
+    setNotice(
+      tr(
+        format === "long" ? "script.limitReachedLong" : "script.limitReachedShort",
+        {
+          limit: String(
+            format === "long" ? aiUsage.long.limit : aiUsage.short.limit,
+          ),
+        },
+      ),
+    );
+    setPaywallOpen(true);
+  }
+
+  async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
+    if (!canUseAiGeneration(options.format)) {
+      handlePaywall(options.format);
       return;
     }
     setGeneratingId(idea.id);
     setNotice(null);
     try {
-      await generateScript(idea.id);
+      await generateScript(idea.id, options);
+      setDialogIdea(null);
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
-        setNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
+        handlePaywall(options.format);
       } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
-        setNotice(
-          tr("script.limitReached", {
-            limit: String(error.usage?.limit ?? aiUsage.limit),
-          }),
-        );
+        handlePaywall(options.format);
       } else if (isGenerateScriptError(error)) {
         setNotice(error.message);
       } else {
@@ -109,7 +129,7 @@ export function ContentsPage() {
                   variant="secondary"
                   className="mt-3 h-9 w-full text-xs"
                   disabled={generatingId === item.id}
-                  onClick={() => handleGenerate(item)}
+                  onClick={() => setDialogIdea(item)}
                 >
                   <Sparkles className="size-3.5" />
                   {generatingId === item.id ? (
@@ -126,6 +146,17 @@ export function ContentsPage() {
           </article>
         ))}
       </div>
+
+      <ScriptGenerateDialog
+        idea={dialogIdea}
+        open={dialogIdea !== null}
+        onClose={() => setDialogIdea(null)}
+        onSubmit={handleGenerateSubmit}
+        isGenerating={generatingId === dialogIdea?.id}
+        onPaywall={handlePaywall}
+      />
+
+      <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </div>
   );
 }

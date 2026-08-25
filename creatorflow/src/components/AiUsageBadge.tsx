@@ -7,8 +7,12 @@ export function AiUsageBadge({ className = "" }: { className?: string }) {
 
   return (
     <p className={`text-xs text-muted-foreground tabular-nums ${className}`}>
-      {tr("script.aiRemaining", { n: String(usage.remaining) })}
-      <span className="text-muted-foreground/70"> / {usage.limit}</span>
+      {tr("script.quotaSummary", {
+        shortRemaining: String(usage.short.remaining),
+        shortLimit: String(usage.short.limit),
+        longRemaining: String(usage.long.remaining),
+        longLimit: String(usage.long.limit),
+      })}
     </p>
   );
 }

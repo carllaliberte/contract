@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { LIMITS } from "../limits.js";
+import { PLAN_LIMITS } from "../limits.js";
 import {
   assertCanGenerate,
   clearMemoryUsageStore,
@@ -13,25 +13,33 @@ describe("memoryUsageStore", () => {
 
   it("starts at zero usage", async () => {
     const usage = await memoryUsageStore.getUsage("demo:test");
-    expect(usage).toEqual({
+    expect(usage.plan).toBe("free");
+    expect(usage.short).toEqual({
       count: 0,
-      limit: LIMITS.free,
-      remaining: LIMITS.free,
+      limit: PLAN_LIMITS.free.short,
+      remaining: PLAN_LIMITS.free.short,
     });
+    expect(usage.long.remaining).toBe(PLAN_LIMITS.free.long);
   });
 
-  it("increments usage", async () => {
-    const first = await memoryUsageStore.incrementUsage("demo:test");
-    expect(first.count).toBe(1);
-    expect(first.remaining).toBe(LIMITS.free - 1);
+  it("increments short usage", async () => {
+    const first = await memoryUsageStore.incrementUsage("demo:test", "short");
+    expect(first.short.count).toBe(1);
+    expect(first.short.remaining).toBe(PLAN_LIMITS.free.short - 1);
   });
 
-  it("blocks when limit reached", async () => {
-    for (let i = 0; i < LIMITS.free; i++) {
-      await memoryUsageStore.incrementUsage("demo:full");
+  it("blocks when short limit reached", async () => {
+    for (let i = 0; i < PLAN_LIMITS.free.short; i++) {
+      await memoryUsageStore.incrementUsage("demo:full", "short");
     }
-    await expect(assertCanGenerate(memoryUsageStore, "demo:full")).rejects.toThrow(
-      "LIMIT_REACHED",
-    );
+    await expect(
+      assertCanGenerate(memoryUsageStore, "demo:full", "short"),
+    ).rejects.toThrow("LIMIT_REACHED");
+  });
+
+  it("tracks long usage separately", async () => {
+    const first = await memoryUsageStore.incrementUsage("demo:long", "long");
+    expect(first.long.count).toBe(1);
+    expect(first.short.count).toBe(0);
   });
 });
