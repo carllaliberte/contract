@@ -5,6 +5,7 @@ export type Translations = Record<string, string>;
 export const translations: Record<Locale, Translations> = {
   fr: {
     "app.name": "CreatorFlow",
+    "app.heroTitle": "Publiez plus de contenu, avec moins de friction",
     "app.tagline": "CreatorFlow — publiez plus, avec moins de friction.",
     "app.lead":
       "Structurez vos idées, générez vos scripts et gardez le cap jusqu'à la publication.",
@@ -119,6 +120,7 @@ export const translations: Record<Locale, Translations> = {
   },
   en: {
     "app.name": "CreatorFlow",
+    "app.heroTitle": "Publish more content, with less friction",
     "app.tagline": "CreatorFlow — publish more, with less friction.",
     "app.lead":
       "Organize your ideas, generate scripts, and stay on track until you publish.",
