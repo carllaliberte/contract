@@ -35,6 +35,10 @@ jobs:
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
 
+      - name: Install dependencies
+        working-directory: creatorflow
+        run: npm ci
+
       - name: Install Playwright Chromium
         working-directory: creatorflow
         run: npx playwright install --with-deps chromium
@@ -43,11 +47,9 @@ jobs:
         working-directory: creatorflow
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
-          VITE_ROUTER_BASENAME: ${{ vars.VITE_ROUTER_BASENAME }}
-        run: |
-          npm ci
-          npm run build:seo
+          VITE_BASE_PATH: /contract/creatorflow/
+          VITE_ROUTER_BASENAME: /contract/creatorflow
+        run: npm run build:seo
 
       - name: Publish to gh-pages/creatorflow (keep META dashboard at root)
         working-directory: creatorflow
