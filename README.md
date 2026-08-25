@@ -104,6 +104,7 @@ cd google-app && npm run build && npx firebase deploy --only hosting
 | --- | --- |
 | `VITE_CONTRACT_ADDRESS` | Deployed `META` contract address |
 | `VITE_RPC_URL` | JSON-RPC endpoint for the chain where the contract is deployed |
+| `VITE_WALLETCONNECT_PROJECT_ID` | WalletConnect Cloud project ID (public; no private keys in the app) |
 
 ## Regenerate contract ABI
 

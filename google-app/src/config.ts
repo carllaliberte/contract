@@ -9,3 +9,8 @@ export function getRpcUrl(): string {
 export function getContractAddress(): string {
   return import.meta.env.VITE_CONTRACT_ADDRESS?.trim() || DEFAULT_CONTRACT_ADDRESS
 }
+
+export function getWalletConnectProjectId(): string | undefined {
+  const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim()
+  return projectId || undefined
+}
