@@ -4,6 +4,7 @@ import { getContractAddress, getMetaChainId, getRpcUrl } from './config'
 import { metaEntitlements, tierLabel } from '../../shared/meta-entitlements'
 import { getChainName, getChainRpcUrl, isSupportedChainId } from './wallet/chains'
 import { getConnectedAccount } from './wallet'
+import { initPortfolioUi } from './wallet/portfolio-ui'
 import { initWalletUi, setWalletEntitlements, handleWalletStatusCta } from './wallet/ui'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -40,6 +41,11 @@ app.innerHTML = `
       <p id="wallet-status-message" class="wallet-status__message"></p>
       <div id="wallet-status-actions" class="wallet-status__actions hidden"></div>
     </div>
+  </section>
+
+  <section class="panel">
+    <h2>Mes actifs</h2>
+    <div id="portfolio-panel" class="portfolio" aria-live="polite"></div>
   </section>
 
   <section class="panel">
@@ -114,6 +120,7 @@ const walletStatusMessageEl = document.querySelector<HTMLParagraphElement>('#wal
 const walletStatusActionsEl = document.querySelector<HTMLDivElement>('#wallet-status-actions')!
 const walletResult = document.querySelector<HTMLDivElement>('#wallet-result')!
 const walletBar = document.querySelector<HTMLDivElement>('#wallet-bar')!
+const portfolioPanel = document.querySelector<HTMLDivElement>('#portfolio-panel')!
 
 rpcInput.value = getRpcUrl()
 contractInput.value = getContractAddress()
@@ -255,6 +262,8 @@ initWalletUi(
     }
   },
 )
+
+initPortfolioUi(portfolioPanel, (message, type) => setWalletStatus(message, type))
 
 document.querySelector<HTMLFormElement>('#connection-form')!.addEventListener('submit', async (event) => {
   event.preventDefault()
