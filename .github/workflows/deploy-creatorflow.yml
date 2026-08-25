@@ -41,6 +41,10 @@ jobs:
 
       - name: Build CreatorFlow (SEO prerender)
         working-directory: creatorflow
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+          VITE_ROUTER_BASENAME: ${{ vars.VITE_ROUTER_BASENAME }}
         run: |
           npm ci
           npm run build:seo

@@ -31,8 +31,10 @@ jobs:
       - name: Install and build for GitHub Pages
         working-directory: google-app
         env:
-          VITE_BASE_PATH: /contract/
-          VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || '/contract/' }}
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
+          VITE_CONTRACT_ADDRESS: ${{ vars.VITE_CONTRACT_ADDRESS }}
+          VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
         run: |
           npm ci
           npm run generate-icons
@@ -71,7 +73,9 @@ jobs:
       - name: Build for Firebase
         working-directory: google-app
         env:
-          VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
+          VITE_CONTRACT_ADDRESS: ${{ vars.VITE_CONTRACT_ADDRESS }}
+          VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
         run: |
           npm ci
           if [ -f deployment.json ]; then
