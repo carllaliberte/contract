@@ -1,0 +1,5 @@
+# --- add-all-security-ci: secret & signing hygiene ---
+# Append once to .gitignore (do not commit filled secrets locally).
+google-app/play-store/secrets-a-remplir.env
+**/*.jks
+**/keystore.properties

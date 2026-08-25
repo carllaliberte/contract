@@ -83,12 +83,19 @@ jobs:
         run: |
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
-            {
-              echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
-              echo "ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS:-meta-upload}"
-              echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
-              echo "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
-            } >> "$GITHUB_ENV"
+            append_env() {
+              local key="$1" val="$2"
+              {
+                printf '%s<<EOF\n' "$key"
+                printf '%s\n' "$val"
+                printf 'EOF\n'
+              } >> "$GITHUB_ENV"
+            }
+            append_env "ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEYSTORE_PASSWORD"
+            append_env "ANDROID_KEY_ALIAS" "${ANDROID_KEY_ALIAS:-meta-upload}"
+            append_env "ANDROID_KEY_PASSWORD" "$ANDROID_KEY_PASSWORD"
+            append_env "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+            echo "Legacy keystore secrets loaded (values not logged)"
           else
             echo "No legacy keystore secret"
           fi
