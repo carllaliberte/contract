@@ -9,6 +9,9 @@ import {
   Sparkles,
   Check,
   Zap,
+  Code2,
+  Server,
+  Terminal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +30,13 @@ const faqItems = [
   { q: "faq.q2", a: "faq.a2" },
   { q: "faq.q3", a: "faq.a3" },
   { q: "faq.q4", a: "faq.a4" },
+] as const;
+
+const devCards = [
+  { titleKey: "dev.stack.title", bodyKey: "dev.stack.body", icon: Code2 },
+  { titleKey: "dev.api.title", bodyKey: "dev.api.body", icon: Server },
+  { titleKey: "dev.demo.title", bodyKey: "dev.demo.body", icon: Terminal },
+  { titleKey: "dev.build.title", bodyKey: "dev.build.body", icon: Zap },
 ] as const;
 
 const pipelineSteps = [
@@ -427,6 +437,37 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section id="dev" className="border-t border-border bg-card/25 py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-5 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                {tr("dev.title")}
+              </h2>
+              <p className="mt-3 text-muted-foreground sm:text-lg">{tr("dev.subtitle")}</p>
+            </div>
+
+            <div className="mt-12 grid gap-5 sm:grid-cols-2">
+              {devCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.titleKey}
+                    className="rounded-2xl border border-border bg-card p-6 shadow-card"
+                  >
+                    <span className="grid size-11 place-items-center rounded-xl bg-primary/12 text-primary">
+                      <Icon className="size-5" />
+                    </span>
+                    <h3 className="mt-4 text-base font-semibold">{tr(card.titleKey)}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {tr(card.bodyKey)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         <section id="faq" className="border-t border-border py-16 sm:py-20">
           <div className="mx-auto max-w-3xl px-5 sm:px-6">
             <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -467,6 +508,11 @@ export function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 text-sm text-muted-foreground sm:flex-row sm:px-6">
           <Logo size="sm" />
+          <nav className="flex flex-wrap items-center justify-center gap-4">
+            <a href="#dev" className="transition-colors hover:text-foreground">
+              {tr("dev.footerLink")}
+            </a>
+          </nav>
           <p>{tr("footer.rights")}</p>
         </div>
       </footer>
