@@ -1,24 +1,14 @@
-import { createConfig, http } from '@wagmi/core'
+import { createConfig, http, type Transport } from '@wagmi/core'
 import { coinbaseWallet, injected, walletConnect } from '@wagmi/connectors'
-import { arbitrum, base, mainnet, polygon, sepolia } from '@wagmi/core/chains'
+import { DASHBOARD_ICON_URL, DASHBOARD_NAME, getWalletConnectProjectId } from '../config'
 import {
-  DASHBOARD_DESCRIPTION,
-  DASHBOARD_ICON_URL,
-  DASHBOARD_NAME,
-  DASHBOARD_ORIGIN,
-  getRpcUrl,
-  getWalletConnectProjectId,
-} from '../config'
-import { getRpcUrlForChain, supportedChains } from './chains'
+  chainEntries,
+  getChainRpcUrl,
+  getWalletConnectMetadata,
+  supportedChains,
+} from './chains'
 
 const projectId = getWalletConnectProjectId()
-
-const walletMetadata = {
-  name: DASHBOARD_NAME,
-  description: DASHBOARD_DESCRIPTION,
-  url: DASHBOARD_ORIGIN,
-  icons: [DASHBOARD_ICON_URL],
-}
 
 const connectors = [
   injected({
@@ -33,23 +23,27 @@ const connectors = [
     ? [
         walletConnect({
           projectId,
-          metadata: walletMetadata,
+          metadata: getWalletConnectMetadata(
+            typeof window !== 'undefined' ? window.location.origin : undefined,
+          ),
           showQrModal: true,
         }),
       ]
     : []),
 ]
 
+const transports = Object.fromEntries(
+  chainEntries.map((entry) => {
+    const rpcUrl = getChainRpcUrl(entry.chain.id)
+    const transport: Transport = rpcUrl ? http(rpcUrl) : http()
+    return [entry.chain.id, transport]
+  }),
+) as Record<(typeof supportedChains)[number]['id'], Transport>
+
 export const wagmiConfig = createConfig({
   chains: supportedChains,
   connectors,
-  transports: {
-    [mainnet.id]: http(getRpcUrlForChain(mainnet.id)),
-    [sepolia.id]: http(getRpcUrl()),
-    [polygon.id]: http(getRpcUrlForChain(polygon.id)),
-    [arbitrum.id]: http(getRpcUrlForChain(arbitrum.id)),
-    [base.id]: http(getRpcUrlForChain(base.id)),
-  },
+  transports,
 })
 
 export function isWalletConnectConfigured(): boolean {

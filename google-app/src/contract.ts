@@ -1,6 +1,13 @@
 import { Contract, JsonRpcProvider, formatUnits, isAddress } from 'ethers'
 import metaArtifact from './contracts/META.json'
+import {
+  metaEntitlements,
+  resolveMetaTier,
+  type MetaTier,
+} from '../../shared/meta-entitlements'
 import { getContractAddress, getRpcUrl } from './config'
+
+export type { MetaTier }
 
 export interface TokenSnapshot {
   name: string
@@ -19,6 +26,9 @@ export interface TokenSnapshot {
 export interface WalletSnapshot {
   address: string
   balance: string
+  balanceWei: bigint
+  symbol: string
+  tier: MetaTier
   isExcluded: boolean
 }
 
@@ -83,15 +93,21 @@ export async function fetchWalletSnapshot(
 
   const address = requireAddress(walletAddress, 'Wallet address')
   const contract = createMetaContract(contractAddress, rpcUrl)
-  const [balance, isExcluded] = await Promise.all([
+  const [balance, isExcluded, decimals, symbol] = await Promise.all([
     contract.balanceOf(address),
     contract.isExcluded(address),
+    contract.decimals(),
+    contract.symbol(),
   ])
-  const decimals = await contract.decimals()
+
+  const balanceWei = BigInt(balance)
 
   return {
     address,
     balance: formatUnits(balance, decimals),
+    balanceWei,
+    symbol: symbol || metaEntitlements.symbol,
+    tier: resolveMetaTier(balanceWei),
     isExcluded,
   }
 }

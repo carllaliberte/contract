@@ -12,14 +12,20 @@ import {
   type SendTransactionParameters,
 } from '@wagmi/core'
 import type { Hash, Hex } from 'viem'
-import { fetchWalletSnapshot } from '../contract'
-import { getContractAddress, isContractConfigured } from '../config'
 import { toWalletError } from '../lib/walletErrors'
-import { getRpcUrlForChain } from './chains'
 import { isWalletConnectConfigured, wagmiConfig } from './config'
-import { getChainName, supportedChains, type SupportedChain } from './chains'
+import { supportedChains, type SupportedChain } from './chains'
 
-export { supportedChains, getChainName, isWalletConnectConfigured, wagmiConfig }
+export {
+  chainEntries,
+  defaultChain,
+  getChainName,
+  getChainRpcUrl,
+  isSupportedChainId,
+  supportedChains,
+  WALLETCONNECT_APP_URL,
+} from './chains'
+export { isWalletConnectConfigured, wagmiConfig }
 export { classifyWalletError, WalletError, type ClassifiedWalletError } from '../lib/walletErrors'
 
 export type WalletAccount = GetAccountReturnType
@@ -38,6 +44,10 @@ export function getConnectorLabel(id: WalletConnectorId): string {
 
 function getConnector(id: WalletConnectorId) {
   return getConnectors(wagmiConfig).find((connector) => connector.id === id)
+}
+
+export function hasInjectedWallet(): boolean {
+  return typeof window !== 'undefined' && Boolean(window.ethereum)
 }
 
 async function runWalletOperation<T>(operation: () => Promise<T>, chainId?: number): Promise<T> {
@@ -113,25 +123,4 @@ export async function tryReconnect(): Promise<void> {
 
 export function shortenAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
-}
-
-export async function fetchConnectedMetaBalance(
-  address: string,
-  chainId: number,
-): Promise<string | null> {
-  if (!isContractConfigured()) {
-    return null
-  }
-
-  const rpcUrl = getRpcUrlForChain(chainId)
-  if (!rpcUrl) {
-    return null
-  }
-
-  try {
-    const snapshot = await fetchWalletSnapshot(address, getContractAddress(), rpcUrl)
-    return snapshot.balance
-  } catch {
-    return null
-  }
 }

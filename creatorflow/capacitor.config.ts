@@ -6,10 +6,14 @@ const config: CapacitorConfig = {
   webDir: "dist",
   server: {
     iosScheme: "https",
+    androidScheme: "https",
   },
   ios: {
     contentInset: "automatic",
     scrollEnabled: true,
+  },
+  android: {
+    backgroundColor: "#09090b",
   },
   plugins: {
     StatusBar: {
