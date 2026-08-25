@@ -72,7 +72,11 @@ jobs:
           LEGACY_CERT_PASS: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           LEGACY_PROFILE_B64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
         run: |
-          set_env() { [ -n "${2:-}" ] && echo "$1=$2" >> "$GITHUB_ENV"; }
+          set_env() {
+            if [ -n "${2:-}" ]; then
+              echo "$1=$2" >> "$GITHUB_ENV"
+            fi
+          }
           set_env APPLE_TEAM_ID "${APPLE_TEAM_ID:-$LEGACY_TEAM_ID}"
           set_env APP_STORE_CONNECT_API_KEY_ID "${APP_STORE_CONNECT_API_KEY_ID:-$LEGACY_KEY_ID}"
           set_env APP_STORE_CONNECT_API_ISSUER_ID "${APP_STORE_CONNECT_API_ISSUER_ID:-$LEGACY_ISSUER_ID}"
