@@ -29,6 +29,21 @@ const YOUTUBE_FR_STRUCTURE = [
   "- Longueur adaptée à une vidéo 8–12 min (version condensée OK)",
 ].join("\n");
 
+const TIKTOK_FR_STRUCTURE = [
+  "Produis :",
+  "HOOK (0–3s): une phrase qui stoppe le scroll",
+  "SCÈNE 1 (3–10s): setup",
+  "SCÈNE 2 (10–25s): valeur / twist",
+  "SCÈNE 3 (25–40s): preuve ou démo ultra courte",
+  "CTA (dernières 5s): suivi ou commentaire",
+  "",
+  "Contraintes :",
+  "- Total ~35–50 secondes à l’oral",
+  "- Phrases courtes, oral, punchy",
+  "- 1 idée max, pas de liste longue",
+  "- Pas de « dans cette vidéo on va parler de… »",
+].join("\n");
+
 export type PromptInput = {
   title: string;
   description: string;
@@ -67,12 +82,45 @@ function buildYouTubeFrPrompt(input: PromptInput): { system: string; user: strin
   return { system, user };
 }
 
+function buildTikTokFrPrompt(input: PromptInput): { system: string; user: string } {
+  const system =
+    "Tu es scénariste TikTok / Shorts (FR-CA). Rythme rapide, pattern interrupt. Réponds uniquement avec le script structuré, sans méta-commentaire.";
+
+  if (input.mode === "improve" && input.existingScript?.trim()) {
+    const user = [
+      `Titre: ${input.title}`,
+      `Description: ${input.description}`,
+      "",
+      "Améliore le script actuel en gardant la structure ci-dessous. Renforce le hook scroll-stopper, le rythme et le twist.",
+      "",
+      TIKTOK_FR_STRUCTURE,
+      "",
+      "Script actuel :",
+      input.existingScript,
+    ].join("\n");
+    return { system, user };
+  }
+
+  const user = [
+    `Titre: ${input.title}`,
+    `Description: ${input.description}`,
+    "",
+    TIKTOK_FR_STRUCTURE,
+  ].join("\n");
+
+  return { system, user };
+}
+
 export function buildScriptPrompt(input: PromptInput): {
   system: string;
   user: string;
 } {
   if (input.platform === "youtube" && input.language === "fr") {
     return buildYouTubeFrPrompt(input);
+  }
+
+  if (input.platform === "tiktok" && input.language === "fr") {
+    return buildTikTokFrPrompt(input);
   }
 
   const lang = input.language;
@@ -136,6 +184,20 @@ export function buildMockScript(input: PromptInput): string {
       "PREUVE / EXEMPLE: Un cas réel ou une anecdote courte qui illustre le point central.",
       "",
       "CTA: Si ça t'a aidé, abonne-toi — la semaine prochaine on creuse [prochain sujet].",
+    ].join("\n");
+  }
+
+  if (input.platform === "tiktok" && input.language === "fr") {
+    return [
+      `HOOK (0–3s): ${input.title} — arrête tout.`,
+      "",
+      `SCÈNE 1 (3–10s): ${input.description}`,
+      "",
+      "SCÈNE 2 (10–25s): Le twist — une seule idée, punchy.",
+      "",
+      "SCÈNE 3 (25–40s): Démo ultra courte ou preuve en 10 secondes.",
+      "",
+      "CTA (dernières 5s): Suis pour plus — commente si tu veux la suite.",
     ].join("\n");
   }
 

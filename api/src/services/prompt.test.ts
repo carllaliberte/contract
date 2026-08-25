@@ -38,6 +38,40 @@ describe("buildScriptPrompt", () => {
     expect(user).toContain("HOOK:");
   });
 
+  it("builds TikTok FR-CA structured prompt", () => {
+    const { system, user } = buildScriptPrompt({
+      title: "Hook viral",
+      description: "Une idée simple",
+      platform: "tiktok",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(system).toContain("scénariste TikTok / Shorts (FR-CA)");
+    expect(system).toContain("pattern interrupt");
+    expect(user).toContain("Titre: Hook viral");
+    expect(user).toContain("HOOK (0–3s)");
+    expect(user).toContain("SCÈNE 1 (3–10s)");
+    expect(user).toContain("SCÈNE 2 (10–25s)");
+    expect(user).toContain("SCÈNE 3 (25–40s)");
+    expect(user).toContain("CTA (dernières 5s)");
+    expect(user).toContain("35–50 secondes");
+    expect(user).toContain("dans cette vidéo on va parler de");
+  });
+
+  it("includes existing script for TikTok FR improve mode", () => {
+    const { user } = buildScriptPrompt({
+      title: "Twist",
+      description: "Desc",
+      platform: "tiktok",
+      language: "fr",
+      mode: "improve",
+      existingScript: "Script TikTok existant",
+    });
+    expect(user).toContain("scroll-stopper");
+    expect(user).toContain("Script TikTok existant");
+    expect(user).toContain("SCÈNE 2");
+  });
+
   it("builds an improve prompt for TikTok in English", () => {
     const { user } = buildScriptPrompt({
       title: "Hook",
@@ -66,5 +100,20 @@ describe("buildMockScript", () => {
     expect(script).toContain("POINTS:");
     expect(script).toContain("PREUVE / EXEMPLE:");
     expect(script).toContain("CTA:");
+  });
+
+  it("returns scene-based structure for TikTok FR", () => {
+    const script = buildMockScript({
+      title: "Stop le scroll",
+      description: "Setup rapide",
+      platform: "tiktok",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(script).toMatch(/^HOOK \(0–3s\)/);
+    expect(script).toContain("SCÈNE 1 (3–10s)");
+    expect(script).toContain("SCÈNE 2 (10–25s)");
+    expect(script).toContain("SCÈNE 3 (25–40s)");
+    expect(script).toContain("CTA (dernières 5s)");
   });
 });
