@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Context, Next } from "hono";
 import { env } from "../env.js";
+import { parseMemoryAppleToken } from "../services/appleAuth.js";
 import {
   createSupabaseUsageStore,
   memoryUsageStore,
@@ -65,6 +66,16 @@ export async function authMiddleware(c: Context<AppEnv>, next: Next) {
 
     if (env.memoryStore && token === "demo") {
       userId = `demo:${demoId ?? "local"}`;
+    } else if (env.memoryStore) {
+      const appleUserId = parseMemoryAppleToken(token);
+      if (appleUserId) {
+        userId = appleUserId;
+      } else {
+        return c.json(
+          { error: "UNAUTHORIZED", message: "Invalid memory-store token" },
+          401,
+        );
+      }
     } else {
       const authClient = getSupabaseAuthClient();
       if (!authClient) {

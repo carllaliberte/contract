@@ -67,6 +67,13 @@ function parseUsageRow(row: {
   };
 }
 
+export function setMemoryUserPlan(userId: string, plan: PlanId): void {
+  const key = memoryKey(userId);
+  const row = memory.get(key) ?? emptyRow(plan);
+  row.plan = plan;
+  memory.set(key, row);
+}
+
 export const memoryUsageStore: UsageStore = {
   async getUsage(userId: string): Promise<AiUsageSnapshot> {
     const row = memory.get(memoryKey(userId)) ?? emptyRow();

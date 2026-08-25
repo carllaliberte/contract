@@ -8,6 +8,11 @@ function parseList(raw: string | undefined, fallback: string[]): string[] {
     .filter(Boolean);
 }
 
+const memoryStore =
+  process.env.MEMORY_STORE === "true" ||
+  !process.env.SUPABASE_URL ||
+  !process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 export const env = {
   port: Number(process.env.PORT ?? 3000),
   supabaseUrl: process.env.SUPABASE_URL ?? "",
@@ -20,12 +25,18 @@ export const env = {
   corsOrigins: parseList(process.env.CORS_ORIGINS, [
     "https://carllaliberte.github.io",
     "http://localhost:5173",
+    "capacitor://localhost",
+    "https://localhost",
   ]),
-  memoryStore:
-    process.env.MEMORY_STORE === "true" ||
-    !process.env.SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY,
+  appleClientId:
+    process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",
+  appleBundleId:
+    process.env.APPLE_BUNDLE_ID ?? "com.carllaliberte.creatorflow",
+  memoryStore,
   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
+  mockAppleAuth:
+    process.env.MOCK_APPLE_AUTH === "true" || memoryStore,
+  mockIap: process.env.MOCK_IAP === "true" || memoryStore,
 };
 
 export function currentMonth(): string {

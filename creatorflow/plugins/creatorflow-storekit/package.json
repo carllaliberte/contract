@@ -1,0 +1,29 @@
+{
+  "name": "creatorflow-storekit",
+  "version": "1.0.0",
+  "description": "CreatorFlow StoreKit 2 bridge for iOS in-app purchases",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist/",
+    "ios/",
+    "Package.swift"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/core": "^8.5.0",
+    "typescript": "~5.8.3"
+  },
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  }
+}
