@@ -1,6 +1,8 @@
 import { LanguageSelector } from "../components/LanguageSelector";
 import { Card } from "../components/ui";
 import { useI18n } from "../i18n/context";
+import { META_HOLDER_BONUS_AI } from "../lib/limits";
+import { metaEntitlements } from "../../../shared/meta-entitlements";
 
 export function SettingsPage() {
   const { tr } = useI18n();
@@ -41,6 +43,16 @@ export function SettingsPage() {
           <div className="video-progress-bar" style={{ width: "37%" }} />
         </div>
         <p className="mt-1 text-xs text-muted-foreground">3 / 8 générations utilisées</p>
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold">META (utilitaire)</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Jeton utilitaire pour l&apos;écosystème — pas un produit d&apos;investissement. À terme :
+          wallet connecté + solde ≥ {metaEntitlements.thresholds.holder} META → +{META_HOLDER_BONUS_AI}{" "}
+          générations IA / mois (bonus holder). Pro iOS via achat in-app (IAP).
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
       </Card>
     </div>
   );
