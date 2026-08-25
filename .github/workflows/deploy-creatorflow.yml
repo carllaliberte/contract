@@ -27,11 +27,15 @@ jobs:
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
 
-      - name: Build CreatorFlow
+      - name: Install Playwright Chromium
+        working-directory: creatorflow
+        run: npx playwright install --with-deps chromium
+
+      - name: Build CreatorFlow (SEO prerender)
         working-directory: creatorflow
         run: |
           npm ci
-          npm run build
+          npm run build:seo
 
       - name: Publish to gh-pages/creatorflow (keep META dashboard at root)
         working-directory: creatorflow

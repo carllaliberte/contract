@@ -9,10 +9,12 @@ import {
   Settings,
   Sparkles,
 } from "lucide-react";
+import { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { Logo } from "../components/ui";
 import { useI18n } from "../i18n/context";
+import { applyAppRobots, applyLandingRobots } from "../lib/seo";
 
 const navItems = [
   { to: "/app", icon: LayoutDashboard, label: "nav.dashboard", end: true },
@@ -32,6 +34,11 @@ const statusIcons = {
 export function AppLayout() {
   const { tr } = useI18n();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    applyAppRobots();
+    return () => applyLandingRobots();
+  }, []);
 
   function exitDemo() {
     localStorage.removeItem("cf-demo");

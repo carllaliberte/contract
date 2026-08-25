@@ -10,7 +10,7 @@ import {
   Check,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { Button, Input, Label, Logo } from "../components/ui";
@@ -20,6 +20,7 @@ import {
   exampleGallery,
 } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { applyLandingRobots } from "../lib/seo";
 
 const pipelineSteps = [
   { key: "idea", icon: Lightbulb, color: "text-status-idea", bg: "bg-status-idea/15" },
@@ -66,6 +67,10 @@ export function LandingPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+
+  useEffect(() => {
+    applyLandingRobots();
+  }, []);
 
   function enterDemo() {
     localStorage.setItem("cf-demo", "1");
