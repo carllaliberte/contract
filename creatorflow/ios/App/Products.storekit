@@ -1,0 +1,148 @@
+{
+  "identifier" : "CF_PRO",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0000000000",
+    "_developerTeamID" : "REPLACE_WITH_TEAM_ID",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 778608000,
+    "_locale" : "fr_CA",
+    "_storefront" : "CAN",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "creatorflow_pro",
+      "localizations" : [
+        {
+          "description" : "Débloquez 100 scripts courts et 50 scripts longs par mois.",
+          "displayName" : "CreatorFlow Pro",
+          "locale" : "fr_CA"
+        },
+        {
+          "description" : "Unlock 100 short and 50 long scripts per month.",
+          "displayName" : "CreatorFlow Pro",
+          "locale" : "en_CA"
+        }
+      ],
+      "name" : "CreatorFlow Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "6.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "cf_pro_monthly",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "100 scripts courts + 50 longs / mois, durée longue jusqu'à 30 min.",
+              "displayName" : "CreatorFlow Pro — Mensuel",
+              "locale" : "fr_CA"
+            },
+            {
+              "description" : "100 short + 50 long scripts/month, up to 30 min long format.",
+              "displayName" : "CreatorFlow Pro — Monthly",
+              "locale" : "en_CA"
+            }
+          ],
+          "productID" : "cf_pro_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "CreatorFlow Pro Monthly",
+          "subscriptionGroupID" : "creatorflow_pro",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "59.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "cf_pro_yearly",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Même avantages Pro, facturé annuellement.",
+              "displayName" : "CreatorFlow Pro — Annuel",
+              "locale" : "fr_CA"
+            },
+            {
+              "description" : "Same Pro benefits, billed yearly.",
+              "displayName" : "CreatorFlow Pro — Yearly",
+              "locale" : "en_CA"
+            }
+          ],
+          "productID" : "cf_pro_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "CreatorFlow Pro Yearly",
+          "subscriptionGroupID" : "creatorflow_pro",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
