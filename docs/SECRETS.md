@@ -12,12 +12,14 @@ Le `.gitignore` racine couvre déjà :
 |---------|--------|
 | `.env` | Fichiers d’environnement locaux (tout sous-répertoire) |
 | `.env.local` | Overrides locaux (ex. `creatorflow/.env.local`) |
-| `*.jks` | Keystores Android (signing) |
+| `*.jks`, `**/*.jks` | Keystores Android (signing), tous niveaux |
 | `local.properties` | Chemins SDK Android locaux |
+| `**/keystore.properties` | Config signing Android locale |
 | `*.keystore` | Keystores Android (alias) |
+| `google-app/play-store/secrets-a-remplir.env` | Brouillon local Play (rempli à la main) |
 | `google-app/.env`, `google-app/.env.production` | Env META dashboard |
 
-Exemples versionnés : `creatorflow/.env.example`, `google-app/.env.example`, `api/.env.example`.
+Exemples versionnés : `creatorflow/.env.example`, `google-app/.env.example`, `api/.env.example`, `google-app/play-store/secrets-a-remplir.env.example`.
 
 ## Public vs secret
 
@@ -87,10 +89,32 @@ Aucune clé OpenAI ni Supabase n’est requise en CI. Le build et les tests doiv
 
 ## Play / Android — secrets uniquement
 
-Workflow : `.github/workflows/android-play-release.yml` (inchangé par ce doc)
+Workflow : `.github/workflows/android-play-release.yml`
 
-- Ne jamais commiter `*.jks`, `*.keystore`, `local.properties`, ni JSON compte de service Play.
+- Ne jamais commiter `*.jks`, `**/*.jks`, `*.keystore`, `local.properties`, `**/keystore.properties`, ni JSON compte de service Play.
+- Brouillon local : copier `google-app/play-store/secrets-a-remplir.env.example` → `secrets-a-remplir.env` (gitignored), puis coller les valeurs dans GitHub Secrets via `SECRETS-GITHUB-COPIER.txt`.
 - Scripts d’aide : `scripts/prepare-play-github-secrets.sh`, `google-app/play-store/META_PLAY_CONFIG.example.json`.
+
+### Rotation si `secrets-a-remplir.env` a été rempli
+
+Si ce fichier a un jour contenu de **vrais** mots de passe ou clés (même en local, même brièvement) :
+
+1. **Considérer les valeurs compromises** si le fichier a été copié ailleurs, partagé, ou commité par erreur.
+2. **Rotation immédiate** :
+   - Régénérer ou remplacer le keystore Android (`scripts/generate-android-keystore.sh`) et mettre à jour les secrets `ANDROID_KEYSTORE_*` sur GitHub.
+   - Révoquer et recréer la clé du compte de service Google Play ; mettre à jour `META_PLAY_CONFIG` ou `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
+3. **Vérifier l’historique git** : `git log -- google-app/play-store/secrets-a-remplir.env` — si un commit a exposé le fichier, rotation obligatoire + purge d’historique si le dépôt est public.
+4. Supprimer la copie locale remplie ; ne garder que le `.example` versionné.
+
+## CI anti-fuite (optionnel)
+
+Workflow : `.github/workflows/secret-hygiene.yml` — exécute `scripts/check-no-secrets.sh` sur chaque push/PR :
+
+- Recherche `sk-` (clés OpenAI) et `BEGIN PRIVATE KEY` dans les fichiers suivis
+- Exclut les `.example`, `.md`, `META_PLAY_CONFIG.example.json`, `package-lock.json`
+- Échoue si `secrets-a-remplir.env` est encore tracké par git
+
+Les workflows Play écrivent les secrets dans `GITHUB_ENV` via heredoc (`<<EOF`) et **n’affichent jamais** les mots de passe dans les logs (messages « values not logged » uniquement).
 
 ## Règles
 

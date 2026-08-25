@@ -21,11 +21,14 @@ const playJson =
 
 const envFile = process.env.GITHUB_ENV
 if (envFile) {
-  fs.appendFileSync(envFile, `ANDROID_KEYSTORE_PASSWORD=${c.keystorePassword}\n`)
-  fs.appendFileSync(envFile, `ANDROID_KEY_ALIAS=${c.keyAlias || 'meta-upload'}\n`)
-  fs.appendFileSync(envFile, `ANDROID_KEY_PASSWORD=${c.keyPassword}\n`)
-  fs.appendFileSync(envFile, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=${playJson}\n`)
+  const appendEnv = (name, value) => {
+    fs.appendFileSync(envFile, `${name}<<EOF\n${value}\nEOF\n`)
+  }
+  appendEnv('ANDROID_KEYSTORE_PASSWORD', c.keystorePassword)
+  appendEnv('ANDROID_KEY_ALIAS', c.keyAlias || 'meta-upload')
+  appendEnv('ANDROID_KEY_PASSWORD', c.keyPassword)
+  appendEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON', playJson)
 }
 
 fs.appendFileSync(process.env.GITHUB_OUTPUT, 'loaded=true\n')
-console.log('META_PLAY_CONFIG loaded')
+console.log('META_PLAY_CONFIG loaded (values not logged)')

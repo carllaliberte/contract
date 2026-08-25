@@ -10,7 +10,10 @@ hardhat.config.js
 # Mobile signing & local SDK paths
 *.keystore
 *.jks
+**/*.jks
 local.properties
+**/keystore.properties
+google-app/play-store/secrets-a-remplir.env
 **/DerivedData/
 
 # Android / iOS build outputs (when outside subproject .gitignore)
