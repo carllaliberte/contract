@@ -1,46 +1,197 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Installer META Dashboard (Android)</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        max-width: 42rem;
-        margin: 2rem auto;
-        padding: 0 1rem;
-        line-height: 1.5;
-      }
-      a.button {
-        display: inline-block;
-        background: #1a73e8;
-        color: #fff;
-        padding: 0.75rem 1.25rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-      }
-      code { font-size: 0.9em; }
-    </style>
-  </head>
-  <body>
-    <h1>META Dashboard — Android</h1>
-    <p>Application <code>com.carllaliberte.meta</code> (Capacitor, lecture seule META).</p>
-    <p>
-      <a class="button" href="./meta-dashboard.apk">Télécharger l’APK (3,4 MB)</a>
-    </p>
-    <h2>Installation</h2>
-    <ol>
-      <li>Téléchargez l’APK sur votre téléphone Android.</li>
-      <li>Ouvrez le fichier → autorisez « sources inconnues » si demandé.</li>
-      <li>Installez et ouvrez META Dashboard.</li>
-    </ol>
-    <p>
-      <a href="./">Retour au tableau de bord web</a>
-      ·
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Installer META Dashboard — Android</title>
+  <meta name="description" content="Téléchargez et installez META Dashboard sur Android. Application officielle en lecture seule pour le token META." />
+  <meta name="theme-color" content="#0a0a0c" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --surface: #121216;
+      --surface-2: #1a1a20;
+      --border: rgba(255,255,255,0.08);
+      --text: #f2f2f4;
+      --muted: #9a9aa3;
+      --primary: #4c8dff;
+      --primary-hover: #6ba1ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3rem;
+    }
+    header { text-align: center; margin-bottom: 2rem; }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 1.25rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .logo-mark {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #4c8dff, #2f6fe0);
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 0.95rem; color: #fff;
+    }
+    .logo-text { font-weight: 600; font-size: 1.1rem; letter-spacing: -0.02em; }
+    h1 {
+      font-size: 1.55rem; font-weight: 700;
+      letter-spacing: -0.03em; margin-bottom: 0.4rem;
+    }
+    .subtitle { color: var(--muted); font-size: 0.95rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .qr-section { text-align: center; padding: 1.75rem 1rem; }
+    .qr-box {
+      display: inline-block;
+      background: #fff;
+      padding: 12px;
+      border-radius: 16px;
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+    .qr-box img { display: block; width: 180px; height: 180px; }
+    .qr-hint { font-size: 0.85rem; color: var(--muted); }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      width: 100%;
+      background: var(--primary);
+      color: #071018;
+      font-weight: 600; font-size: 1rem;
+      padding: 0.95rem 1.25rem;
+      border-radius: 14px;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn:active { transform: scale(0.98); }
+    .btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .meta {
+      display: flex; justify-content: center; gap: 1.25rem;
+      margin-top: 0.9rem; font-size: 0.8rem; color: var(--muted);
+    }
+    .steps { list-style: none; counter-reset: step; }
+    .steps li {
+      position: relative;
+      padding: 0.85rem 0 0.85rem 3rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    .steps li:last-child { border-bottom: none; padding-bottom: 0; }
+    .steps li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute; left: 0; top: 0.85rem;
+      width: 1.85rem; height: 1.85rem;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 0.8rem; font-weight: 600; color: var(--primary);
+    }
+    .note {
+      background: rgba(76, 141, 255, 0.08);
+      border: 1px solid rgba(76, 141, 255, 0.2);
+      border-radius: 14px;
+      padding: 1rem 1.15rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .note strong { color: var(--text); font-weight: 600; }
+    footer {
+      text-align: center; margin-top: 2rem;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .package {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      background: var(--surface-2);
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="logo" href="./">
+        <span class="logo-mark">M</span>
+        <span class="logo-text">META Dashboard</span>
+      </a>
+      <h1>Installer sur Android</h1>
+      <p class="subtitle">Application officielle en lecture seule<br>pour le token META</p>
+    </header>
+
+    <div class="card qr-section">
+      <div class="qr-box">
+        <img
+          src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fcarllaliberte.github.io%2Fcontract%2Finstall-android.html&bgcolor=ffffff&color=0a0a0c&margin=8"
+          alt="QR code pour installer META Dashboard"
+          width="180"
+          height="180"
+        />
+      </div>
+      <p class="qr-hint">Scannez avec votre téléphone pour ouvrir cette page</p>
+
+      <a class="btn" href="./meta-dashboard.apk" download="META-Dashboard.apk" style="margin-top: 1.35rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Télécharger l’APK
+      </a>
+      <div class="meta">
+        <span>3,4 MB</span>
+        <span class="package">com.carllaliberte.meta</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <ol class="steps">
+        <li>Téléchargez l’APK en cliquant sur le bouton ci-dessus (ou via le QR).</li>
+        <li>Ouvrez le fichier téléchargé. Android demandera d’autoriser les <strong>sources inconnues</strong> — acceptez.</li>
+        <li>Appuyez sur <strong>Installer</strong>, puis ouvrez META Dashboard.</li>
+      </ol>
+    </div>
+
+    <div class="note">
+      <strong>Note de sécurité.</strong> Cette application est en lecture seule. Elle ne demande aucun compte, ne fait aucune transaction et ne stocke aucune clé privée. Le fichier est signé et hébergé sur GitHub Pages.
+    </div>
+
+    <footer>
+      <a href="./">Tableau de bord web</a>
+      &nbsp;·&nbsp;
       <a href="./privacy.html">Confidentialité</a>
-    </p>
-    <p><small>Google Play (internal) : en attente de publication automatique.</small></p>
-  </body>
+      <br /><br />
+      Google Play (Internal testing) : en attente de compte développeur.
+    </footer>
+  </div>
+</body>
 </html>
