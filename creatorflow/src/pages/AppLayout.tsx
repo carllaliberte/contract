@@ -14,6 +14,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { Logo } from "../components/ui";
 import { useI18n } from "../i18n/context";
+import { useAuth } from "../hooks/useAuth";
 import { applyAppRobots, applyLandingRobots } from "../lib/seo";
 
 const navItems = [
@@ -34,14 +35,15 @@ const statusIcons = {
 export function AppLayout() {
   const { tr } = useI18n();
   const navigate = useNavigate();
+  const { signOut, isAuthenticated } = useAuth();
 
   useEffect(() => {
     applyAppRobots();
     return () => applyLandingRobots();
   }, []);
 
-  function exitDemo() {
-    localStorage.removeItem("cf-demo");
+  async function exitApp() {
+    await signOut();
     navigate("/");
   }
 
@@ -51,13 +53,13 @@ export function AppLayout() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Logo size="sm" />
           <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-            {tr("demo.badge")}
+            {isAuthenticated ? tr("session.badge.apple") : tr("demo.badge")}
           </span>
           <div className="flex items-center gap-2">
             <LanguageSelector />
             <button
               type="button"
-              onClick={exitDemo}
+              onClick={() => void exitApp()}
               className="inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               <LogOut className="size-4" />

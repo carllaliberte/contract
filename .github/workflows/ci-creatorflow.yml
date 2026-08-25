@@ -40,6 +40,17 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Verify iOS ATS (no arbitrary loads)
+        run: |
+          PLIST=ios/App/App/Info.plist
+          if grep -q '<key>NSAllowsArbitraryLoads</key>' "$PLIST"; then
+            if grep -A1 '<key>NSAllowsArbitraryLoads</key>' "$PLIST" | grep -q '<true/>'; then
+              echo "ERROR: NSAllowsArbitraryLoads must not be true in Info.plist"
+              exit 1
+            fi
+          fi
+          echo "ATS check passed"
+
       - name: Unit tests
         run: npm run test
 
@@ -104,6 +115,17 @@ jobs:
 
       - name: Build web and sync iOS
         run: npm ci && npm run build:ios
+
+      - name: Verify iOS ATS (no arbitrary loads)
+        run: |
+          PLIST=ios/App/App/Info.plist
+          if grep -q '<key>NSAllowsArbitraryLoads</key>' "$PLIST"; then
+            if grep -A1 '<key>NSAllowsArbitraryLoads</key>' "$PLIST" | grep -q '<true/>'; then
+              echo "ERROR: NSAllowsArbitraryLoads must not be true in Info.plist"
+              exit 1
+            fi
+          fi
+          echo "ATS check passed"
 
       - name: Build for iOS Simulator
         working-directory: creatorflow/ios/App

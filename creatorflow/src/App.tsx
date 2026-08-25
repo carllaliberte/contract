@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { IdeasProvider } from "./context/IdeasContext";
+import { useAuth } from "./hooks/useAuth";
 import { I18nProvider } from "./i18n/context";
 import { ROUTER_BASENAME } from "./lib/router";
 import { AppLayout } from "./pages/AppLayout";
@@ -19,9 +20,10 @@ const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
 
-function DemoGuard({ children }: { children: React.ReactNode }) {
-  const isDemo = localStorage.getItem("cf-demo") === "1";
-  if (!isDemo) return <Navigate to="/" replace />;
+function SessionGuard({ children }: { children: React.ReactNode }) {
+  const { isAppAllowed, isLoading } = useAuth();
+  if (isLoading) return <AppRouteFallback />;
+  if (!isAppAllowed) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -42,11 +44,11 @@ export default function App() {
           <Route
             path="/app"
             element={
-              <DemoGuard>
+              <SessionGuard>
                 <IdeasProvider>
                   <AppLayout />
                 </IdeasProvider>
-              </DemoGuard>
+              </SessionGuard>
             }
           >
             <Route

@@ -14,7 +14,7 @@ Ce document décrit les forfaits, identifiants StoreKit et quotas applicatifs.
 - **Court** : TikTok, Reels, YouTube Shorts — scripts dynamiques 15–90 s.
 - **Long** : YouTube long format — structure **chapitrée** (hook, chapitres numérotés, récap + CTA). Durées proposées : 8, 12, 20 ou 30 min (selon plan).
 
-Configuration source : `creatorflow/src/lib/plans.ts`, `api/src/limits.ts`, migration `supabase/migrations/20250825120000_script_format_quotas.sql`.
+Configuration source : `shared/plans.ts`, re-exported by `creatorflow/src/lib/plans.ts`, `api/src/limits.ts`, migration `supabase/migrations/20250825120000_script_format_quotas.sql`.
 
 ## Produits App Store (abonnements)
 
@@ -65,7 +65,8 @@ Clés i18n : préfixe `paywall.*`, `plan.*`, `script.format*`, `script.duration*
 
 | Fichier | Rôle |
 |---------|------|
-| `creatorflow/src/lib/plans.ts` | Limites, product IDs, prix affichés |
+| `shared/plans.ts` | Limites, product IDs, prix affichés |
+| `creatorflow/src/lib/plans.ts` | Re-export client |
 | `creatorflow/src/lib/iap.ts` | Stub StoreKit |
 | `creatorflow/src/components/PaywallSheet.tsx` | Paywall + restaurer |
 | `creatorflow/src/components/ScriptGenerateDialog.tsx` | Toggle Short/Long |

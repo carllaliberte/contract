@@ -1,4 +1,6 @@
 import { useCallback, useState } from "react";
+import { exchangeAppleSession } from "../lib/api/auth";
+import { establishAppleSession } from "../lib/auth/session";
 import { isNativeIos } from "../lib/platform";
 
 export interface AppleSignInResult {
@@ -16,19 +18,19 @@ const APPLE_CLIENT_ID = "com.carllaliberte.creatorflow";
 const APPLE_REDIRECT_URI = "https://carllaliberte.github.io/contract/creatorflow/auth/apple";
 
 /**
- * P0 — prépare Sign in with Apple sur iOS natif (Capacitor).
- * L’échange identityToken → session JWT arrive en phase P1 (auth backend).
+ * Sign in with Apple on native iOS.
+ * identityToken is exchanged server-side (stub when backend unavailable).
  */
 export function useAppleSignIn() {
   const available = isNativeIos();
   const [status, setStatus] = useState<AppleSignInStatus>(available ? "idle" : "unavailable");
   const [error, setError] = useState<string | null>(null);
 
-  const signIn = useCallback(async (): Promise<AppleSignInResult | null> => {
+  const signIn = useCallback(async (): Promise<boolean> => {
     if (!available) {
       setError("Sign in with Apple is only available on iOS");
       setStatus("unavailable");
-      return null;
+      return false;
     }
 
     setStatus("loading");
@@ -52,18 +54,19 @@ export function useAppleSignIn() {
         authorizationCode: response.authorizationCode,
       };
 
-      // P1: POST identityToken to backend — P0 stores only a client marker
-      if (payload.user) {
-        localStorage.setItem("cf-apple-user", payload.user);
-      }
+      const session = await exchangeAppleSession(payload);
+      await establishAppleSession({
+        accessToken: session.accessToken,
+        userId: session.userId,
+      });
 
       setStatus("idle");
-      return payload;
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Apple sign-in failed";
       setError(message);
       setStatus("error");
-      return null;
+      return false;
     }
   }, [available]);
 

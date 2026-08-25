@@ -72,6 +72,8 @@ xcodebuild build \
 
 Sign in with Apple : plugin `@capacitor-community/apple-sign-in`, entitlements dans `ios/App/App/App.entitlements`.
 
+Sécurité iOS (ATS, Keychain, auth) : voir [`SECURITY.md`](./SECURITY.md).
+
 ## CI GitHub Actions
 
 Workflow `.github/workflows/ci-creatorflow.yml` :

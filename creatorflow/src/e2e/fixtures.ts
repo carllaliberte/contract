@@ -24,6 +24,7 @@ async function clearCreatorFlowStorage(page: Page) {
     localStorage.removeItem("cf-ideas");
     localStorage.removeItem("cf-ai-usage");
     localStorage.removeItem("cf-locale");
+    sessionStorage.clear();
   });
 }
 
