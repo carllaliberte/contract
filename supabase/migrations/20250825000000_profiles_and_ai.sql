@@ -32,9 +32,9 @@ create policy "Users read own profile"
   for select
   using (auth.uid() = id);
 
-create policy "Users read own ai_usage"
+create policy "own usage"
   on public.ai_usage
-  for select
+  for all
   using (auth.uid() = user_id);
 
 create policy "Users read own ai_generations"
