@@ -85,7 +85,7 @@ export function LandingPage() {
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href="#pipeline" className="transition-colors hover:text-foreground">
-            Pipeline
+            {tr("nav.pipelineSection")}
           </a>
           <a href="#features" className="transition-colors hover:text-foreground">
             {tr("nav.features")}
@@ -111,7 +111,7 @@ export function LandingPage() {
             </div>
 
             <h1 className="text-[2.35rem] font-semibold leading-[1.12] tracking-tight sm:text-5xl sm:leading-[1.1]">
-              {tr("app.tagline")}
+              {tr("app.heroTitle")}
             </h1>
 
             <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
