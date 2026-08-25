@@ -1,6 +1,7 @@
 import './style.css'
 import { fetchTokenSnapshot, fetchWalletSnapshot } from './contract'
 import { getContractAddress, getRpcUrl } from './config'
+import { initPortfolioUi } from './wallet/portfolio-ui'
 import { initWalletUi } from './wallet/ui'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -19,9 +20,14 @@ app.innerHTML = `
   </header>
 
   <section class="panel">
-    <h2>Wallet</h2>
+    <h2>Portefeuille</h2>
     <div id="wallet-bar" class="wallet-bar" aria-live="polite"></div>
     <p id="wallet-status" class="status hidden" aria-live="polite"></p>
+  </section>
+
+  <section class="panel">
+    <h2>Mes actifs</h2>
+    <div id="portfolio-panel" class="portfolio" aria-live="polite"></div>
   </section>
 
   <section class="panel">
@@ -93,6 +99,7 @@ const statusEl = document.querySelector<HTMLParagraphElement>('#status')!
 const walletStatusEl = document.querySelector<HTMLParagraphElement>('#wallet-status')!
 const walletResult = document.querySelector<HTMLDivElement>('#wallet-result')!
 const walletBar = document.querySelector<HTMLDivElement>('#wallet-bar')!
+const portfolioPanel = document.querySelector<HTMLDivElement>('#portfolio-panel')!
 
 rpcInput.value = getRpcUrl()
 contractInput.value = getContractAddress()
@@ -123,6 +130,8 @@ initWalletUi(walletBar, (address) => {
     walletInput.value = address
   }
 })
+
+initPortfolioUi(portfolioPanel, setWalletStatus)
 
 document.querySelector<HTMLFormElement>('#connection-form')!.addEventListener('submit', async (event) => {
   event.preventDefault()

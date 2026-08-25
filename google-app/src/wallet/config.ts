@@ -1,31 +1,40 @@
 import { createConfig, http } from '@wagmi/core'
-import { injected, walletConnect } from '@wagmi/connectors'
+import { coinbaseWallet, injected, walletConnect } from '@wagmi/connectors'
 import { mainnet, sepolia } from '@wagmi/core/chains'
 import { getRpcUrl, getWalletConnectProjectId } from '../config'
 import { supportedChains } from './chains'
 
 const projectId = getWalletConnectProjectId()
 
+const walletConnectMetadata = {
+  name: 'META Token Dashboard',
+  description: 'Tableau de bord en lecture seule pour le contrat ERC-20 META',
+  url: typeof window !== 'undefined' ? window.location.origin : 'https://carllaliberte.github.io/contract/',
+  icons: [
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${import.meta.env.BASE_URL}favicon.svg`
+      : 'https://carllaliberte.github.io/contract/favicon.svg',
+  ],
+}
+
 const connectors = [
+  injected({
+    target: 'metaMask',
+    shimDisconnect: true,
+  }),
+  coinbaseWallet({
+    appName: walletConnectMetadata.name,
+    appLogoUrl: walletConnectMetadata.icons[0],
+  }),
   ...(projectId
     ? [
         walletConnect({
           projectId,
-          metadata: {
-            name: 'META Token Dashboard',
-            description: 'Read-only dashboard for the META ERC-20 contract',
-            url: typeof window !== 'undefined' ? window.location.origin : 'https://carllaliberte.github.io/contract/',
-            icons: [
-              typeof window !== 'undefined'
-                ? `${window.location.origin}${import.meta.env.BASE_URL}favicon.svg`
-                : 'https://carllaliberte.github.io/contract/favicon.svg',
-            ],
-          },
+          metadata: walletConnectMetadata,
           showQrModal: true,
         }),
       ]
     : []),
-  injected({ shimDisconnect: true }),
 ]
 
 export const wagmiConfig = createConfig({

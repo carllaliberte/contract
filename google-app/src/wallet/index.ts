@@ -15,21 +15,34 @@ export { supportedChains, getChainName, isWalletConnectConfigured, wagmiConfig }
 
 export type WalletAccount = GetAccountReturnType
 
-function getConnector(id: 'walletConnect' | 'injected') {
+export type WalletConnectorId = 'metaMask' | 'coinbaseWalletSDK' | 'walletConnect'
+
+export const walletConnectorLabels: Record<WalletConnectorId, string> = {
+  metaMask: 'MetaMask',
+  coinbaseWalletSDK: 'Coinbase Wallet',
+  walletConnect: 'Crypto.com DeFi Wallet',
+}
+
+function getConnector(id: WalletConnectorId) {
   return getConnectors(wagmiConfig).find((connector) => connector.id === id)
 }
 
-export async function connectWallet(): Promise<void> {
-  const walletConnectConnector = getConnector('walletConnect')
-  const injectedConnector = getConnector('injected')
-  const connector = walletConnectConnector ?? injectedConnector
+export function getAvailableConnectors(): WalletConnectorId[] {
+  const ids: WalletConnectorId[] = ['metaMask', 'coinbaseWalletSDK']
+  if (isWalletConnectConfigured()) {
+    ids.push('walletConnect')
+  }
+  return ids
+}
+
+export async function connectWallet(connectorId: WalletConnectorId): Promise<void> {
+  const connector = getConnector(connectorId)
 
   if (!connector) {
-    throw new Error(
-      isWalletConnectConfigured()
-        ? 'No wallet connector available'
-        : 'Set VITE_WALLETCONNECT_PROJECT_ID or use a browser wallet extension',
-    )
+    if (connectorId === 'walletConnect') {
+      throw new Error('WalletConnect nécessite VITE_WALLETCONNECT_PROJECT_ID au build.')
+    }
+    throw new Error('Connecteur de portefeuille indisponible.')
   }
 
   await connect(wagmiConfig, { connector })
@@ -42,7 +55,7 @@ export async function disconnectWallet(): Promise<void> {
 export async function switchWalletChain(chainId: number): Promise<void> {
   const chain = supportedChains.find((entry) => entry.id === chainId)
   if (!chain) {
-    throw new Error(`Unsupported chain: ${chainId}`)
+    throw new Error(`Réseau non pris en charge : ${chainId}`)
   }
 
   await switchChain(wagmiConfig, { chainId: chain.id as SupportedChain['id'] })
