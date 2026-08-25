@@ -1,4 +1,5 @@
 import type { AiUsageSnapshot } from "../types.js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { currentMonth, env } from "../env.js";
 
 export type UsageStore = {
@@ -46,59 +47,38 @@ export const memoryUsageStore: UsageStore = {
   },
 };
 
+function limitForPlan(plan: string): number {
+  return plan === "pro" ? env.monthlyAiLimitPro : env.monthlyAiLimit;
+}
+
 export function createSupabaseUsageStore(
-  supabase: {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (col: string, val: string) => {
-          eq: (col2: string, val2: string) => {
-            maybeSingle: () => Promise<{
-              data: { count: number; limit: number } | null;
-              error: { message: string } | null;
-            }>;
-          };
-        };
-      };
-      upsert: (
-        row: Record<string, unknown>,
-        opts: { onConflict: string },
-      ) => Promise<{ error: { message: string } | null }>;
-      update: (patch: Record<string, unknown>) => {
-        eq: (col: string, val: string) => {
-          eq: (col2: string, val2: string) => {
-            select: (columns: string) => {
-              single: () => Promise<{
-                data: { count: number; limit: number } | null;
-                error: { message: string } | null;
-              }>;
-            };
-          };
-        };
-      };
-    };
-    rpc: (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{
-      data: { count: number; limit: number; remaining: number }[] | null;
-      error: { message: string; code?: string } | null;
-    }>;
-  },
+  supabase: SupabaseClient,
 ): UsageStore {
   return {
     async getUsage(userId: string): Promise<AiUsageSnapshot> {
       const month = currentMonth();
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError) throw new Error(profileError.message);
+
+      const limit = limitForPlan(profile?.plan ?? "free");
+
       const { data, error } = await supabase
         .from("ai_usage")
-        .select("count, limit")
+        .select("count")
         .eq("user_id", userId)
         .eq("month", month)
         .maybeSingle();
 
       if (error) throw new Error(error.message);
 
-      if (!data) return snapshot(0, env.monthlyAiLimit);
-      return snapshot(data.count, data.limit);
+      const count = data?.count ?? 0;
+      return snapshot(count, limit);
     },
 
     async incrementUsage(userId: string): Promise<AiUsageSnapshot> {
@@ -106,7 +86,6 @@ export function createSupabaseUsageStore(
       const { data, error } = await supabase.rpc("increment_ai_usage", {
         p_user_id: userId,
         p_month: month,
-        p_limit: env.monthlyAiLimit,
       });
 
       if (error) {
@@ -119,7 +98,9 @@ export function createSupabaseUsageStore(
         throw new Error(error.message);
       }
 
-      const row = data?.[0];
+      const row = data?.[0] as
+        | { count: number; limit: number; remaining: number }
+        | undefined;
       if (!row) throw new Error("increment_ai_usage returned no row");
       return snapshot(row.count, row.limit);
     },

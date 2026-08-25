@@ -33,13 +33,19 @@ function getSupabaseAuthClient() {
   });
 }
 
-async function resolveUsageStore(): Promise<UsageStore> {
-  if (env.memoryStore) return memoryUsageStore;
+async function resolveUsageStore(userId: string): Promise<UsageStore> {
+  if (userId.startsWith("demo:") || env.memoryStore) {
+    return memoryUsageStore;
+  }
 
   const admin = getSupabaseAdmin();
   if (!admin) return memoryUsageStore;
 
-  return createSupabaseUsageStore(admin as never);
+  return createSupabaseUsageStore(admin);
+}
+
+export function getSupabaseAdminClient() {
+  return getSupabaseAdmin();
 }
 
 export async function authMiddleware(c: Context<AppEnv>, next: Next) {
@@ -91,6 +97,6 @@ export async function authMiddleware(c: Context<AppEnv>, next: Next) {
   }
 
   c.set("userId", userId);
-  c.set("usageStore", await resolveUsageStore());
+  c.set("usageStore", await resolveUsageStore(userId));
   await next();
 }

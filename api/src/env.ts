@@ -14,6 +14,7 @@ export const env = {
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
   monthlyAiLimit: Number(process.env.MONTHLY_AI_LIMIT ?? 8),
+  monthlyAiLimitPro: Number(process.env.MONTHLY_AI_LIMIT_PRO ?? 100),
   corsOrigins: parseList(process.env.CORS_ORIGINS, [
     "https://carllaliberte.github.io",
     "http://localhost:5173",

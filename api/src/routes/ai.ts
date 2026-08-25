@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { AuthVariables } from "../middleware/auth.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, getSupabaseAdminClient } from "../middleware/auth.js";
 import { env } from "../env.js";
+import { logAiGeneration } from "../services/aiGenerations.js";
 import {
   assertCanGenerate,
   type UsageStore,
@@ -128,6 +129,15 @@ export function createAiRoutes() {
           return c.json(limitError(snap), 429);
         }
         throw incrementError;
+      }
+
+      const admin = getSupabaseAdminClient();
+      if (admin) {
+        await logAiGeneration(admin, {
+          userId,
+          ideaId: payload.ideaId,
+          platform: payload.platform,
+        });
       }
 
       // 7. Retourner { script, usage, model }
