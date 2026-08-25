@@ -1,6 +1,7 @@
 import { Play, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
+import { GenerateScriptApiError } from "../lib/api/generateScript";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
@@ -21,8 +22,17 @@ export function ContentsPage() {
     }
     setGeneratingId(idea.id);
     setNotice(null);
-    await generateScript(idea.id);
-    setGeneratingId(null);
+    try {
+      await generateScript(idea.id);
+    } catch (error) {
+      if (error instanceof GenerateScriptApiError && error.code === "LIMIT_REACHED") {
+        setNotice(tr("script.limitReached"));
+      } else if (error instanceof GenerateScriptApiError) {
+        setNotice(error.message);
+      }
+    } finally {
+      setGeneratingId(null);
+    }
   }
 
   return (

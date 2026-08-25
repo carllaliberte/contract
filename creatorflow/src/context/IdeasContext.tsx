@@ -12,7 +12,13 @@ import {
   type Idea,
   type IdeaStatus,
 } from "../data/demo";
-import { canUseAiGeneration, recordAiGeneration } from "../lib/aiUsage";
+import { GenerateScriptApiError, postGenerateScript } from "../lib/api/generateScript";
+import {
+  canUseAiGeneration,
+  recordAiGeneration,
+  syncAiUsage,
+} from "../lib/aiUsage";
+import { generateScriptLocally } from "../lib/generateScriptLocal";
 
 const STORAGE_KEY = "cf-ideas";
 
@@ -49,43 +55,9 @@ function saveIdeas(ideas: Idea[]) {
   }
 }
 
-function buildScript(idea: Idea): string {
-  const title = idea.title;
-  if (idea.platform === "youtube") {
-    return [
-      `HOOK (0-8s)`,
-      `« ${title} — et la plupart des gens se trompent. »`,
-      ``,
-      `POINT 1`,
-      `Explique le problème principal lié à « ${title} ».`,
-      ``,
-      `POINT 2`,
-      `Montre la solution concrète + un exemple visuel.`,
-      ``,
-      `POINT 3`,
-      `Erreur fréquente à éviter + mini démonstration.`,
-      ``,
-      `CTA`,
-      `« Abonne-toi si tu veux la version complète. »`,
-    ].join("\n");
-  }
-  return [
-    `HOOK (0-3s)`,
-    `Texte à l'écran : « ${title} »`,
-    `Voix : accroche ultra courte, ton direct.`,
-    ``,
-    `SCÈNE 1`,
-    `Montre le problème en 1 plan rapide.`,
-    ``,
-    `SCÈNE 2`,
-    `La solution en action (B-roll + voix off).`,
-    ``,
-    `SCÈNE 3`,
-    `Résultat / avant-après.`,
-    ``,
-    `CTA final`,
-    `« Suis pour la suite » + emoji fort.`,
-  ].join("\n");
+function readLanguage(): "fr" | "en" {
+  const saved = localStorage.getItem("cf-locale");
+  return saved === "en" ? "en" : "fr";
 }
 
 export function IdeasProvider({ children }: { children: ReactNode }) {
@@ -127,12 +99,50 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
 
   const generateScript = useCallback(
     async (id: string) => {
-      if (!canUseAiGeneration()) return;
-      await new Promise((r) => setTimeout(r, 480));
-      if (!recordAiGeneration()) return;
       const idea = ideas.find((i) => i.id === id);
       if (!idea) return;
-      const script = buildScript(idea);
+
+      const mode = idea.script ? "improve" : "generate";
+      const language = readLanguage();
+
+      try {
+        const result = await postGenerateScript({
+          ideaId: id,
+          title: idea.title,
+          description: idea.description,
+          platform: idea.platform,
+          language,
+          mode,
+          existingScript: idea.script,
+        });
+        syncAiUsage(result.usage);
+        updateIdea(id, {
+          script: result.script,
+          status: idea.status === "idea" ? "script" : idea.status,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof GenerateScriptApiError) {
+          if (error.usage) syncAiUsage(error.usage);
+          throw error;
+        }
+      }
+
+      if (!canUseAiGeneration()) {
+        throw new GenerateScriptApiError({
+          error: "LIMIT_REACHED",
+          message: "Monthly AI generation limit reached.",
+        });
+      }
+
+      const script = await generateScriptLocally(idea);
+      if (!recordAiGeneration()) {
+        throw new GenerateScriptApiError({
+          error: "LIMIT_REACHED",
+          message: "Monthly AI generation limit reached.",
+        });
+      }
+
       updateIdea(id, {
         script,
         status: idea.status === "idea" ? "script" : idea.status,

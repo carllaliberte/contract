@@ -1,7 +1,7 @@
 const STORAGE_KEY = "cf-ai-usage";
 const MONTHLY_LIMIT = 8;
 
-type UsageRecord = { month: string; count: number };
+type UsageRecord = { month: string; count: number; limit?: number };
 
 function currentMonth(): string {
   const d = new Date();
@@ -25,17 +25,29 @@ function writeUsage(record: UsageRecord) {
 }
 
 export function getAiUsage(): { count: number; limit: number; remaining: number } {
-  const { count } = readUsage();
-  return { count, limit: MONTHLY_LIMIT, remaining: Math.max(0, MONTHLY_LIMIT - count) };
+  const { count, limit } = readUsage();
+  const effectiveLimit = limit ?? MONTHLY_LIMIT;
+  return {
+    count,
+    limit: effectiveLimit,
+    remaining: Math.max(0, effectiveLimit - count),
+  };
 }
 
 export function canUseAiGeneration(): boolean {
-  return readUsage().count < MONTHLY_LIMIT;
+  const { count, limit } = readUsage();
+  const effectiveLimit = limit ?? MONTHLY_LIMIT;
+  return count < effectiveLimit;
 }
 
 export function recordAiGeneration(): boolean {
   const usage = readUsage();
-  if (usage.count >= MONTHLY_LIMIT) return false;
-  writeUsage({ month: currentMonth(), count: usage.count + 1 });
+  const effectiveLimit = usage.limit ?? MONTHLY_LIMIT;
+  if (usage.count >= effectiveLimit) return false;
+  writeUsage({ month: currentMonth(), count: usage.count + 1, limit: usage.limit });
   return true;
+}
+
+export function syncAiUsage(usage: { count: number; limit?: number }) {
+  writeUsage({ month: currentMonth(), count: usage.count, limit: usage.limit });
 }
