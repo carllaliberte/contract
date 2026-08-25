@@ -42,14 +42,14 @@ create policy "Users read own ai_generations"
   for select
   using (auth.uid() = user_id);
 
--- Limites par plan (free = 8, pro = 100)
+-- Limites par plan (free = 8, pro = 200)
 create or replace function public.get_ai_monthly_limit(p_plan text)
 returns integer
 language sql
 immutable
 set search_path = public
 as $$
-  select case when p_plan = 'pro' then 100 else 8 end;
+  select case when p_plan = 'pro' then 200 else 8 end;
 $$;
 
 -- Incrément atomique avec lecture du plan

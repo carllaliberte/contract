@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { LIMITS } from "../limits.js";
 import {
   assertCanGenerate,
   clearMemoryUsageStore,
   memoryUsageStore,
 } from "./aiUsage.js";
-import { env } from "../env.js";
 
 describe("memoryUsageStore", () => {
   beforeEach(() => {
@@ -15,19 +15,19 @@ describe("memoryUsageStore", () => {
     const usage = await memoryUsageStore.getUsage("demo:test");
     expect(usage).toEqual({
       count: 0,
-      limit: env.monthlyAiLimit,
-      remaining: env.monthlyAiLimit,
+      limit: LIMITS.free,
+      remaining: LIMITS.free,
     });
   });
 
   it("increments usage", async () => {
     const first = await memoryUsageStore.incrementUsage("demo:test");
     expect(first.count).toBe(1);
-    expect(first.remaining).toBe(env.monthlyAiLimit - 1);
+    expect(first.remaining).toBe(LIMITS.free - 1);
   });
 
   it("blocks when limit reached", async () => {
-    for (let i = 0; i < env.monthlyAiLimit; i++) {
+    for (let i = 0; i < LIMITS.free; i++) {
       await memoryUsageStore.incrementUsage("demo:full");
     }
     await expect(assertCanGenerate(memoryUsageStore, "demo:full")).rejects.toThrow(

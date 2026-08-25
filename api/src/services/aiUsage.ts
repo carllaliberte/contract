@@ -1,6 +1,7 @@
+import { LIMITS, limitForPlan } from "../limits.js";
 import type { AiUsageSnapshot } from "../types.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { currentMonth, env } from "../env.js";
+import { currentMonth } from "../env.js";
 
 export type UsageStore = {
   getUsage(userId: string): Promise<AiUsageSnapshot>;
@@ -26,13 +27,13 @@ function snapshot(count: number, limit: number): AiUsageSnapshot {
 export const memoryUsageStore: UsageStore = {
   async getUsage(userId: string): Promise<AiUsageSnapshot> {
     const row = memory.get(memoryKey(userId));
-    if (!row) return snapshot(0, env.monthlyAiLimit);
+    if (!row) return snapshot(0, LIMITS.free);
     return snapshot(row.count, row.limit);
   },
 
   async incrementUsage(userId: string): Promise<AiUsageSnapshot> {
     const key = memoryKey(userId);
-    const row = memory.get(key) ?? { count: 0, limit: env.monthlyAiLimit };
+    const row = memory.get(key) ?? { count: 0, limit: LIMITS.free };
     if (row.count >= row.limit) {
       const err = new Error("LIMIT_REACHED");
       (err as Error & { usage?: AiUsageSnapshot }).usage = snapshot(
@@ -46,10 +47,6 @@ export const memoryUsageStore: UsageStore = {
     return snapshot(row.count, row.limit);
   },
 };
-
-function limitForPlan(plan: string): number {
-  return plan === "pro" ? env.monthlyAiLimitPro : env.monthlyAiLimit;
-}
 
 export function createSupabaseUsageStore(
   supabase: SupabaseClient,
