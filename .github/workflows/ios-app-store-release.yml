@@ -1,5 +1,8 @@
 name: iOS App Store release
 
+# "Virtual Mac" — runs on GitHub-hosted macOS runners (macos-latest).
+# Trigger: push tag ios-release/* OR manual dispatch.
+
 on:
   workflow_dispatch:
     inputs:
@@ -10,12 +13,14 @@ on:
   push:
     tags:
       - "ios-release/*"
+      - "deliverable/app-store-*"
 
 permissions:
   contents: read
 
 jobs:
-  archive-upload:
+  macos-virtual:
+    name: macOS virtual builder
     runs-on: macos-latest
     defaults:
       run:
@@ -23,8 +28,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -32,17 +35,33 @@ jobs:
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
 
+      - name: System info (virtual Mac)
+        run: |
+          sw_vers
+          xcodebuild -version
+          echo "Runner: GitHub-hosted macOS (virtual Mac for iOS builds)"
+
       - name: Build web and sync iOS
         env:
-          VITE_API_URL: ${{ inputs.vite_api_url || vars.VITE_API_URL }}
+          VITE_API_URL: ${{ github.event.inputs.vite_api_url || vars.VITE_API_URL || '' }}
         run: |
           npm ci
-          export VITE_API_URL="${VITE_API_URL:-}"
           unset VITE_AUTH_STUB || true
           npm run build:ios
 
+      - name: Simulator build (always — proves Xcode compiles)
+        working-directory: creatorflow/ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Import signing certificate
-        if: env.APPLE_CERTIFICATE_BASE64 != ''
+        if: ${{ secrets.APPLE_CERTIFICATE_BASE64 != '' }}
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -57,7 +76,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
 
       - name: Install provisioning profile
-        if: env.APPLE_PROVISION_PROFILE_BASE64 != ''
+        if: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 != '' }}
         env:
           APPLE_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
         run: |
@@ -67,7 +86,7 @@ jobs:
           cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID.mobileprovision"
 
       - name: Decode App Store Connect API key
-        if: env.APP_STORE_CONNECT_API_KEY_BASE64 != ''
+        if: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 != '' }}
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -75,7 +94,8 @@ jobs:
           mkdir -p ~/.private_keys
           echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
-      - name: Archive and upload
+      - name: Archive + upload to App Store Connect
+        if: ${{ secrets.APPLE_TEAM_ID != '' }}
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -84,10 +104,26 @@ jobs:
           export APP_STORE_CONNECT_API_KEY_PATH="$HOME/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
           bash ../scripts/ios-archive-and-upload.sh
 
+      - name: Secrets missing — instructions
+        if: ${{ secrets.APPLE_TEAM_ID == '' }}
+        run: |
+          echo "::warning::APPLE_TEAM_ID secret not configured — archive/upload skipped."
+          echo "Add GitHub secrets: APPLE_TEAM_ID, APP_STORE_CONNECT_API_KEY_ID,"
+          echo "APP_STORE_CONNECT_API_ISSUER_ID, APP_STORE_CONNECT_API_KEY_BASE64"
+          echo "Then re-run this workflow or push tag ios-release/1.0.0"
+
       - name: Upload IPA artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: creatorflow-ios-ipa
           path: creatorflow/ios/build/export/*.ipa
+          if-no-files-found: ignore
+
+      - name: Upload xcarchive artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creatorflow-ios-xcarchive
+          path: creatorflow/ios/build/CreatorFlow.xcarchive
           if-no-files-found: ignore
