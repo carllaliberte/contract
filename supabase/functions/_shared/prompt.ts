@@ -1,4 +1,47 @@
-import type { Language, Platform, GenerateMode, PromptInput } from "./types.ts";
+import type { Language, Platform, GenerateMode, PromptInput, ScriptFormat } from "./types.ts";
+
+function buildLongChapteredStructure(
+  durationMinutes: number,
+  language: Language,
+): string {
+  if (language === "fr") {
+    return [
+      `Produis un script YouTube long format (~${durationMinutes} min) avec structure chapitrée :`,
+      "CHAPITRE 0 — HOOK (10–15 s): promesse claire, pattern interrupt",
+      "CHAPITRE 1 — CONTEXTE: pourquoi le sujet compte maintenant",
+      "CHAPITRES 2–N — CORPS: sections numérotées (titre de chapitre + contenu oral)",
+      "  - Chaque chapitre = 1 idée actionnable avec transition vers le suivant",
+      "  - Indique [VISUEL] ou plan suggéré quand pertinent",
+      "CHAPITRE FINAL — RÉCAP + CTA: synthèse en 3 points + abonnement + prochain épisode",
+      "",
+      "Contraintes :",
+      `- Durée cible ~${durationMinutes} minutes à l'oral`,
+      "- Style naturel FR-CA, zéro corporate",
+      "- Pas de hashtags dans le script",
+      "- Structure explicite avec titres CHAPITRE",
+    ].join("\n");
+  }
+
+  return [
+    `Produce a long-form YouTube script (~${durationMinutes} min) with a chaptered structure:`,
+    "CHAPTER 0 — HOOK (10–15 s): clear promise, pattern interrupt",
+    "CHAPTER 1 — CONTEXT: why this topic matters now",
+    "CHAPTERS 2–N — BODY: numbered sections (chapter title + spoken content)",
+    "  - Each chapter = one actionable idea with a transition to the next",
+    "  - Add [VISUAL] or shot suggestions when helpful",
+    "FINAL CHAPTER — RECAP + CTA: 3-point summary + subscribe + next episode",
+    "",
+    "Constraints:",
+    `- Target spoken length ~${durationMinutes} minutes`,
+    "- Natural, direct tone",
+    "- No hashtags in the script",
+    "- Explicit CHAPTER headings",
+  ].join("\n");
+}
+
+function resolveFormat(input: { format?: ScriptFormat }): ScriptFormat {
+  return input.format === "long" ? "long" : "short";
+}
 
 const platformGuidance: Record<Platform, { fr: string; en: string }> = {
   youtube: {
@@ -159,6 +202,39 @@ export function buildScriptPrompt(input: PromptInput): {
   system: string;
   user: string;
 } {
+  const format = resolveFormat(input);
+
+  if (format === "long") {
+    const duration = input.durationMinutes ?? 12;
+    const structure = buildLongChapteredStructure(duration, input.language);
+    const systemFr =
+      "Tu es scénariste YouTube long format (FR-CA). Structure chapitrée type documentaire/creator. Réponds uniquement avec le script, sans méta-commentaire.";
+    const systemEn =
+      "You are a long-form YouTube scriptwriter. Chaptered creator/documentary style. Reply with only the script, no meta commentary.";
+    const system = input.language === "fr" ? systemFr : systemEn;
+
+    if (input.mode === "improve" && input.existingScript?.trim()) {
+      return {
+        system,
+        user: buildImproveUserPrompt(
+          input.platform,
+          input.existingScript,
+          input.language,
+        ),
+      };
+    }
+
+    const user = [
+      `Titre: ${input.title}`,
+      `Description: ${input.description}`,
+      `Plateforme: ${input.platform}`,
+      "",
+      structure,
+    ].join("\n");
+
+    return { system, user };
+  }
+
   if (input.platform === "youtube" && input.language === "fr") {
     return buildYouTubeFrPrompt(input);
   }

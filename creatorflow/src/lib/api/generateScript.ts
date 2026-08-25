@@ -56,6 +56,8 @@ export async function postGenerateScript(
       language: payload.language ?? "fr",
       mode: payload.mode ?? "generate",
       existingScript: payload.existingScript,
+      format: payload.format ?? "short",
+      durationMinutes: payload.durationMinutes,
     }),
   });
 

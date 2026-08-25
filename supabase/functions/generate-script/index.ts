@@ -1,11 +1,19 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 import { buildScriptPrompt } from "../_shared/prompt.ts";
-import { LIMITS, limitForPlan } from "../_shared/limits.ts";
+import {
+  limitForFormat,
+  maxLongMinutesForPlan,
+  type PlanId,
+  type ScriptFormat,
+} from "../_shared/limits.ts";
 import {
   isGenerateMode,
   isLanguage,
+  isLongDuration,
   isPlatform,
+  isScriptFormat,
   type AiUsageSnapshot,
+  type FormatQuota,
   type GenerateScriptErrorBody,
   type GenerateScriptRequest,
   type GenerateScriptResponse,
@@ -33,8 +41,34 @@ function currentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function snapshot(count: number, limit: number): AiUsageSnapshot {
+function formatQuota(count: number, plan: PlanId, format: ScriptFormat): FormatQuota {
+  const limit = limitForFormat(plan, format);
   return { count, limit, remaining: Math.max(0, limit - count) };
+}
+
+function parseUsageRow(row: {
+  short_count?: number;
+  long_count?: number;
+  short_limit?: number;
+  long_limit?: number;
+  short_remaining?: number;
+  long_remaining?: number;
+  plan?: string;
+}): AiUsageSnapshot {
+  const plan: PlanId = row.plan === "pro" ? "pro" : "free";
+  return {
+    plan,
+    short: {
+      count: row.short_count ?? 0,
+      limit: row.short_limit ?? limitForFormat(plan, "short"),
+      remaining: row.short_remaining ?? 0,
+    },
+    long: {
+      count: row.long_count ?? 0,
+      limit: row.long_limit ?? limitForFormat(plan, "long"),
+      remaining: row.long_remaining ?? 0,
+    },
+  };
 }
 
 function parseBody(raw: unknown): GenerateScriptRequest | null {
@@ -44,6 +78,14 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
   if (typeof b.title !== "string" || !b.title.trim()) return null;
   if (typeof b.description !== "string") return null;
   if (typeof b.platform !== "string" || !isPlatform(b.platform)) return null;
+
+  const format =
+    typeof b.format === "string" && isScriptFormat(b.format) ? b.format : "short";
+  const durationMinutes =
+    typeof b.durationMinutes === "number" && isLongDuration(b.durationMinutes)
+      ? b.durationMinutes
+      : undefined;
+
   return {
     ideaId: b.ideaId.trim(),
     title: b.title.trim(),
@@ -57,6 +99,8 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
       typeof b.mode === "string" && isGenerateMode(b.mode) ? b.mode : "generate",
     existingScript:
       typeof b.existingScript === "string" ? b.existingScript : undefined,
+    format,
+    durationMinutes,
   };
 }
 
@@ -99,13 +143,17 @@ async function getUsage(
   if (isDemo) {
     const { data, error } = await admin
       .from("demo_ai_usage")
-      .select("count")
+      .select("short_count, long_count")
       .eq("demo_id", userId)
       .eq("month", month)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    const count = data?.count ?? 0;
-    return snapshot(count, LIMITS.free);
+    const plan: PlanId = "free";
+    return {
+      plan,
+      short: formatQuota(data?.short_count ?? 0, plan, "short"),
+      long: formatQuota(data?.long_count ?? 0, plan, "long"),
+    };
   }
 
   const { data: profile, error: profileError } = await admin
@@ -115,61 +163,62 @@ async function getUsage(
     .maybeSingle();
   if (profileError) throw new Error(profileError.message);
 
-  const limit = limitForPlan(profile?.plan ?? "free");
+  const plan: PlanId = profile?.plan === "pro" ? "pro" : "free";
 
   const { data, error } = await admin
     .from("ai_usage")
-    .select("count")
+    .select("short_count, long_count")
     .eq("user_id", userId)
     .eq("month", month)
     .maybeSingle();
   if (error) throw new Error(error.message);
 
-  return snapshot(data?.count ?? 0, limit);
+  return {
+    plan,
+    short: formatQuota(data?.short_count ?? 0, plan, "short"),
+    long: formatQuota(data?.long_count ?? 0, plan, "long"),
+  };
 }
 
 async function incrementUsage(
   admin: SupabaseClient,
   userId: string,
   isDemo: boolean,
+  format: ScriptFormat,
 ): Promise<AiUsageSnapshot> {
   const month = currentMonth();
+  const rpc = isDemo ? "increment_demo_ai_usage" : "increment_ai_usage";
+  const params = isDemo
+    ? { p_demo_id: userId, p_month: month, p_format: format }
+    : { p_user_id: userId, p_month: month, p_format: format };
 
-  if (isDemo) {
-    const { data, error } = await admin.rpc("increment_demo_ai_usage", {
-      p_demo_id: userId,
-      p_month: month,
-    });
-    if (error) {
-      if (error.message.includes("LIMIT_REACHED")) {
-        const usage = await getUsage(admin, userId, true);
-        const err = new Error("LIMIT_REACHED") as Error & { usage?: AiUsageSnapshot };
-        err.usage = usage;
-        throw err;
-      }
-      throw new Error(error.message);
-    }
-    const row = data?.[0] as { count: number; limit: number } | undefined;
-    if (!row) throw new Error("increment_demo_ai_usage returned no row");
-    return snapshot(row.count, row.limit);
-  }
-
-  const { data, error } = await admin.rpc("increment_ai_usage", {
-    p_user_id: userId,
-    p_month: month,
-  });
+  const { data, error } = await admin.rpc(rpc, params);
   if (error) {
     if (error.message.includes("LIMIT_REACHED")) {
-      const usage = await getUsage(admin, userId, false);
+      const usage = await getUsage(admin, userId, isDemo);
       const err = new Error("LIMIT_REACHED") as Error & { usage?: AiUsageSnapshot };
       err.usage = usage;
       throw err;
     }
     throw new Error(error.message);
   }
-  const row = data?.[0] as { count: number; limit: number } | undefined;
-  if (!row) throw new Error("increment_ai_usage returned no row");
-  return snapshot(row.count, row.limit);
+  const row = data?.[0];
+  if (!row) throw new Error(`${rpc} returned no row`);
+  return parseUsageRow(row);
+}
+
+function validateDurationForPlan(
+  plan: PlanId,
+  format: ScriptFormat,
+  durationMinutes?: number,
+): string | null {
+  if (format !== "long") return null;
+  if (!durationMinutes) return "durationMinutes is required for long format";
+  const max = maxLongMinutesForPlan(plan);
+  if (durationMinutes > max) {
+    return `Long scripts are limited to ${max} minutes on the ${plan} plan`;
+  }
+  return null;
 }
 
 async function callOpenAi(
@@ -281,14 +330,25 @@ Deno.serve(async (req) => {
   }
 
   const { userId, isDemo } = authResult;
+  const format: ScriptFormat = payload.format ?? "short";
 
   try {
     const usage = await getUsage(admin, userId, isDemo);
-    if (usage.count >= usage.limit) {
+    const durationError = validateDurationForPlan(
+      usage.plan,
+      format,
+      payload.durationMinutes,
+    );
+    if (durationError) {
+      return json({ error: "BAD_REQUEST", message: durationError }, 400);
+    }
+
+    const quota = format === "long" ? usage.long : usage.short;
+    if (quota.count >= quota.limit) {
       return json(
         {
           error: "LIMIT_REACHED",
-          message: "Monthly AI generation limit reached",
+          message: `Monthly ${format} script limit reached`,
           usage,
         },
         429,
@@ -307,13 +367,15 @@ Deno.serve(async (req) => {
       language: payload.language ?? "fr",
       mode,
       existingScript: payload.existingScript,
+      format,
+      durationMinutes: payload.durationMinutes,
     });
 
     const { script, model } = await callOpenAi(system, user);
 
     let finalUsage: AiUsageSnapshot;
     try {
-      finalUsage = await incrementUsage(admin, userId, isDemo);
+      finalUsage = await incrementUsage(admin, userId, isDemo, format);
     } catch (incrementError) {
       if (
         incrementError instanceof Error &&

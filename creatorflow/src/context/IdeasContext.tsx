@@ -14,6 +14,7 @@ import {
 } from "../data/demo";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 const STORAGE_KEY = "cf-ideas";
 
@@ -23,7 +24,7 @@ type IdeasContextValue = {
   updateIdea: (id: string, patch: Partial<Idea>) => void;
   moveIdea: (id: string, status: IdeaStatus) => void;
   deleteIdea: (id: string) => void;
-  generateScript: (id: string) => Promise<void>;
+  generateScript: (id: string, options?: ScriptGenerateOptions) => Promise<void>;
 };
 
 const IdeasContext = createContext<IdeasContextValue | null>(null);
@@ -93,11 +94,11 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const generateScript = useCallback(
-    async (id: string) => {
+    async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
       const idea = ideas.find((i) => i.id === id);
       if (!idea) return;
 
-      if (!canUseAiGeneration()) {
+      if (!canUseAiGeneration(options.format)) {
         throw new Error("LIMIT_REACHED");
       }
 
@@ -110,6 +111,8 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
         language: readLanguage(),
         mode,
         existingScript: idea.script,
+        format: options.format,
+        durationMinutes: options.durationMinutes,
       });
 
       if (data.usage) syncAiUsage(data.usage);

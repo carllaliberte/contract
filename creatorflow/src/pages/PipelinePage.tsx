@@ -10,10 +10,16 @@ import {
 } from "@dnd-kit/core";
 import { useState } from "react";
 import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
+import { PaywallSheet } from "../components/PaywallSheet";
+import {
+  ScriptGenerateDialog,
+  type ScriptGenerateOptions,
+} from "../components/ScriptGenerateDialog";
 import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea, IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { useAiUsage } from "../hooks/useAiUsage";
 
@@ -63,6 +69,8 @@ export function PipelinePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
+  const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -106,25 +114,42 @@ export function PipelinePage() {
     }
   }
 
-  async function handleGenerateScript(idea: Idea) {
-    if (!canUseAiGeneration()) {
-      setAiNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
+  function openGenerateDialog(idea: Idea) {
+    setAiNotice(null);
+    setDialogIdea(idea);
+  }
+
+  function handlePaywall(format: ScriptFormat) {
+    setDialogIdea(null);
+    setAiNotice(
+      tr(
+        format === "long" ? "script.limitReachedLong" : "script.limitReachedShort",
+        {
+          limit: String(
+            format === "long" ? aiUsage.long.limit : aiUsage.short.limit,
+          ),
+        },
+      ),
+    );
+    setPaywallOpen(true);
+  }
+
+  async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
+    if (!canUseAiGeneration(options.format)) {
+      handlePaywall(options.format);
       return;
     }
     setGeneratingId(idea.id);
     setAiNotice(null);
     try {
-      await generateScript(idea.id);
+      await generateScript(idea.id, options);
+      setDialogIdea(null);
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
-        setAiNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
+        handlePaywall(options.format);
       } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
-        setAiNotice(
-          tr("script.limitReached", {
-            limit: String(error.usage?.limit ?? aiUsage.limit),
-          }),
-        );
+        handlePaywall(options.format);
       } else if (isGenerateScriptError(error)) {
         setAiNotice(error.message);
       } else {
@@ -183,7 +208,7 @@ export function PipelinePage() {
                     <DraggableIdeaCard
                       key={idea.id}
                       idea={idea}
-                      onGenerateScript={handleGenerateScript}
+                      onGenerateScript={openGenerateDialog}
                       isGenerating={generatingId === idea.id}
                     />
                   ))
@@ -199,6 +224,17 @@ export function PipelinePage() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <ScriptGenerateDialog
+        idea={dialogIdea}
+        open={dialogIdea !== null}
+        onClose={() => setDialogIdea(null)}
+        onSubmit={handleGenerateSubmit}
+        isGenerating={generatingId === dialogIdea?.id}
+        onPaywall={handlePaywall}
+      />
+
+      <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 export type Platform = "youtube" | "tiktok" | "reels";
 export type Language = "fr" | "en";
 export type GenerateMode = "generate" | "improve";
+export type ScriptFormat = "short" | "long";
+export type PlanId = "free" | "pro";
 
 export type GenerateScriptRequest = {
   ideaId: string;
@@ -10,12 +12,20 @@ export type GenerateScriptRequest = {
   language?: Language;
   mode?: GenerateMode;
   existingScript?: string;
+  format?: ScriptFormat;
+  durationMinutes?: 8 | 12 | 20 | 30;
 };
 
-export type AiUsageSnapshot = {
+export type FormatQuota = {
   count: number;
   limit: number;
   remaining: number;
+};
+
+export type AiUsageSnapshot = {
+  short: FormatQuota;
+  long: FormatQuota;
+  plan: PlanId;
 };
 
 export type GenerateScriptResponse = {
@@ -46,4 +56,12 @@ export function isLanguage(value: string): value is Language {
 
 export function isGenerateMode(value: string): value is GenerateMode {
   return value === "generate" || value === "improve";
+}
+
+export function isScriptFormat(value: string): value is ScriptFormat {
+  return value === "short" || value === "long";
+}
+
+export function isLongDuration(value: number): value is 8 | 12 | 20 | 30 {
+  return value === 8 || value === 12 || value === 20 || value === 30;
 }

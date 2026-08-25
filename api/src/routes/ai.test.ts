@@ -40,7 +40,7 @@ describe("POST /ai/generate-script", () => {
     expect(res.status).toBe(200);
     const data = (await res.json()) as GenerateScriptResponse;
     expect(data.script).toContain("Mon titre");
-    expect(data.usage.count).toBe(1);
+    expect(data.usage.short.count).toBe(1);
     expect(data.model).toBe("mock");
   });
 
