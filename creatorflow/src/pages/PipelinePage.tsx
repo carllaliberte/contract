@@ -13,7 +13,9 @@ import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
 import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea, IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration, getAiUsage, syncAiUsage } from "../lib/aiUsage";
+import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { AiUsageBadge } from "../components/AiUsageBadge";
+import { useAiUsage } from "../hooks/useAiUsage";
 
 const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
 
@@ -75,7 +77,7 @@ export function PipelinePage() {
   );
 
   const activeIdea = activeId ? ideas.find((i) => i.id === activeId) : null;
-  const aiUsage = getAiUsage();
+  const aiUsage = useAiUsage();
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
@@ -106,7 +108,7 @@ export function PipelinePage() {
 
   async function handleGenerateScript(idea: Idea) {
     if (!canUseAiGeneration()) {
-      setAiNotice(tr("script.limitReached"));
+      setAiNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
       return;
     }
     setGeneratingId(idea.id);
@@ -115,12 +117,18 @@ export function PipelinePage() {
       await generateScript(idea.id);
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
-        setAiNotice(tr("script.limitReached"));
+        setAiNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
       } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
-        setAiNotice(tr("script.limitReached"));
+        setAiNotice(
+          tr("script.limitReached", {
+            limit: String(error.usage?.limit ?? aiUsage.limit),
+          }),
+        );
       } else if (isGenerateScriptError(error)) {
         setAiNotice(error.message);
+      } else {
+        setAiNotice(tr("script.apiError"));
       }
     } finally {
       setGeneratingId(null);
@@ -134,9 +142,10 @@ export function PipelinePage() {
           <h1 className="text-2xl font-semibold tracking-tight">{tr("pipeline.titlePage")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{tr("pipeline.subtitlePage")}</p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {ideas.length} contenus · {tr("script.aiRemaining", { n: String(aiUsage.remaining) })}
-        </p>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">{ideas.length} contenus</p>
+          <AiUsageBadge className="mt-0.5" />
+        </div>
       </header>
 
       {aiNotice && (

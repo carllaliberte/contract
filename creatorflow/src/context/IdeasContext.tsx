@@ -13,11 +13,7 @@ import {
   type IdeaStatus,
 } from "../data/demo";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
-import {
-  canUseAiGeneration,
-  recordAiGeneration,
-  syncAiUsage,
-} from "../lib/aiUsage";
+import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 
 const STORAGE_KEY = "cf-ideas";
 
@@ -117,7 +113,6 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       });
 
       if (data.usage) syncAiUsage(data.usage);
-      recordAiGeneration();
 
       updateIdea(id, {
         script: data.script,
