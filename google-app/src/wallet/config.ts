@@ -1,6 +1,6 @@
 import { createConfig, http, type Transport } from '@wagmi/core'
-import { injected, walletConnect } from '@wagmi/connectors'
-import { getWalletConnectProjectId } from '../config'
+import { coinbaseWallet, injected, walletConnect } from '@wagmi/connectors'
+import { DASHBOARD_ICON_URL, DASHBOARD_NAME, getWalletConnectProjectId } from '../config'
 import {
   chainEntries,
   getChainRpcUrl,
@@ -11,6 +11,14 @@ import {
 const projectId = getWalletConnectProjectId()
 
 const connectors = [
+  injected({
+    target: 'metaMask',
+    shimDisconnect: true,
+  }),
+  coinbaseWallet({
+    appName: DASHBOARD_NAME,
+    appLogoUrl: DASHBOARD_ICON_URL,
+  }),
   ...(projectId
     ? [
         walletConnect({
@@ -22,7 +30,6 @@ const connectors = [
         }),
       ]
     : []),
-  injected({ shimDisconnect: true }),
 ]
 
 const transports = Object.fromEntries(

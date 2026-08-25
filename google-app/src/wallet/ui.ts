@@ -1,3 +1,4 @@
+import { classifyWalletError, WalletError } from '../lib/walletErrors'
 import {
   metaEntitlements,
   tierDescription,
@@ -8,18 +9,21 @@ import {
   connectWallet,
   disconnectWallet,
   getConnectedAccount,
-  hasInjectedWallet,
   isWalletConnectConfigured,
   onAccountChange,
   shortenAddress,
+  signWalletMessage,
   switchWalletChain,
   tryReconnect,
   type WalletAccount,
+  type WalletConnectorId,
 } from './index'
 import { defaultChain, getChainName, isSupportedChainId, supportedChains } from './chains'
 
 const DISCLAIMER =
   'Connexion non-custodiale — nous ne détenons jamais vos clés. / Non-custodial — we never hold your keys.'
+
+const SIGN_MESSAGE = 'META Token Dashboard — Vérification de propriété du portefeuille'
 
 export type WalletEntitlementsView = {
   balance?: string
@@ -29,14 +33,43 @@ export type WalletEntitlementsView = {
   error?: string
 }
 
+type WalletBarCallbacks = {
+  onAddressChange: (address: string | null) => void
+}
+
+type WalletStatusDetail = {
+  message: string
+  type: 'info' | 'error' | 'success'
+  cta?: 'switch_chain' | 'reconnect'
+  chainId?: number
+  connectorId?: WalletConnectorId
+}
+
 let entitlementsView: WalletEntitlementsView | null = null
 let walletBarElement: HTMLElement | null = null
+let walletBarCallbacks: WalletBarCallbacks | null = null
+let lastConnectorId: WalletConnectorId | null = null
 
 export function setWalletEntitlements(view: WalletEntitlementsView | null): void {
   entitlementsView = view
   if (walletBarElement) {
     renderWalletBar(walletBarElement)
   }
+}
+
+function dispatchWalletStatus(detail: WalletStatusDetail) {
+  window.dispatchEvent(new CustomEvent('wallet-status', { detail }))
+}
+
+function presentWalletError(error: unknown, chainId?: number) {
+  const classified = error instanceof WalletError ? error.classified : classifyWalletError(error, chainId)
+  dispatchWalletStatus({
+    message: classified.message,
+    type: 'error',
+    cta: classified.cta,
+    chainId: classified.chainId ?? chainId,
+    connectorId: classified.cta === 'reconnect' ? (lastConnectorId ?? undefined) : undefined,
+  })
 }
 
 function renderDisclaimer(): string {
@@ -47,7 +80,7 @@ function renderEntitlements(): string {
   if (!entitlementsView) return ''
 
   if (entitlementsView.loading) {
-    return `<p class="wallet-bar__meta wallet-bar__meta--loading">Loading META balance…</p>`
+    return `<p class="wallet-bar__meta wallet-bar__meta--loading">Chargement du solde META…</p>`
   }
 
   if (entitlementsView.error) {
@@ -62,7 +95,7 @@ function renderEntitlements(): string {
   return `
     <div class="wallet-bar__meta">
       <p class="wallet-bar__balance">
-        <span class="wallet-bar__balance-label">META balance</span>
+        <span class="wallet-bar__balance-label">Solde META</span>
         <strong>${entitlementsView.balance} ${entitlementsView.symbol ?? metaEntitlements.symbol}</strong>
       </p>
       <p class="wallet-bar__tier-row">
@@ -73,72 +106,68 @@ function renderEntitlements(): string {
   `
 }
 
+async function bindConnectorButton(
+  walletBar: HTMLElement,
+  button: HTMLButtonElement,
+  connectorId: WalletConnectorId,
+) {
+  button.addEventListener('click', async () => {
+    const buttons = walletBar.querySelectorAll<HTMLButtonElement>('[data-connector]')
+    buttons.forEach((entry) => {
+      entry.disabled = true
+    })
+    const originalLabel = button.innerHTML
+    button.textContent = 'Connexion…'
+
+    try {
+      await connectWallet(connectorId)
+      lastConnectorId = connectorId
+      dispatchWalletStatus({ message: 'Portefeuille connecté.', type: 'success' })
+    } catch (error) {
+      presentWalletError(error)
+      renderWalletBar(walletBar)
+      return
+    }
+
+    button.innerHTML = originalLabel
+    renderWalletBar(walletBar)
+  })
+}
+
 function renderDisconnected(walletBar: HTMLElement) {
-  const missingProjectId = !isWalletConnectConfigured()
-  const canUseInjected = hasInjectedWallet()
-  const canConnect = isWalletConnectConfigured() || canUseInjected
+  const walletConnectReady = isWalletConnectConfigured()
 
   walletBar.innerHTML = `
     ${renderDisclaimer()}
     <div class="wallet-bar__body">
       <div class="wallet-bar__info">
-        <p class="wallet-bar__label">Connect a wallet via WalletConnect or browser extension.</p>
+        <p class="wallet-bar__label">Connecter un portefeuille</p>
+        <p class="wallet-bar__hint">MetaMask, Coinbase ou WalletConnect (Crypto.com et portefeuilles mobiles).</p>
         ${
-          missingProjectId
-            ? `<p class="wallet-bar__hint wallet-bar__hint--warn">
-                WalletConnect is disabled: set <code>VITE_WALLETCONNECT_PROJECT_ID</code> at build time.
-                ${canUseInjected ? 'You can still connect with a browser extension below.' : ''}
-              </p>`
-            : ''
+          walletConnectReady
+            ? ''
+            : '<p class="wallet-bar__hint wallet-bar__hint--warning">WalletConnect désactivé : définissez <code>VITE_WALLETCONNECT_PROJECT_ID</code> au build.</p>'
         }
       </div>
-      <div class="wallet-bar__actions">
+      <div class="wallet-bar__actions wallet-connectors">
+        <button type="button" data-connector="metaMask" class="wallet-btn wallet-btn--connector wallet-btn--primary">MetaMask</button>
+        <button type="button" data-connector="coinbaseWalletSDK" class="wallet-btn wallet-btn--connector wallet-btn--secondary">Coinbase</button>
         <button
           type="button"
-          id="wallet-connect"
-          class="wallet-btn wallet-btn--primary"
-          ${canConnect ? '' : 'disabled'}
+          data-connector="walletConnect"
+          class="wallet-btn wallet-btn--connector wallet-btn--ghost"
+          ${walletConnectReady ? '' : 'disabled'}
         >
-          Connect wallet
+          WalletConnect
+          <span class="wallet-btn__sub">Crypto.com &amp; autres</span>
         </button>
-        ${
-          missingProjectId && canUseInjected
-            ? `<button type="button" id="wallet-connect-injected" class="wallet-btn wallet-btn--secondary">
-                Connect browser wallet
-              </button>`
-            : ''
-        }
       </div>
     </div>
   `
 
-  const connectButton = walletBar.querySelector<HTMLButtonElement>('#wallet-connect')
-  connectButton?.addEventListener('click', async () => {
-    if (!connectButton || connectButton.disabled) return
-    connectButton.disabled = true
-    connectButton.textContent = 'Connecting…'
-
-    try {
-      await connectWallet()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect wallet'
-      window.dispatchEvent(new CustomEvent('wallet-status', { detail: { message, type: 'error' } }))
-      renderWalletBar(walletBar)
-    }
-  })
-
-  walletBar.querySelector<HTMLButtonElement>('#wallet-connect-injected')?.addEventListener('click', async () => {
-    const button = walletBar.querySelector<HTMLButtonElement>('#wallet-connect-injected')!
-    button.disabled = true
-    button.textContent = 'Connecting…'
-
-    try {
-      await connectWallet(true)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect wallet'
-      window.dispatchEvent(new CustomEvent('wallet-status', { detail: { message, type: 'error' } }))
-      renderWalletBar(walletBar)
-    }
+  walletBar.querySelectorAll<HTMLButtonElement>('[data-connector]').forEach((button) => {
+    const connectorId = button.dataset.connector as WalletConnectorId
+    void bindConnectorButton(walletBar, button, connectorId)
   })
 }
 
@@ -146,11 +175,11 @@ function renderUnsupportedChainBanner(chainId: number): string {
   return `
     <div class="wallet-bar__unsupported" role="alert">
       <p>
-        <strong>Unsupported network:</strong> ${getChainName(chainId)} (chain ID ${chainId}).
-        Switch to a supported chain to use this dashboard.
+        <strong>Réseau non pris en charge :</strong> ${getChainName(chainId)} (chain ID ${chainId}).
+        Changez de réseau pour utiliser ce tableau de bord.
       </p>
       <button type="button" id="wallet-switch-default" class="wallet-btn wallet-btn--secondary">
-        Switch to ${defaultChain.name}
+        Passer à ${defaultChain.name}
       </button>
     </div>
   `
@@ -167,15 +196,15 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
     ${chainId !== undefined && !onSupportedChain ? renderUnsupportedChainBanner(chainId) : ''}
     <div class="wallet-bar__body">
       <div class="wallet-bar__info">
-        <p class="wallet-bar__label">Connected</p>
+        <p class="wallet-bar__label">Connecté</p>
         <p class="wallet-bar__address mono" title="${address}">${shortenAddress(address)}</p>
         <p class="wallet-bar__chain">${getChainName(displayChainId)}</p>
         ${renderEntitlements()}
       </div>
       <div class="wallet-bar__actions">
         <label class="wallet-chain-select">
-          <span class="sr-only">Switch chain</span>
-          <select id="wallet-chain-select" aria-label="Switch chain">
+          <span class="sr-only">Changer de réseau</span>
+          <select id="wallet-chain-select" aria-label="Changer de réseau">
             ${supportedChains
               .map(
                 (chain) =>
@@ -184,8 +213,9 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
               .join('')}
           </select>
         </label>
-        <button type="button" id="wallet-switch-chain" class="wallet-btn wallet-btn--secondary">Switch chain</button>
-        <button type="button" id="wallet-disconnect" class="wallet-btn wallet-btn--ghost">Disconnect</button>
+        <button type="button" id="wallet-switch-chain" class="wallet-btn wallet-btn--secondary">Changer de réseau</button>
+        <button type="button" id="wallet-sign-message" class="wallet-btn wallet-btn--primary">Signer un message</button>
+        <button type="button" id="wallet-disconnect" class="wallet-btn wallet-btn--ghost">Déconnecter</button>
       </div>
     </div>
   `
@@ -193,17 +223,12 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
   walletBar.querySelector<HTMLButtonElement>('#wallet-switch-default')?.addEventListener('click', async () => {
     try {
       await switchWalletChain(defaultChain.id)
-      window.dispatchEvent(
-        new CustomEvent('wallet-status', {
-          detail: { message: `Switched to ${defaultChain.name}`, type: 'success' },
-        }),
-      )
+      dispatchWalletStatus({ message: `Réseau changé : ${defaultChain.name}.`, type: 'success' })
       window.dispatchEvent(
         new CustomEvent('wallet-chain-changed', { detail: { chainId: defaultChain.id } }),
       )
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to switch chain'
-      window.dispatchEvent(new CustomEvent('wallet-status', { detail: { message, type: 'error' } }))
+      presentWalletError(error, defaultChain.id)
     } finally {
       renderWalletBar(walletBar)
     }
@@ -211,53 +236,63 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
 
   const chainSelect = walletBar.querySelector<HTMLSelectElement>('#wallet-chain-select')!
   const switchButton = walletBar.querySelector<HTMLButtonElement>('#wallet-switch-chain')!
+  const signButton = walletBar.querySelector<HTMLButtonElement>('#wallet-sign-message')!
   const disconnectButton = walletBar.querySelector<HTMLButtonElement>('#wallet-disconnect')!
 
   switchButton.addEventListener('click', async () => {
     const selectedChainId = Number(chainSelect.value)
     if (selectedChainId === chainId) {
-      window.dispatchEvent(
-        new CustomEvent('wallet-status', {
-          detail: { message: `Already on ${getChainName(selectedChainId)}`, type: 'info' },
-        }),
-      )
+      dispatchWalletStatus({ message: `Déjà sur ${getChainName(selectedChainId)}.`, type: 'info' })
       return
     }
 
     switchButton.disabled = true
-    switchButton.textContent = 'Switching…'
+    switchButton.textContent = 'Changement…'
 
     try {
       await switchWalletChain(selectedChainId)
-      window.dispatchEvent(
-        new CustomEvent('wallet-status', {
-          detail: { message: `Switched to ${getChainName(selectedChainId)}`, type: 'success' },
-        }),
-      )
+      dispatchWalletStatus({ message: `Réseau changé : ${getChainName(selectedChainId)}.`, type: 'success' })
       window.dispatchEvent(
         new CustomEvent('wallet-chain-changed', { detail: { chainId: selectedChainId } }),
       )
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to switch chain'
-      window.dispatchEvent(new CustomEvent('wallet-status', { detail: { message, type: 'error' } }))
+      presentWalletError(error, selectedChainId)
     } finally {
       renderWalletBar(walletBar)
     }
   })
 
+  signButton.addEventListener('click', async () => {
+    signButton.disabled = true
+    signButton.textContent = 'Signature…'
+
+    try {
+      const signature = await signWalletMessage(SIGN_MESSAGE)
+      dispatchWalletStatus({
+        message: `Message signé (${signature.slice(0, 10)}…${signature.slice(-8)}).`,
+        type: 'success',
+      })
+    } catch (error) {
+      presentWalletError(error, chainId)
+    } finally {
+      if (document.body.contains(walletBar)) {
+        signButton.disabled = false
+        signButton.textContent = 'Signer un message'
+      }
+    }
+  })
+
   disconnectButton.addEventListener('click', async () => {
     disconnectButton.disabled = true
-    disconnectButton.textContent = 'Disconnecting…'
+    disconnectButton.textContent = 'Déconnexion…'
 
     try {
       await disconnectWallet()
       setWalletEntitlements(null)
-      window.dispatchEvent(
-        new CustomEvent('wallet-status', { detail: { message: 'Wallet disconnected', type: 'info' } }),
-      )
+      dispatchWalletStatus({ message: 'Portefeuille déconnecté.', type: 'info' })
+      walletBarCallbacks?.onAddressChange(null)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to disconnect wallet'
-      window.dispatchEvent(new CustomEvent('wallet-status', { detail: { message, type: 'error' } }))
+      presentWalletError(error, chainId)
     } finally {
       renderWalletBar(walletBar)
     }
@@ -273,12 +308,45 @@ export function renderWalletBar(walletBar: HTMLElement): void {
   }
 }
 
+export async function handleWalletStatusCta(
+  walletBar: HTMLElement,
+  action: 'switch_chain' | 'reconnect',
+  chainId?: number,
+  connectorId?: WalletConnectorId,
+): Promise<void> {
+  if (action === 'switch_chain' && chainId !== undefined) {
+    try {
+      await switchWalletChain(chainId)
+      dispatchWalletStatus({ message: `Réseau changé : ${getChainName(chainId)}.`, type: 'success' })
+      window.dispatchEvent(new CustomEvent('wallet-chain-changed', { detail: { chainId } }))
+    } catch (error) {
+      presentWalletError(error, chainId)
+    } finally {
+      renderWalletBar(walletBar)
+    }
+    return
+  }
+
+  if (action === 'reconnect' && connectorId) {
+    try {
+      await connectWallet(connectorId)
+      lastConnectorId = connectorId
+      dispatchWalletStatus({ message: 'Portefeuille reconnecté.', type: 'success' })
+    } catch (error) {
+      presentWalletError(error, chainId)
+    } finally {
+      renderWalletBar(walletBar)
+    }
+  }
+}
+
 export function initWalletUi(
   walletBar: HTMLElement,
   onAddressChange: (address: string | null) => void,
   onChainChange?: (chainId: number) => void,
 ): void {
   walletBarElement = walletBar
+  walletBarCallbacks = { onAddressChange }
   renderWalletBar(walletBar)
 
   onAccountChange((account) => {
