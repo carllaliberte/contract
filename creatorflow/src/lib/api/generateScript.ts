@@ -1,3 +1,4 @@
+import { peekAuthToken, getAuthToken } from "../auth/session";
 import type {
   GenerateScriptErrorBody,
   GenerateScriptRequest,
@@ -5,7 +6,6 @@ import type {
 } from "./types";
 
 const DEMO_ID_KEY = "cf-demo-id";
-const AUTH_TOKEN_KEY = "cf-auth-token";
 
 /** Endpoint: Edge Function URL or local Hono API via Vite proxy. */
 export function resolveGenerateScriptUrl(): string {
@@ -29,11 +29,11 @@ function getDemoId(): string {
   return id;
 }
 
-function requestHeaders(): Record<string, string> {
+async function requestHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const token = peekAuthToken() ?? (await getAuthToken());
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   } else {
@@ -47,7 +47,7 @@ export async function postGenerateScript(
 ): Promise<GenerateScriptResponse> {
   const res = await fetch(resolveGenerateScriptUrl(), {
     method: "POST",
-    headers: requestHeaders(),
+    headers: await requestHeaders(),
     body: JSON.stringify({
       ideaId: payload.ideaId,
       title: payload.title,

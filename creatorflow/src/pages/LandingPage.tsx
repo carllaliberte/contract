@@ -25,6 +25,7 @@ import {
   exampleGallery,
 } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { useAuth } from "../hooks/useAuth";
 import { applyLandingRobots, setFaqJsonLd } from "../lib/seo";
 
 const faqItems = [
@@ -84,6 +85,7 @@ const heroBullets = [
 export function LandingPage() {
   const { tr, locale } = useI18n();
   const navigate = useNavigate();
+  const { enterDemo } = useAuth();
   const [authTab, setAuthTab] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -99,14 +101,14 @@ export function LandingPage() {
     );
   }, [locale, tr]);
 
-  function enterDemo() {
-    localStorage.setItem("cf-demo", "1");
+  async function handleEnterDemo() {
+    await enterDemo();
     navigate("/app");
   }
 
   function handleAuth(e: React.FormEvent) {
     e.preventDefault();
-    enterDemo();
+    void handleEnterDemo();
   }
 
   return (
@@ -140,7 +142,7 @@ export function LandingPage() {
         </nav>
         <div className="flex items-center gap-2.5">
           <LanguageSelector />
-          <Button variant="outline" className="hidden h-10 sm:inline-flex" onClick={enterDemo}>
+          <Button variant="outline" className="hidden h-10 sm:inline-flex" onClick={() => void handleEnterDemo()}>
             {tr("nav.demo")}
           </Button>
         </div>
@@ -174,7 +176,7 @@ export function LandingPage() {
             </ul>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Button className="h-12 px-6 text-[15px]" onClick={enterDemo}>
+              <Button className="h-12 px-6 text-[15px]" onClick={() => void handleEnterDemo()}>
                 {tr("login.tryDemo")}
                 <ArrowRight className="size-4" />
               </Button>
@@ -213,8 +215,8 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-col gap-2">
-              <AppleSignInButton onSuccess={enterDemo} />
-              <Button variant="outline" type="button" className="h-11" onClick={enterDemo}>
+              <AppleSignInButton onSuccess={() => navigate("/app")} />
+              <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
                 <svg className="size-4" viewBox="0 0 24 24" aria-hidden>
                   <path
                     fill="#4285F4"
@@ -235,13 +237,13 @@ export function LandingPage() {
                 </svg>
                 {tr("login.continueGoogle")}
               </Button>
-              <Button variant="outline" type="button" className="h-11" onClick={enterDemo}>
+              <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
                 <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
                 {tr("login.continueX")}
               </Button>
-              <Button variant="outline" type="button" className="h-11" onClick={enterDemo}>
+              <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
                 <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path
                     fillRule="evenodd"
@@ -301,7 +303,7 @@ export function LandingPage() {
 
             <button
               type="button"
-              onClick={enterDemo}
+              onClick={() => void handleEnterDemo()}
               className="mt-5 w-full text-center text-sm font-semibold text-primary transition-colors hover:text-primary/80"
             >
               {tr("login.tryDemo")} →
@@ -511,7 +513,7 @@ export function LandingPage() {
             <p className="mt-4 text-muted-foreground sm:text-lg">
               {tr("cta.subtitle")}
             </p>
-            <Button className="mt-8 h-12 px-8 text-[15px]" onClick={enterDemo}>
+            <Button className="mt-8 h-12 px-8 text-[15px]" onClick={() => void handleEnterDemo()}>
               {tr("login.tryDemo")}
               <ArrowRight className="size-4" />
             </Button>

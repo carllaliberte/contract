@@ -14,8 +14,8 @@ export function AppleSignInButton({ onSuccess, className }: AppleSignInButtonPro
   if (!available) return null;
 
   async function handleClick() {
-    const result = await signIn();
-    if (result) onSuccess?.();
+    const ok = await signIn();
+    if (ok) onSuccess?.();
   }
 
   return (

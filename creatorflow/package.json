@@ -23,6 +23,7 @@
     "ci": "npm run typecheck && npm run test && npm run build && npm run test:e2e"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^7.1.6",
     "@capacitor-community/apple-sign-in": "^7.1.0",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
