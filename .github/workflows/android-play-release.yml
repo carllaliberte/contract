@@ -96,10 +96,17 @@ jobs:
       - name: Check Play upload credentials
         id: play_upload
         run: |
-          if [ -f google-app/android/release.keystore ] && [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+          HAS_KEYSTORE=false
+          HAS_PLAY_JSON=false
+          if [ -f google-app/android/release.keystore ]; then HAS_KEYSTORE=true; fi
+          if [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then HAS_PLAY_JSON=true; fi
+          echo "keystore=$HAS_KEYSTORE" >> "$GITHUB_OUTPUT"
+          echo "play_json=$HAS_PLAY_JSON" >> "$GITHUB_OUTPUT"
+          if [ "$HAS_KEYSTORE" = true ] && [ "$HAS_PLAY_JSON" = true ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Play upload skipped — add one secret META_PLAY_CONFIG"
+            echo "Play upload skipped — add repository secret META_PLAY_CONFIG (Actions → Repository secrets, not Codespaces)"
+            echo "https://github.com/${{ github.repository }}/settings/secrets/actions"
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
