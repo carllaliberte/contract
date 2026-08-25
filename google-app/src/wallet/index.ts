@@ -4,61 +4,105 @@ import {
   getAccount,
   getConnectors,
   reconnect,
+  sendTransaction,
+  signMessage,
   switchChain,
   watchAccount,
   type GetAccountReturnType,
+  type SendTransactionParameters,
 } from '@wagmi/core'
+import type { Hash, Hex } from 'viem'
+import { toWalletError } from '../lib/walletErrors'
 import { isWalletConnectConfigured, wagmiConfig } from './config'
-import { getChainName, supportedChains, type SupportedChain } from './chains'
+import { supportedChains, type SupportedChain } from './chains'
 
-export { supportedChains, getChainName, isWalletConnectConfigured, wagmiConfig }
+export {
+  chainEntries,
+  defaultChain,
+  getChainName,
+  getChainRpcUrl,
+  isSupportedChainId,
+  supportedChains,
+  WALLETCONNECT_APP_URL,
+} from './chains'
+export { isWalletConnectConfigured, wagmiConfig }
+export { classifyWalletError, WalletError, type ClassifiedWalletError } from '../lib/walletErrors'
 
 export type WalletAccount = GetAccountReturnType
 
 export type WalletConnectorId = 'metaMask' | 'coinbaseWalletSDK' | 'walletConnect'
 
-export const walletConnectorLabels: Record<WalletConnectorId, string> = {
+const connectorLabels: Record<WalletConnectorId, string> = {
   metaMask: 'MetaMask',
-  coinbaseWalletSDK: 'Coinbase Wallet',
-  walletConnect: 'Crypto.com DeFi Wallet',
+  coinbaseWalletSDK: 'Coinbase',
+  walletConnect: 'WalletConnect',
+}
+
+export function getConnectorLabel(id: WalletConnectorId): string {
+  return connectorLabels[id]
 }
 
 function getConnector(id: WalletConnectorId) {
   return getConnectors(wagmiConfig).find((connector) => connector.id === id)
 }
 
-export function getAvailableConnectors(): WalletConnectorId[] {
-  const ids: WalletConnectorId[] = ['metaMask', 'coinbaseWalletSDK']
-  if (isWalletConnectConfigured()) {
-    ids.push('walletConnect')
+export function hasInjectedWallet(): boolean {
+  return typeof window !== 'undefined' && Boolean(window.ethereum)
+}
+
+async function runWalletOperation<T>(operation: () => Promise<T>, chainId?: number): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    throw toWalletError(error, chainId)
   }
-  return ids
 }
 
 export async function connectWallet(connectorId: WalletConnectorId): Promise<void> {
-  const connector = getConnector(connectorId)
-
-  if (!connector) {
-    if (connectorId === 'walletConnect') {
-      throw new Error('WalletConnect nécessite VITE_WALLETCONNECT_PROJECT_ID au build.')
-    }
-    throw new Error('Connecteur de portefeuille indisponible.')
+  if (connectorId === 'walletConnect' && !isWalletConnectConfigured()) {
+    throw toWalletError(new Error('Set VITE_WALLETCONNECT_PROJECT_ID at build time to use WalletConnect'))
   }
 
-  await connect(wagmiConfig, { connector })
+  const connector = getConnector(connectorId)
+  if (!connector) {
+    throw toWalletError(new Error(`${getConnectorLabel(connectorId)} connector is not available`))
+  }
+
+  await runWalletOperation(() => connect(wagmiConfig, { connector }))
 }
 
 export async function disconnectWallet(): Promise<void> {
-  await disconnect(wagmiConfig)
+  await runWalletOperation(() => disconnect(wagmiConfig))
 }
 
 export async function switchWalletChain(chainId: number): Promise<void> {
   const chain = supportedChains.find((entry) => entry.id === chainId)
   if (!chain) {
-    throw new Error(`Réseau non pris en charge : ${chainId}`)
+    throw toWalletError(new Error(`Unsupported chain: ${chainId}`), chainId)
   }
 
-  await switchChain(wagmiConfig, { chainId: chain.id as SupportedChain['id'] })
+  await runWalletOperation(
+    () => switchChain(wagmiConfig, { chainId: chain.id as SupportedChain['id'] }),
+    chainId,
+  )
+}
+
+export async function signWalletMessage(message: string): Promise<Hex> {
+  const account = getAccount(wagmiConfig)
+  return runWalletOperation(
+    () => signMessage(wagmiConfig, { message }),
+    account.chainId,
+  )
+}
+
+export async function sendWalletTransaction(
+  request: SendTransactionParameters<typeof wagmiConfig>,
+): Promise<Hash> {
+  const account = getAccount(wagmiConfig)
+  return runWalletOperation(
+    () => sendTransaction(wagmiConfig, request),
+    account.chainId ?? ('chainId' in request ? Number(request.chainId) : undefined),
+  )
 }
 
 export function getConnectedAccount(): WalletAccount {
@@ -70,7 +114,11 @@ export function onAccountChange(callback: (account: WalletAccount) => void): () 
 }
 
 export async function tryReconnect(): Promise<void> {
-  await reconnect(wagmiConfig)
+  try {
+    await reconnect(wagmiConfig)
+  } catch {
+    // Silent on startup — user can reconnect manually.
+  }
 }
 
 export function shortenAddress(address: string): string {

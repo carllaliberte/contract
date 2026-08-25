@@ -1,8 +1,11 @@
 import './style.css'
 import { fetchTokenSnapshot, fetchWalletSnapshot } from './contract'
-import { getContractAddress, getRpcUrl } from './config'
+import { getContractAddress, getMetaChainId, getRpcUrl } from './config'
+import { metaEntitlements, tierLabel } from '../../shared/meta-entitlements'
+import { getChainName, getChainRpcUrl, isSupportedChainId } from './wallet/chains'
+import { getConnectedAccount } from './wallet'
 import { initPortfolioUi } from './wallet/portfolio-ui'
-import { initWalletUi } from './wallet/ui'
+import { initWalletUi, setWalletEntitlements, handleWalletStatusCta } from './wallet/ui'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -12,17 +15,32 @@ app.innerHTML = `
       <p class="eyebrow">Google App · GitHub Contract</p>
       <h1>META Token Dashboard</h1>
       <p class="subtitle">
-        Read-only dashboard for the <code>META</code> ERC-20 contract from
+        Read-only dashboard for the <code>META</code> utility token from
         <a href="https://github.com/carllaliberte/contract" target="_blank" rel="noreferrer">carllaliberte/contract</a>.
-        Deploy this app to Firebase Hosting or sync data into Google Sheets with Apps Script.
+        Connect a wallet to view your on-chain balance and access tier.
       </p>
     </div>
   </header>
 
+  <section class="panel panel--notice" aria-labelledby="utility-notice-title">
+    <h2 id="utility-notice-title">Utility token notice</h2>
+    <p class="utility-notice__en">${metaEntitlements.disclaimer.en}</p>
+    <p class="utility-notice__fr">${metaEntitlements.disclaimer.fr}</p>
+    <p class="utility-notice__thresholds">
+      Holder tiers (config): <strong>Holder</strong> ≥ ${metaEntitlements.thresholds.holder} ${metaEntitlements.symbol},
+      <strong>Pro (on-chain)</strong> ≥ ${metaEntitlements.thresholds.proOnchain} ${metaEntitlements.symbol}
+      on chain ID ${metaEntitlements.chainId}.
+    </p>
+  </section>
+
   <section class="panel">
-    <h2>Portefeuille</h2>
+    <h2>Wallet</h2>
+    <p class="panel-lead">Multi-chain EVM connection via WalletConnect (non-custodial).</p>
     <div id="wallet-bar" class="wallet-bar" aria-live="polite"></div>
-    <p id="wallet-status" class="status hidden" aria-live="polite"></p>
+    <div id="wallet-status" class="status hidden" aria-live="polite">
+      <p id="wallet-status-message" class="wallet-status__message"></p>
+      <div id="wallet-status-actions" class="wallet-status__actions hidden"></div>
+    </div>
   </section>
 
   <section class="panel">
@@ -77,6 +95,7 @@ app.innerHTML = `
     <div id="wallet-result" class="wallet-result hidden">
       <div class="metric"><span>Address</span><strong id="wallet-address-result" class="mono">—</strong></div>
       <div class="metric"><span>Balance</span><strong id="wallet-balance">—</strong></div>
+      <div class="metric"><span>Access tier</span><strong id="wallet-tier">—</strong></div>
       <div class="metric"><span>Excluded from reflections</span><strong id="wallet-excluded">—</strong></div>
     </div>
   </section>
@@ -96,7 +115,9 @@ const rpcInput = document.querySelector<HTMLInputElement>('#rpc-url')!
 const contractInput = document.querySelector<HTMLInputElement>('#contract-address')!
 const walletInput = document.querySelector<HTMLInputElement>('#wallet-address')!
 const statusEl = document.querySelector<HTMLParagraphElement>('#status')!
-const walletStatusEl = document.querySelector<HTMLParagraphElement>('#wallet-status')!
+const walletStatusEl = document.querySelector<HTMLDivElement>('#wallet-status')!
+const walletStatusMessageEl = document.querySelector<HTMLParagraphElement>('#wallet-status-message')!
+const walletStatusActionsEl = document.querySelector<HTMLDivElement>('#wallet-status-actions')!
 const walletResult = document.querySelector<HTMLDivElement>('#wallet-result')!
 const walletBar = document.querySelector<HTMLDivElement>('#wallet-bar')!
 const portfolioPanel = document.querySelector<HTMLDivElement>('#portfolio-panel')!
@@ -109,10 +130,43 @@ function setStatus(message: string, type: 'info' | 'error' | 'success' = 'info')
   statusEl.dataset.type = type
 }
 
-function setWalletStatus(message: string, type: 'info' | 'error' | 'success' = 'info') {
-  walletStatusEl.textContent = message
+function setWalletStatus(
+  message: string,
+  type: 'info' | 'error' | 'success' = 'info',
+  cta?: 'switch_chain' | 'reconnect',
+  chainId?: number,
+  connectorId?: 'metaMask' | 'coinbaseWalletSDK' | 'walletConnect',
+) {
+  walletStatusMessageEl.textContent = message
   walletStatusEl.dataset.type = type
   walletStatusEl.classList.remove('hidden')
+  walletStatusActionsEl.innerHTML = ''
+  walletStatusActionsEl.classList.add('hidden')
+
+  if (cta === 'switch_chain' && chainId !== undefined) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'wallet-btn wallet-btn--secondary wallet-status__cta'
+    button.textContent = 'Changer de réseau'
+    button.addEventListener('click', () => {
+      void handleWalletStatusCta(walletBar, 'switch_chain', chainId)
+    })
+    walletStatusActionsEl.append(button)
+    walletStatusActionsEl.classList.remove('hidden')
+    return
+  }
+
+  if (cta === 'reconnect' && connectorId) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'wallet-btn wallet-btn--primary wallet-status__cta'
+    button.textContent = 'Reconnecter le portefeuille'
+    button.addEventListener('click', () => {
+      void handleWalletStatusCta(walletBar, 'reconnect', chainId, connectorId)
+    })
+    walletStatusActionsEl.append(button)
+    walletStatusActionsEl.classList.remove('hidden')
+  }
 }
 
 function setText(id: string, value: string) {
@@ -120,18 +174,96 @@ function setText(id: string, value: string) {
   if (element) element.textContent = value
 }
 
-window.addEventListener('wallet-status', (event) => {
-  const detail = (event as CustomEvent<{ message: string; type: 'info' | 'error' | 'success' }>).detail
-  setWalletStatus(detail.message, detail.type)
-})
+function applyWalletChain(chainId: number) {
+  const rpcUrl = getChainRpcUrl(chainId)
+  if (rpcUrl) {
+    rpcInput.value = rpcUrl
+    setWalletStatus(`RPC URL set for ${getChainName(chainId)}`, 'info')
+  }
+}
 
-initWalletUi(walletBar, (address) => {
+async function refreshConnectedEntitlements(address: string, chainId: number) {
+  const metaChainId = getMetaChainId()
+
+  if (chainId !== metaChainId) {
+    setWalletEntitlements({
+      loading: false,
+      error: `Switch to ${getChainName(metaChainId)} (chain ${metaChainId}) to read META entitlements.`,
+    })
+    return
+  }
+
+  const rpcUrl = getChainRpcUrl(chainId) ?? getRpcUrl()
+  setWalletEntitlements({ loading: true })
+
+  try {
+    const snapshot = await fetchWalletSnapshot(address, contractInput.value.trim(), rpcUrl)
+    setWalletEntitlements({
+      loading: false,
+      balance: snapshot.balance,
+      symbol: snapshot.symbol,
+      tier: snapshot.tier,
+    })
+    walletResult.classList.remove('hidden')
+    setText('wallet-address-result', snapshot.address)
+    setText('wallet-balance', `${snapshot.balance} ${snapshot.symbol}`)
+    setText('wallet-tier', tierLabel(snapshot.tier))
+    setText('wallet-excluded', snapshot.isExcluded ? 'Yes' : 'No')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to load META balance'
+    setWalletEntitlements({ loading: false, error: message })
+  }
+}
+
+function handleWalletSession(address: string | null, chainId?: number) {
   if (address) {
     walletInput.value = address
+    if (chainId !== undefined && isSupportedChainId(chainId)) {
+      void refreshConnectedEntitlements(address, chainId)
+    }
+  } else {
+    setWalletEntitlements(null)
+  }
+}
+
+window.addEventListener('wallet-status', (event) => {
+  const detail = (
+    event as CustomEvent<{
+      message: string
+      type: 'info' | 'error' | 'success'
+      cta?: 'switch_chain' | 'reconnect'
+      chainId?: number
+      connectorId?: 'metaMask' | 'coinbaseWalletSDK' | 'walletConnect'
+    }>
+  ).detail
+  setWalletStatus(detail.message, detail.type, detail.cta, detail.chainId, detail.connectorId)
+})
+
+window.addEventListener('wallet-chain-changed', (event) => {
+  const { chainId } = (event as CustomEvent<{ chainId: number }>).detail
+  applyWalletChain(chainId)
+  const account = getConnectedAccount()
+  if (account.address) {
+    void refreshConnectedEntitlements(account.address, chainId)
   }
 })
 
-initPortfolioUi(portfolioPanel, setWalletStatus)
+initWalletUi(
+  walletBar,
+  (address) => {
+    const account = getConnectedAccount()
+    handleWalletSession(address, account.chainId)
+  },
+  (chainId) => {
+    applyWalletChain(chainId)
+    const account = getConnectedAccount()
+    if (account.address) {
+      void refreshConnectedEntitlements(account.address, chainId)
+    }
+  },
+)
+
+initPortfolioUi(portfolioPanel, (message, type) => setWalletStatus(message, type))
 
 document.querySelector<HTMLFormElement>('#connection-form')!.addEventListener('submit', async (event) => {
   event.preventDefault()
@@ -167,7 +299,8 @@ document.querySelector<HTMLFormElement>('#wallet-form')!.addEventListener('submi
     )
     walletResult.classList.remove('hidden')
     setText('wallet-address-result', snapshot.address)
-    setText('wallet-balance', snapshot.balance)
+    setText('wallet-balance', `${snapshot.balance} ${snapshot.symbol}`)
+    setText('wallet-tier', tierLabel(snapshot.tier))
     setText('wallet-excluded', snapshot.isExcluded ? 'Yes' : 'No')
     setStatus(`Balance loaded for ${snapshot.address}`, 'success')
   } catch (error) {

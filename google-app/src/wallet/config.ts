@@ -1,21 +1,14 @@
-import { createConfig, http } from '@wagmi/core'
+import { createConfig, http, type Transport } from '@wagmi/core'
 import { coinbaseWallet, injected, walletConnect } from '@wagmi/connectors'
-import { mainnet, sepolia } from '@wagmi/core/chains'
-import { getRpcUrl, getWalletConnectProjectId } from '../config'
-import { supportedChains } from './chains'
+import { DASHBOARD_ICON_URL, DASHBOARD_NAME, getWalletConnectProjectId } from '../config'
+import {
+  chainEntries,
+  getChainRpcUrl,
+  getWalletConnectMetadata,
+  supportedChains,
+} from './chains'
 
 const projectId = getWalletConnectProjectId()
-
-const walletConnectMetadata = {
-  name: 'META Token Dashboard',
-  description: 'Tableau de bord en lecture seule pour le contrat ERC-20 META',
-  url: typeof window !== 'undefined' ? window.location.origin : 'https://carllaliberte.github.io/contract/',
-  icons: [
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${import.meta.env.BASE_URL}favicon.svg`
-      : 'https://carllaliberte.github.io/contract/favicon.svg',
-  ],
-}
 
 const connectors = [
   injected({
@@ -23,27 +16,34 @@ const connectors = [
     shimDisconnect: true,
   }),
   coinbaseWallet({
-    appName: walletConnectMetadata.name,
-    appLogoUrl: walletConnectMetadata.icons[0],
+    appName: DASHBOARD_NAME,
+    appLogoUrl: DASHBOARD_ICON_URL,
   }),
   ...(projectId
     ? [
         walletConnect({
           projectId,
-          metadata: walletConnectMetadata,
+          metadata: getWalletConnectMetadata(
+            typeof window !== 'undefined' ? window.location.origin : undefined,
+          ),
           showQrModal: true,
         }),
       ]
     : []),
 ]
 
+const transports = Object.fromEntries(
+  chainEntries.map((entry) => {
+    const rpcUrl = getChainRpcUrl(entry.chain.id)
+    const transport: Transport = rpcUrl ? http(rpcUrl) : http()
+    return [entry.chain.id, transport]
+  }),
+) as Record<(typeof supportedChains)[number]['id'], Transport>
+
 export const wagmiConfig = createConfig({
   chains: supportedChains,
   connectors,
-  transports: {
-    [sepolia.id]: http(getRpcUrl()),
-    [mainnet.id]: http(),
-  },
+  transports,
 })
 
 export function isWalletConnectConfigured(): boolean {

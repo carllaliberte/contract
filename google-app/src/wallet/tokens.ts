@@ -1,6 +1,6 @@
 import { isAddress } from 'viem'
-import { mainnet, sepolia } from 'viem/chains'
-import { getContractAddress } from '../config'
+import { arbitrum, base, mainnet, polygon, sepolia } from 'viem/chains'
+import { getContractAddress, getMetaChainId } from '../config'
 
 export interface TokenInfo {
   address: `0x${string}`
@@ -63,6 +63,59 @@ const SEPOLIA_TOKENS: TokenInfo[] = [
   },
 ]
 
+const POLYGON_TOKENS: TokenInfo[] = [
+  {
+    address: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+    symbol: 'WMATIC',
+    name: 'Wrapped Matic',
+    decimals: 18,
+  },
+  {
+    address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+  },
+]
+
+const ARBITRUM_TOKENS: TokenInfo[] = [
+  {
+    address: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+    symbol: 'WETH',
+    name: 'Wrapped Ether',
+    decimals: 18,
+  },
+  {
+    address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+  },
+]
+
+const BASE_TOKENS: TokenInfo[] = [
+  {
+    address: '0x4200000000000000000000000000000000000006',
+    symbol: 'WETH',
+    name: 'Wrapped Ether',
+    decimals: 18,
+  },
+  {
+    address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+  },
+]
+
+const TOKENS_BY_CHAIN: Partial<Record<number, TokenInfo[]>> = {
+  [mainnet.id]: MAINNET_TOKENS,
+  [sepolia.id]: SEPOLIA_TOKENS,
+  [polygon.id]: POLYGON_TOKENS,
+  [arbitrum.id]: ARBITRUM_TOKENS,
+  [base.id]: BASE_TOKENS,
+}
+
 function dedupeTokens(tokens: TokenInfo[]): TokenInfo[] {
   const seen = new Set<string>()
   return tokens.filter((token) => {
@@ -73,9 +126,12 @@ function dedupeTokens(tokens: TokenInfo[]): TokenInfo[] {
   })
 }
 
-export function getMetaTokenInfo(): TokenInfo | undefined {
+export function getMetaTokenInfo(chainId?: number): TokenInfo | undefined {
   const address = getContractAddress()
   if (!address || !isAddress(address)) return undefined
+
+  const metaChainId = getMetaChainId()
+  if (chainId !== undefined && chainId !== metaChainId) return undefined
 
   return {
     address,
@@ -86,7 +142,7 @@ export function getMetaTokenInfo(): TokenInfo | undefined {
 }
 
 export function getTokensForChain(chainId: number): TokenInfo[] {
-  const baseTokens = chainId === mainnet.id ? MAINNET_TOKENS : chainId === sepolia.id ? SEPOLIA_TOKENS : []
-  const metaToken = getMetaTokenInfo()
+  const baseTokens = TOKENS_BY_CHAIN[chainId] ?? []
+  const metaToken = getMetaTokenInfo(chainId)
   return dedupeTokens(metaToken ? [metaToken, ...baseTokens] : baseTokens)
 }

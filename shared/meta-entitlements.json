@@ -1,0 +1,17 @@
+{
+  "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+  "chainId": 11155111,
+  "symbol": "META",
+  "decimals": 18,
+  "thresholds": {
+    "holder": "1",
+    "proOnchain": "1000"
+  },
+  "creatorflow": {
+    "holderBonusAiPerMonth": 4
+  },
+  "disclaimer": {
+    "en": "META is a utility token for ecosystem access and usage (dashboard features, optional CreatorFlow quotas). It is not an investment product, security, or promise of profit. Holding META does not guarantee returns. This app never requests or stores private keys.",
+    "fr": "META est un jeton utilitaire pour l'accès et l'usage dans l'écosystème (fonctions du tableau de bord, quotas CreatorFlow optionnels). Ce n'est pas un produit d'investissement, un titre financier ni une promesse de gain. Détention de META sans garantie de rendement. Cette application ne demande ni ne stocke de clés privées."
+  }
+}

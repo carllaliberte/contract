@@ -17,8 +17,8 @@ test.describe("Landing page", () => {
   });
 
   test("enters demo mode from primary CTA", async ({ page, demoApp }) => {
-    await expect(page.getByText(/mode démo|demo mode/i)).toBeVisible();
-    await expect(page.locator("h1")).toContainText(/Bonjour|Hello/);
+    await expect(page.locator("span.rounded-full", { hasText: /mode démo|demo mode/i })).toBeVisible();
+    await expect(page.locator("h1")).toContainText(/Bonjour|Hello/, { timeout: 15_000 });
   });
 
   test("OAuth buttons route to demo (mock auth)", async ({ page, landing }) => {

@@ -1,7 +1,5 @@
 import { createPublicClient, formatUnits, http, type Address } from 'viem'
-import { sepolia } from 'viem/chains'
-import { getRpcUrl } from '../config'
-import { getChainById } from './chains'
+import { getChainById, getChainRpcUrl } from './chains'
 import { getMetaTokenInfo, getTokensForChain } from './tokens'
 
 const erc20BalanceOfAbi = [
@@ -30,9 +28,10 @@ function createClientForChain(chainId: number) {
     throw new Error(`Unsupported chain: ${chainId}`)
   }
 
+  const rpcUrl = getChainRpcUrl(chainId)
   return createPublicClient({
     chain,
-    transport: http(chainId === sepolia.id ? getRpcUrl() : undefined),
+    transport: http(rpcUrl),
   })
 }
 
@@ -88,7 +87,7 @@ async function fetchTokenBalances(
     allowFailure: true,
   })
 
-  const metaAddress = getMetaTokenInfo()?.address.toLowerCase()
+  const metaAddress = getMetaTokenInfo(chainId)?.address.toLowerCase()
   const held: HeldAsset[] = []
 
   results.forEach((result, index) => {

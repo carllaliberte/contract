@@ -1,3 +1,14 @@
+# Contract monorepo
+
+Ce dépôt regroupe le contrat **META** (ERC-20) et **deux applications** front distinctes :
+
+| App | Dossier | Plateformes | Déploiement |
+| --- | --- | --- | --- |
+| **META Dashboard** | [`google-app/`](google-app/) | Web, Android (Play Store) | GitHub Pages (`/contract/`), Firebase, Google Play (`com.carllaliberte.meta`) |
+| **CreatorFlow** | [`creatorflow/`](creatorflow/) | Web, iOS, Android | GitHub Pages (`/contract/creatorflow/`), builds natifs Capacitor |
+
+---
+
 # META Google App
 
 This folder contains a Google-friendly app for the `META` ERC-20 smart contract in [`meta.sol`](https://github.com/carllaliberte/contract/blob/main/meta.sol).
@@ -68,6 +79,23 @@ bash scripts/prepare-play-github-secrets.sh
 
 Full Play Console checklist (FR): `google-app/play-store/LISTING.md`
 
+## CreatorFlow (créateurs de contenu)
+
+Pipeline Idée → Script → Production → Publié. Web + apps natives iOS/Android (Capacitor).
+
+```bash
+cd creatorflow
+npm ci
+npm run dev
+```
+
+- Web live : https://carllaliberte.github.io/contract/creatorflow/
+- Doc détaillée : [`creatorflow/README.md`](creatorflow/README.md)
+- Builds mobiles : [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
+- CI : `.github/workflows/ci-creatorflow.yml` (web + Android APK debug + iOS simulateur)
+
+---
+
 ## Deploy to Firebase Hosting
 
 1. Install the Firebase CLI: `npm install -g firebase-tools`
@@ -103,8 +131,26 @@ cd google-app && npm run build && npx firebase deploy --only hosting
 | Variable | Description |
 | --- | --- |
 | `VITE_CONTRACT_ADDRESS` | Deployed `META` contract address |
-| `VITE_RPC_URL` | JSON-RPC endpoint for the chain where the contract is deployed |
+| `VITE_RPC_URL` | JSON-RPC endpoint for Sepolia (overrides default in `chains.ts`) |
 | `VITE_WALLETCONNECT_PROJECT_ID` | WalletConnect Cloud project ID (public; no private keys in the app) |
+
+### WalletConnect (multi-chain, non-custodial)
+
+The META dashboard (`google-app/`) connects wallets via **wagmi + viem + WalletConnect** (plus injected browser wallets). Supported EVM chains are defined in a single file: `google-app/src/wallet/chains.ts` (Ethereum, Sepolia, Polygon, Arbitrum, Base). To add a chain, append one entry there.
+
+**No private keys** are stored in the app. The UI shows a non-custodial disclaimer.
+
+#### WalletConnect Cloud setup
+
+1. Create a project at [WalletConnect Cloud](https://cloud.walletconnect.com).
+2. Set `VITE_WALLETCONNECT_PROJECT_ID` in `google-app/.env` (or as a GitHub Actions secret for CI).
+3. **Whitelist these origins** in the WalletConnect project settings:
+   - `https://carllaliberte.github.io` (GitHub Pages — META dashboard at `/contract/`)
+   - `http://localhost:5173` (local `npm run dev`)
+   - Your Firebase Hosting domain if used (e.g. `https://carllaliberte-meta-dashboard.web.app`)
+4. Without a project ID, WalletConnect is disabled (clear message in UI, no crash). Browser extension wallets may still connect locally.
+
+Custom RPC endpoints per chain can be added later via env keys in `chains.ts`; MVP uses public `http()` defaults.
 
 ## Regenerate contract ABI
 

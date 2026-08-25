@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
-import { disconnectedMessage, isWrongChain, parseWalletError, wrongChainMessage } from './errors'
+import { classifyWalletError } from '../lib/walletErrors'
+import { getChainName, isSupportedChainId } from './chains'
 import { getConnectedAccount, onAccountChange, shortenAddress, type WalletAccount } from './index'
 import { fetchHeldAssets, getPortfolioChainLabel, type HeldAsset } from './portfolio'
 
@@ -9,6 +10,18 @@ function formatBalance(balance: string): string {
 
   const trimmedFraction = fraction.replace(/0+$/, '').slice(0, 6)
   return trimmedFraction ? `${whole}.${trimmedFraction}` : whole
+}
+
+function isWrongChain(account: WalletAccount): boolean {
+  if (!account.isConnected || !account.address) return false
+  return !isSupportedChainId(account.chainId)
+}
+
+function wrongChainMessage(chainId?: number): string {
+  if (chainId !== undefined && !isSupportedChainId(chainId)) {
+    return `Réseau non pris en charge : ${getChainName(chainId)} (chain ID ${chainId}).`
+  }
+  return classifyWalletError(new Error('wrong chain')).message
 }
 
 function renderLoading(portfolioPanel: HTMLElement) {
@@ -84,7 +97,7 @@ async function loadPortfolio(portfolioPanel: HTMLElement, account: WalletAccount
   }
 
   if (isWrongChain(account)) {
-    renderError(portfolioPanel, wrongChainMessage(account.chainId).message)
+    renderError(portfolioPanel, wrongChainMessage(account.chainId))
     return
   }
 
@@ -102,8 +115,7 @@ async function loadPortfolio(portfolioPanel: HTMLElement, account: WalletAccount
     renderAssets(portfolioPanel, account, assets)
   } catch (error) {
     if (generation !== loadGeneration) return
-    const { message } = parseWalletError(error)
-    renderError(portfolioPanel, message)
+    renderError(portfolioPanel, classifyWalletError(error, account.chainId).message)
   }
 }
 
@@ -121,14 +133,14 @@ export function initPortfolioUi(
 
   onAccountChange((account) => {
     if (wasConnected && account.status === 'disconnected') {
-      onStatus?.(disconnectedMessage().message, 'info')
+      onStatus?.(classifyWalletError(new Error('disconnected')).message, 'info')
     }
 
     wasConnected = account.isConnected
     refresh(account)
 
     if (account.isConnected && isWrongChain(account)) {
-      onStatus?.(wrongChainMessage(account.chainId).message, 'error')
+      onStatus?.(wrongChainMessage(account.chainId), 'error')
     }
   })
 }

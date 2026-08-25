@@ -6,3 +6,14 @@ artifacts/
 google-app/.env
 google-app/.env.production
 hardhat.config.js
+
+# Mobile signing & local SDK paths
+*.keystore
+*.jks
+local.properties
+**/DerivedData/
+
+# Android / iOS build outputs (when outside subproject .gitignore)
+**/android/.gradle/
+**/android/**/build/
+**/ios/**/build/
