@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Politique de confidentialité — CreatorFlow</title>
+    <meta
+      name="description"
+      content="Politique de confidentialité de CreatorFlow — pipeline de création de contenu pour YouTube, TikTok et Reels."
+    />
+    <style>
+      :root {
+        color-scheme: dark light;
+        --bg: #09090b;
+        --text: #fafafa;
+        --muted: #a1a1aa;
+        --accent: #a855f7;
+        --card: #18181b;
+        --border: #27272a;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #fafafa;
+          --text: #18181b;
+          --muted: #52525b;
+          --card: #ffffff;
+          --border: #e4e4e7;
+        }
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        line-height: 1.65;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+        color: var(--text);
+        background: var(--bg);
+      }
+      h1 {
+        font-size: 1.75rem;
+        margin-bottom: 0.25rem;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin-top: 1.75rem;
+      }
+      p,
+      li {
+        color: var(--muted);
+      }
+      strong {
+        color: var(--text);
+      }
+      a {
+        color: var(--accent);
+      }
+      .meta {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+      }
+      .card {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0;
+      }
+      nav {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Politique de confidentialité</h1>
+    <p class="meta">
+      <strong>CreatorFlow</strong> — Carl Laliberté<br />
+      Dernière mise à jour : 25 août 2026 ·
+      <a href="./privacy-en.html">English version</a>
+    </p>
+
+    <div class="card">
+      <p>
+        CreatorFlow est une application de pipeline de création de contenu (idées, scripts,
+        production, publication). Cette politique décrit les données traitées dans l’app iOS, le web
+        et l’API associée.
+      </p>
+    </div>
+
+    <h2>1. Données que nous collectons</h2>
+    <ul>
+      <li>
+        <strong>Compte Apple (iOS)</strong> — identifiant Apple, nom et e-mail si vous acceptez de
+        les partager lors de la connexion. Stockés de façon sécurisée (Keychain iOS) pour la session.
+      </li>
+      <li>
+        <strong>Contenu créateur</strong> — titres, descriptions et idées que vous saisissez pour
+        générer des scripts. En mode démo, ces données restent sur l’appareil (stockage local).
+      </li>
+      <li>
+        <strong>Usage IA</strong> — compteurs mensuels de scripts courts/longs pour appliquer les
+        quotas du forfait (Free ou Pro).
+      </li>
+      <li>
+        <strong>Achats intégrés</strong> — identifiants de transaction Apple (via StoreKit) pour
+        valider l’abonnement Pro. Nous ne stockons pas vos informations de paiement.
+      </li>
+    </ul>
+
+    <h2>2. Données que nous ne collectons pas</h2>
+    <ul>
+      <li>Pas de vente de données personnelles.</li>
+      <li>Pas de publicité ciblée ni de suivi publicitaire (NSPrivacyTracking = false).</li>
+      <li>Pas de clés API OpenAI ou secrets serveur dans l’application cliente.</li>
+    </ul>
+
+    <h2>3. Finalités</h2>
+    <ul>
+      <li>Authentification et gestion de session.</li>
+      <li>Génération de scripts IA et application des quotas.</li>
+      <li>Gestion des abonnements CreatorFlow Pro (validation des reçus Apple).</li>
+      <li>Support utilisateur.</li>
+    </ul>
+
+    <h2>4. Services tiers</h2>
+    <ul>
+      <li><strong>Apple</strong> — Sign in with Apple, App Store, StoreKit.</li>
+      <li><strong>Supabase</strong> — authentification et base de données (profils, usage).</li>
+      <li><strong>OpenAI</strong> — génération de scripts (côté serveur uniquement).</li>
+      <li><strong>GitHub Pages</strong> — hébergement de la démo web.</li>
+    </ul>
+
+    <h2>5. Conservation et sécurité</h2>
+    <p>
+      Les jetons de session sont stockés dans le Keychain iOS. Les communications utilisent HTTPS
+      (App Transport Security). Vous pouvez vous déconnecter et supprimer les données locales depuis
+      l’application.
+    </p>
+
+    <h2>6. Vos droits</h2>
+    <p>
+      Vous pouvez demander l’accès, la rectification ou la suppression de vos données en nous
+      contactant. Pour les achats, utilisez aussi « Restaurer les achats » ou la gestion des
+      abonnements iOS.
+    </p>
+
+    <h2>7. Enfants</h2>
+    <p>CreatorFlow n’est pas destinée aux enfants de moins de 13 ans.</p>
+
+    <h2>8. Contact</h2>
+    <p>
+      <a href="mailto:laliberte22@gmail.com">laliberte22@gmail.com</a><br />
+      <a href="https://github.com/carllaliberte/contract/issues">Support GitHub</a>
+    </p>
+
+    <nav>
+      <a href="./">← Retour à CreatorFlow</a>
+    </nav>
+  </body>
+</html>

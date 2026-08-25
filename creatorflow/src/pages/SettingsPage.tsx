@@ -7,7 +7,7 @@ import { useI18n } from "../i18n/context";
 import { useAiUsage } from "../hooks/useAiUsage";
 import { useAuth } from "../hooks/useAuth";
 import { usePlan } from "../hooks/usePlan";
-import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
+import { PRIVACY_POLICY_URL, SUPPORT_URL, TERMS_URL } from "../lib/appLinks";
 import { getAppleProfile } from "../lib/auth/session";
 import { restorePurchases } from "../lib/iap";
 import { PLAN_LIMITS } from "../lib/plans";
@@ -188,6 +188,15 @@ export function SettingsPage() {
             className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
           >
             {tr("settings.privacy")}
+            <ExternalLink className="size-3.5" aria-hidden />
+          </a>
+          <a
+            href={TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            {tr("settings.terms")}
             <ExternalLink className="size-3.5" aria-hidden />
           </a>
           <a

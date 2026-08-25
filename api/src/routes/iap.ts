@@ -35,6 +35,44 @@ export function createIapRoutes() {
     }),
   );
 
+  iap.post("/apple/notifications", async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "BAD_REQUEST" }, 400);
+    }
+
+    const signedPayload =
+      typeof (body as { signedPayload?: string }).signedPayload === "string"
+        ? (body as { signedPayload: string }).signedPayload
+        : "";
+
+    if (!signedPayload) {
+      return c.json({ error: "BAD_REQUEST", message: "signedPayload required" }, 400);
+    }
+
+    if (env.memoryStore) {
+      return c.json({ ok: true, mode: "memory" });
+    }
+
+    const admin = getSupabaseAdminClient();
+    if (!admin) {
+      return c.json({ error: "SERVER_ERROR" }, 500);
+    }
+
+    try {
+      const { handleAppleServerNotification } = await import(
+        "../services/appleNotifications.js"
+      );
+      await handleAppleServerNotification(admin, signedPayload);
+      return c.json({ ok: true });
+    } catch (error) {
+      console.error("iap/apple/notifications error:", error);
+      return c.json({ error: "PROCESSING_FAILED" }, 500);
+    }
+  });
+
   iap.use("*", authMiddleware);
 
   iap.post("/apple/validate", async (c) => {

@@ -31,3 +31,10 @@ Téléchargez CreatorFlow et publiez plus régulièrement.
 ## Web demo
 
 https://carllaliberte.github.io/contract/creatorflow/
+
+## English (App Store)
+
+**Subtitle:** Content creator pipeline  
+**Keywords:** youtube, tiktok, reels, script, content, creator, pipeline, ai, video
+
+See full checklist: [`docs/APP_STORE_CONNECT.md`](docs/APP_STORE_CONNECT.md)

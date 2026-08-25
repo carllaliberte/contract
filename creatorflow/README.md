@@ -50,4 +50,5 @@ Build SEO (prerender landing pour GitHub Pages) :
 npm run build:seo
 ```
 
-Builds mobiles (iOS / Android) : voir [README-MOBILE.md](./README-MOBILE.md).
+Builds mobiles (iOS / Android) : voir [README-MOBILE.md](./README-MOBILE.md).  
+**App Store (Option B — IAP Pro)** : [docs/APP_STORE_CONNECT.md](./docs/APP_STORE_CONNECT.md)

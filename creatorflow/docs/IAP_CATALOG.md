@@ -2,7 +2,7 @@
 
 Catalogue produit pour **CreatorFlow Pro** sur l’App Store (iOS).  
 Ce document décrit les forfaits, identifiants StoreKit et quotas applicatifs.  
-**La facturation production n’est pas activée** tant que le bridge Capacitor / StoreKit natif n’est pas branché (`creatorflow/src/lib/iap.ts`).
+**La facturation production** passe par le plugin Capacitor `creatorflow-storekit` et la validation serveur (`POST /iap/apple/validate`).
 
 ## Forfaits applicatifs
 
@@ -25,22 +25,11 @@ Configuration source : `shared/plans.ts`, re-exported by `creatorflow/src/lib/pl
 
 Ces identifiants doivent être créés dans **App Store Connect** (même bundle ID : `com.carllaliberte.creatorflow`) et reliés au groupe d’abonnements CreatorFlow Pro.
 
-## Bridge StoreKit (P1 — non branché)
+## Bridge StoreKit (branché)
 
-Le client expose un hook JS attendu côté natif :
+Plugin Capacitor : `creatorflow/plugins/creatorflow-storekit/`
 
-```ts
-window.CreatorFlowStoreKit = {
-  purchase(productId: string): Promise<{ productId: string }>;
-  restore(): Promise<{ activeProductId: string | null }>;
-};
-```
-
-Fichier stub : `creatorflow/src/lib/iap.ts`
-
-- `purchaseProduct()` / `restorePurchases()` appellent ce bridge **uniquement** sur iOS natif.
-- Web et démo : retour `unavailable` — pas de simulation d’achat.
-- Après achat / restauration valide : `setCurrentPlan('pro')` côté client ; en production, le plan doit aussi être synchronisé serveur (`profiles.plan`) via validation de reçu.
+Client : `creatorflow/src/lib/iap.ts` → `CreatorFlowStoreKit.purchase()` → `POST /iap/apple/validate`
 
 ## UX associée
 
@@ -56,10 +45,11 @@ Clés i18n : préfixe `paywall.*`, `plan.*`, `script.format*`, `script.duration*
 ## Checklist avant mise en production
 
 1. Créer `cf_pro_monthly` et `cf_pro_yearly` dans App Store Connect (prix CAD).
-2. Implémenter plugin Capacitor iOS exposant `CreatorFlowStoreKit`.
-3. Valider les reçus côté serveur et mettre à jour `profiles.plan`.
-4. Tester sandbox : achat, renouvellement, restauration, expiration.
-5. Soumettre métadonnées d’abonnement (nom, description, captures) pour review Apple.
+2. ~~Implémenter plugin Capacitor iOS~~ ✅ `creatorflow-storekit`
+3. ~~Valider les reçus côté serveur~~ ✅ `POST /iap/apple/validate`
+4. Configurer App Store Server Notifications → `POST /iap/apple/notifications`
+5. Tester sandbox : achat, renouvellement, restauration, expiration.
+6. Soumettre métadonnées d’abonnement (voir `docs/APP_STORE_CONNECT.md`).
 
 ## Références code
 

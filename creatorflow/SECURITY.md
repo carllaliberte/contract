@@ -95,6 +95,8 @@ Report security issues privately to the repository owner via GitHub Security Adv
 - [ ] `VITE_AUTH_STUB` unset in production build
 - [ ] Apple auth backend validates `identityToken` (no stub in production)
 - [ ] Session tokens only in Keychain
-- [ ] Privacy manifest reviewed (`ios/App/App/PrivacyInfo.xcprivacy`)
-- [ ] IAP receipt validation live (P1)
+- [x] Privacy policy published (`creatorflow/public/privacy.html`)
+- [x] IAP receipt validation endpoint (`POST /iap/apple/validate`)
+- [x] StoreKit plugin (`creatorflow/plugins/creatorflow-storekit`)
+- [ ] App Store Server Notifications configured (`POST /iap/apple/notifications`)
 - [ ] No API secrets in client bundle (`npm run build` + inspect `dist/`)
