@@ -17,7 +17,7 @@
     "deploy:pages": "npm run build:pages && npx gh-pages -d dist -m \"Deploy META dashboard\""
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3",
+    "@capacitor/cli": "^8.5.0",
     "firebase-tools": "^15.28.1",
     "gh-pages": "^6.3.0",
     "sharp": "^0.34.3",
@@ -26,8 +26,8 @@
     "vite": "^8.2.2"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@coinbase/wallet-sdk": "^4.3.7",
     "@wagmi/connectors": "^8.1.0",
     "@wagmi/core": "^3.6.4",
