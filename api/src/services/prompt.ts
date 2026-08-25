@@ -67,23 +67,41 @@ export type PromptInput = {
   existingScript?: string;
 };
 
+function buildImproveUserPrompt(
+  platform: Platform,
+  existingScript: string,
+  language: Language,
+): string {
+  if (language === "fr") {
+    return [
+      `Améliore ce script pour ${platform}.`,
+      "Garde la même structure, augmente le punch du hook et clarifie le CTA.",
+      "Script actuel:",
+      existingScript,
+    ].join("\n");
+  }
+
+  return [
+    `Improve this script for ${platform}.`,
+    "Keep the same structure, increase the hook punch and clarify the CTA.",
+    "Current script:",
+    existingScript,
+  ].join("\n");
+}
+
 function buildYouTubeFrPrompt(input: PromptInput): { system: string; user: string } {
   const system =
     "Tu es scénariste YouTube (FR-CA). Style naturel, direct, zéro corporate. Réponds uniquement avec le script structuré, sans méta-commentaire.";
 
   if (input.mode === "improve" && input.existingScript?.trim()) {
-    const user = [
-      `Titre: ${input.title}`,
-      `Description: ${input.description}`,
-      "",
-      "Améliore le script actuel en gardant la structure ci-dessous. Renforce le hook, la clarté et le ton FR-CA naturel.",
-      "",
-      YOUTUBE_FR_STRUCTURE,
-      "",
-      "Script actuel :",
-      input.existingScript,
-    ].join("\n");
-    return { system, user };
+    return {
+      system,
+      user: buildImproveUserPrompt(
+        input.platform,
+        input.existingScript,
+        input.language,
+      ),
+    };
   }
 
   const user = [
@@ -101,18 +119,14 @@ function buildTikTokFrPrompt(input: PromptInput): { system: string; user: string
     "Tu es scénariste TikTok / Shorts (FR-CA). Rythme rapide, pattern interrupt. Réponds uniquement avec le script structuré, sans méta-commentaire.";
 
   if (input.mode === "improve" && input.existingScript?.trim()) {
-    const user = [
-      `Titre: ${input.title}`,
-      `Description: ${input.description}`,
-      "",
-      "Améliore le script actuel en gardant la structure ci-dessous. Renforce le hook scroll-stopper, le rythme et le twist.",
-      "",
-      TIKTOK_FR_STRUCTURE,
-      "",
-      "Script actuel :",
-      input.existingScript,
-    ].join("\n");
-    return { system, user };
+    return {
+      system,
+      user: buildImproveUserPrompt(
+        input.platform,
+        input.existingScript,
+        input.language,
+      ),
+    };
   }
 
   const user = [
@@ -130,18 +144,14 @@ function buildReelsFrPrompt(input: PromptInput): { system: string; user: string 
     "Tu es scénariste Instagram Reels (FR-CA). Esthétique + clarté. Réponds uniquement avec le script structuré, sans méta-commentaire.";
 
   if (input.mode === "improve" && input.existingScript?.trim()) {
-    const user = [
-      `Titre: ${input.title}`,
-      `Description: ${input.description}`,
-      "",
-      "Améliore le script actuel en gardant la structure ci-dessous. Renforce le hook visuel, les beats et la lisibilité sans son.",
-      "",
-      REELS_FR_STRUCTURE,
-      "",
-      "Script actuel :",
-      input.existingScript,
-    ].join("\n");
-    return { system, user };
+    return {
+      system,
+      user: buildImproveUserPrompt(
+        input.platform,
+        input.existingScript,
+        input.language,
+      ),
+    };
   }
 
   const user = [
@@ -181,23 +191,14 @@ export function buildScriptPrompt(input: PromptInput): {
   const system = lang === "fr" ? systemFr : systemEn;
 
   if (input.mode === "improve" && input.existingScript?.trim()) {
-    const userFr = [
-      `Améliore ce script pour ${input.platform}.`,
-      platformLine,
-      `Titre : ${input.title}`,
-      `Description : ${input.description}`,
-      "Script actuel :",
-      input.existingScript,
-    ].join("\n");
-    const userEn = [
-      `Improve this script for ${input.platform}.`,
-      platformLine,
-      `Title: ${input.title}`,
-      `Description: ${input.description}`,
-      "Current script:",
-      input.existingScript,
-    ].join("\n");
-    return { system, user: lang === "fr" ? userFr : userEn };
+    return {
+      system,
+      user: buildImproveUserPrompt(
+        input.platform,
+        input.existingScript,
+        lang,
+      ),
+    };
   }
 
   const userFr = [

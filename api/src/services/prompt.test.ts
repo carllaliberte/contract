@@ -24,7 +24,7 @@ describe("buildScriptPrompt", () => {
     expect(user).not.toContain("YouTube");
   });
 
-  it("includes existing script for YouTube FR improve mode", () => {
+  it("uses unified improve prompt for YouTube FR", () => {
     const { user } = buildScriptPrompt({
       title: "Mon titre",
       description: "Desc",
@@ -33,9 +33,14 @@ describe("buildScriptPrompt", () => {
       mode: "improve",
       existingScript: "Ancien script",
     });
-    expect(user).toContain("Améliore le script actuel");
-    expect(user).toContain("Ancien script");
-    expect(user).toContain("HOOK:");
+    expect(user).toBe(
+      [
+        "Améliore ce script pour youtube.",
+        "Garde la même structure, augmente le punch du hook et clarifie le CTA.",
+        "Script actuel:",
+        "Ancien script",
+      ].join("\n"),
+    );
   });
 
   it("builds TikTok FR-CA structured prompt", () => {
@@ -58,7 +63,7 @@ describe("buildScriptPrompt", () => {
     expect(user).toContain("dans cette vidéo on va parler de");
   });
 
-  it("includes existing script for TikTok FR improve mode", () => {
+  it("uses unified improve prompt for TikTok FR", () => {
     const { user } = buildScriptPrompt({
       title: "Twist",
       description: "Desc",
@@ -67,9 +72,11 @@ describe("buildScriptPrompt", () => {
       mode: "improve",
       existingScript: "Script TikTok existant",
     });
-    expect(user).toContain("scroll-stopper");
+    expect(user).toContain("Améliore ce script pour tiktok.");
+    expect(user).toContain("Garde la même structure");
+    expect(user).toContain("Script actuel:");
     expect(user).toContain("Script TikTok existant");
-    expect(user).toContain("SCÈNE 2");
+    expect(user).not.toContain("SCÈNE 2");
   });
 
   it("builds Reels FR-CA structured prompt", () => {
@@ -93,7 +100,7 @@ describe("buildScriptPrompt", () => {
     expect(user).toContain("sans le son");
   });
 
-  it("includes existing script for Reels FR improve mode", () => {
+  it("uses unified improve prompt for Reels FR", () => {
     const { user } = buildScriptPrompt({
       title: "Beat",
       description: "Desc",
@@ -102,12 +109,13 @@ describe("buildScriptPrompt", () => {
       mode: "improve",
       existingScript: "Script Reels existant",
     });
-    expect(user).toContain("hook visuel");
+    expect(user).toContain("Améliore ce script pour reels.");
+    expect(user).toContain("clarifie le CTA");
     expect(user).toContain("Script Reels existant");
-    expect(user).toContain("DÉROULÉ:");
+    expect(user).not.toContain("DÉROULÉ:");
   });
 
-  it("builds an improve prompt for TikTok in English", () => {
+  it("uses unified improve prompt for TikTok in English", () => {
     const { user } = buildScriptPrompt({
       title: "Hook",
       description: "Desc",
@@ -116,8 +124,14 @@ describe("buildScriptPrompt", () => {
       mode: "improve",
       existingScript: "Old script line",
     });
-    expect(user).toContain("Improve");
-    expect(user).toContain("Old script line");
+    expect(user).toBe(
+      [
+        "Improve this script for tiktok.",
+        "Keep the same structure, increase the hook punch and clarify the CTA.",
+        "Current script:",
+        "Old script line",
+      ].join("\n"),
+    );
   });
 });
 
