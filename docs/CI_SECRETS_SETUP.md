@@ -43,8 +43,10 @@ Le script pousse uniquement les valeurs **non vides** :
 |----------|----------------|
 | `VITE_API_URL` | `creatorflow/.env.local` |
 | `VITE_WALLETCONNECT_PROJECT_ID` | `google-app/.env` |
-| `VITE_CONTRACT_ADDRESS` | `google-app/.env` ou `deployment.json` |
-| `VITE_RPC_URL` | `google-app/.env` ou `deployment.json` |
+| `VITE_CONTRACT_ADDRESS` | `google-app/.env` ou `google-app/deployment.json` |
+| `VITE_RPC_URL` | `google-app/.env` ou `google-app/deployment.json` |
+
+Le script **ne touche pas** à `VITE_BASE_PATH` ni `VITE_ROUTER_BASENAME`.
 
 Simulation : `bash scripts/setup-github-ci-env.sh --dry-run`
 
@@ -59,6 +61,8 @@ gh secret set META_PLAY_CONFIG --repo carllaliberte/contract   # coller le JSON
 
 Schéma : `google-app/play-store/META_PLAY_CONFIG.example.json`
 
+Alternative legacy : `bash scripts/apply-github-secrets.sh` (keystore + JSON compte de service).
+
 ## Règles importantes
 
 | À faire | À ne pas faire |
@@ -67,16 +71,41 @@ Schéma : `google-app/play-store/META_PLAY_CONFIG.example.json`
 | `META_PLAY_CONFIG` en **Secret** | `VITE_BASE_PATH=/` (casse GitHub Pages) |
 | Clés serveur sur Supabase / hébergeur API | Commiter `.env`, `*.keystore`, `play-upload-key.json` |
 
-Les workflows **Deploy CreatorFlow** et **Deploy META** fixent déjà les chemins Pages (`/contract/creatorflow/` et `/contract/`).
+Les workflows **Deploy CreatorFlow** et **Deploy META** fixent déjà les chemins Pages (`/contract/creatorflow/` et `/contract/`). La valeur `/` est réservée aux builds Capacitor natifs en local.
 
 ## Workflows après configuration
 
-| Workflow | Config requise |
-|----------|----------------|
-| Secret scan / CI CreatorFlow / API CI | Aucune |
-| Deploy CreatorFlow | Optionnel `VITE_API_URL` |
-| Deploy META dashboard | Optionnel `VITE_*` |
-| Build Android release | `META_PLAY_CONFIG` pour upload Play |
+| Workflow | Variables | Secrets | Notes |
+|----------|-----------|---------|-------|
+| Secret scan / CI CreatorFlow / API CI | — | — | Aucune config requise |
+| Deploy CreatorFlow | `VITE_API_URL` (optionnel) | — | `VITE_BASE_PATH` forcé dans le YAML |
+| Deploy META dashboard | `VITE_*` META (optionnel) | `FIREBASE_TOKEN` (optionnel) | `deployment.json` écrase adresse + RPC |
+| Build Android release | — | `META_PLAY_CONFIG` (optionnel) | Upload skip si absent |
+
+## Fichiers locaux (ne pas commiter)
+
+| Fichier | Rôle |
+|---------|------|
+| `creatorflow/.env` / `.env.local` | `VITE_API_URL` local + source pour `setup-github-ci-env.sh` |
+| `google-app/.env` / `.env.local` | `VITE_CONTRACT_ADDRESS`, `VITE_RPC_URL`, `VITE_WALLETCONNECT_PROJECT_ID` |
+| `api/.env` | Clés serveur (`OPENAI_API_KEY`, Supabase) — **jamais** en Actions vars |
+| `google-app/play-store/secrets-a-remplir.env` | Brouillon Play (gitignored) |
+
+Exemples versionnés : `creatorflow/.env.example`, `google-app/.env.example`, `api/.env.example`.
+
+## Migration `VITE_WALLETCONNECT_PROJECT_ID`
+
+Historiquement parfois stocké en **secret** Actions. La valeur est publique (ID projet WalletConnect) :
+
+1. Définir la **variable** via `setup-github-ci-env.sh` ou l’UI
+2. Supprimer l’ancien **secret** du même nom si présent
+3. Vérifier avec `print-ci-secrets-checklist.sh`
+
+## Rotation & hygiène
+
+- Ne jamais coller de clés dans issues, PR ou commits
+- Workflow `secret-hygiene.yml` : `scripts/check-no-secrets.sh` sur chaque push/PR
+- Si un fichier local rempli a fuité : voir [SECRETS.md § Rotation](./SECRETS.md#rotation-si-secrets-a-remplirenv-a-été-rempli)
 
 ## Voir aussi
 

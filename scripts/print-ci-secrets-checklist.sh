@@ -76,6 +76,8 @@ echo ""
 bold "Secrets (private — signing, Play, Firebase)"
 status_secret META_PLAY_CONFIG "Play upload: keystore + service account JSON (recommended)"
 status_secret FIREBASE_TOKEN "Firebase Hosting deploy (skip if absent)"
+status_secret ANDROID_KEYSTORE_BASE64 "legacy Play signing — prefer META_PLAY_CONFIG"
+status_secret GOOGLE_PLAY_SERVICE_ACCOUNT_JSON "legacy Play API — prefer META_PLAY_CONFIG or WIF"
 echo ""
 dim "  Play: prefer META_PLAY_CONFIG over legacy ANDROID_KEYSTORE_* / GOOGLE_PLAY_SERVICE_ACCOUNT_JSON."
 dim "  OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY → Supabase / API host, not GitHub Actions."
@@ -91,6 +93,7 @@ echo ""
 bold "Configure"
 echo "  bash scripts/setup-github-ci-env.sh              # push VITE_* variables"
 echo "  bash scripts/print-meta-play-config.sh           # build META_PLAY_CONFIG JSON locally"
+echo "  bash scripts/apply-github-secrets.sh             # legacy Play keystore secrets"
 echo "  gh secret set META_PLAY_CONFIG --repo $REPO      # paste JSON (admin only)"
 echo ""
 
@@ -108,6 +111,10 @@ if $has_gh; then
 
   if repo_secret_set OPENAI_API_KEY; then
     red "Warning: OPENAI_API_KEY should not be a GitHub Actions secret — use Supabase/API host."
+  fi
+
+  if repo_secret_set VITE_WALLETCONNECT_PROJECT_ID; then
+    yellow "Legacy: VITE_WALLETCONNECT_PROJECT_ID is a secret — migrate to a variable (public WC project ID)."
   fi
 
   if repo_secret_set META_PLAY_CONFIG; then

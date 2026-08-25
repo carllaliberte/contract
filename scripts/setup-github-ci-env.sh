@@ -6,7 +6,7 @@
 #   bash scripts/setup-github-ci-env.sh           # set vars from local .env / deployment.json
 #   bash scripts/setup-github-ci-env.sh --dry-run # preview only
 #
-# Reads (in order): creatorflow/.env.local, creatorflow/.env, google-app/.env
+# Reads (in order): creatorflow/.env.local, creatorflow/.env, google-app/.env.local, google-app/.env
 # Falls back to google-app/deployment.json for VITE_CONTRACT_ADDRESS / VITE_RPC_URL.
 #
 # Environment:
@@ -54,6 +54,7 @@ load_dotenv() {
 
 load_dotenv "$ROOT/creatorflow/.env.local"
 load_dotenv "$ROOT/creatorflow/.env"
+load_dotenv "$ROOT/google-app/.env.local"
 load_dotenv "$ROOT/google-app/.env"
 
 if [[ -z "${VITE_CONTRACT_ADDRESS:-}" || -z "${VITE_RPC_URL:-}" ]] && [[ -f "$ROOT/google-app/deployment.json" ]]; then
