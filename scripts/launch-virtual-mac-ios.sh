@@ -23,11 +23,11 @@ git tag -f "$TAG"
 git push origin "refs/tags/$TAG" --force
 
 echo "✓ Pushed tag $TAG"
-echo "  Workflow: iOS App Store release (macos-latest)"
+echo "  Workflow: macOS iOS build (virtual Mac)"
 echo ""
 
 # Also try workflow_dispatch if workflow exists on default branch
-gh workflow run ios-app-store-release.yml \
+gh workflow run macos-ios-virtual.yml \
   --repo carllaliberte/contract \
   --ref "$TAG" \
   -f "vite_api_url=$API_URL" 2>/dev/null || \
@@ -35,5 +35,5 @@ gh workflow run ios-app-store-release.yml \
 
 echo ""
 echo "Monitor:"
-echo "  gh run list --repo carllaliberte/contract --workflow=ios-app-store-release.yml"
+echo "  gh run list --repo carllaliberte/contract --workflow=macos-ios-virtual.yml"
 echo "  https://github.com/carllaliberte/contract/actions"

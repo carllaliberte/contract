@@ -7,7 +7,7 @@
     "postinstall": "npm run build --prefix plugins/creatorflow-storekit",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:ios": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync ios",
+    "build:ios": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync ios && bash scripts/fix-ios-spm.sh",
     "build:android": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync android",
     "cap:sync": "npm run build:ios",
     "cap:sync:android": "npm run build:android",
