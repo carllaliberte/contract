@@ -1,8 +1,9 @@
 import {
   ArrowRight,
-  Calendar,
   Clapperboard,
   FileText,
+  Globe,
+  LayoutDashboard,
   Lightbulb,
   Play,
   Sparkles,
@@ -30,20 +31,32 @@ const pipelineSteps = [
 
 const features = [
   {
-    icon: Sparkles,
-    titleKey: "features.script.title",
-    descKey: "features.script.desc",
-  },
-  {
     icon: Clapperboard,
     titleKey: "features.pipeline.title",
     descKey: "features.pipeline.desc",
   },
   {
-    icon: Calendar,
-    titleKey: "features.calendar.title",
-    descKey: "features.calendar.desc",
+    icon: Sparkles,
+    titleKey: "features.script.title",
+    descKey: "features.script.desc",
   },
+  {
+    icon: LayoutDashboard,
+    titleKey: "features.dashboard.title",
+    descKey: "features.dashboard.desc",
+  },
+  {
+    icon: Globe,
+    titleKey: "features.locale.title",
+    descKey: "features.locale.desc",
+  },
+] as const;
+
+const heroBullets = [
+  "login.bullet1",
+  "login.bullet2",
+  "login.bullet3",
+  "login.bullet4",
 ] as const;
 
 export function LandingPage() {
@@ -94,7 +107,7 @@ export function LandingPage() {
           <div className="animate-fade-up">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <Zap className="size-3.5" />
-              Pipeline + Scripts IA · Démo interactive
+              {tr("app.heroBadge")}
             </div>
 
             <h1 className="text-[2.35rem] font-semibold leading-[1.12] tracking-tight sm:text-5xl sm:leading-[1.1]">
@@ -106,7 +119,7 @@ export function LandingPage() {
             </p>
 
             <ul className="mt-7 flex flex-col gap-3">
-              {(["login.bullet1", "login.bullet2", "login.bullet3"] as const).map((key) => (
+              {heroBullets.map((key) => (
                 <li key={key} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                   <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
                     <Check className="size-3" strokeWidth={3} />
@@ -125,7 +138,7 @@ export function LandingPage() {
                 href="#pipeline"
                 className="inline-flex h-12 items-center gap-2 rounded-xl px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Voir le pipeline
+                {tr("nav.viewPipeline")}
               </a>
             </div>
           </div>
@@ -285,6 +298,17 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section id="audience" className="border-t border-border bg-card/25 py-16 sm:py-20">
+          <div className="mx-auto max-w-3xl px-5 text-center sm:px-6">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              {tr("audience.title")}
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+              {tr("audience.body")}
+            </p>
+          </div>
+        </section>
+
         <section id="features" className="py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-5 sm:px-6">
             <div className="mx-auto max-w-2xl text-center">
@@ -293,7 +317,7 @@ export function LandingPage() {
               </h2>
             </div>
 
-            <div className="mt-12 grid gap-5 sm:grid-cols-3">
+            <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((f) => {
                 const Icon = f.icon;
                 return (
@@ -371,13 +395,24 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section id="why" className="border-t border-border bg-card/25 py-16 sm:py-20">
+          <div className="mx-auto max-w-3xl px-5 text-center sm:px-6">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              {tr("why.title")}
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+              {tr("why.body")}
+            </p>
+          </div>
+        </section>
+
         <section className="py-16 sm:py-20">
           <div className="mx-auto max-w-3xl px-5 text-center sm:px-6">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Prêt à passer de l’idée à la publication ?
+              {tr("cta.title")}
             </h2>
             <p className="mt-4 text-muted-foreground sm:text-lg">
-              Explorez la démo interactive. Aucun compte requis.
+              {tr("cta.subtitle")}
             </p>
             <Button className="mt-8 h-12 px-8 text-[15px]" onClick={enterDemo}>
               {tr("login.tryDemo")}
