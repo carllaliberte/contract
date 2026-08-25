@@ -27,7 +27,11 @@ Branch naming for Cursor Cloud Agents: `cursor/<descriptive-name>-5045`
 **Known constraint:** GitHub ruleset `CreatorFlow` may block branch creation for integration tokens. If push fails:
 
 ```bash
-# Run locally as repo owner (or add agent to ruleset bypass):
+# Option A — fetch deliverable tag (works for Cursor integration):
+git fetch origin tag deliverable/app-store-option-b-5045
+git checkout -b cursor/app-store-iap-option-b-5045 deliverable/app-store-option-b-5045
+
+# Option B — run locally as repo owner:
 bash scripts/push-agent-branch.sh cursor/app-store-iap-option-b-5045
 ```
 
