@@ -209,6 +209,35 @@ button:hover {
   color: var(--text);
 }
 
+.wallet-bar__hint--warning {
+  color: #b54708;
+}
+
+.wallet-bar__balance {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+.wallet-connectors {
+  justify-content: flex-end;
+}
+
+.wallet-btn--connector {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 9.5rem;
+}
+
+.wallet-btn__sub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 .wallet-bar__actions {
   display: flex;
   flex-wrap: wrap;

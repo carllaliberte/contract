@@ -8,6 +8,9 @@ import {
   watchAccount,
   type GetAccountReturnType,
 } from '@wagmi/core'
+import { fetchWalletSnapshot } from '../contract'
+import { getContractAddress, isContractConfigured } from '../config'
+import { getRpcUrlForChain } from './chains'
 import { isWalletConnectConfigured, wagmiConfig } from './config'
 import { getChainName, supportedChains, type SupportedChain } from './chains'
 
@@ -15,21 +18,30 @@ export { supportedChains, getChainName, isWalletConnectConfigured, wagmiConfig }
 
 export type WalletAccount = GetAccountReturnType
 
-function getConnector(id: 'walletConnect' | 'injected') {
+export type WalletConnectorId = 'metaMask' | 'coinbaseWalletSDK' | 'walletConnect'
+
+const connectorLabels: Record<WalletConnectorId, string> = {
+  metaMask: 'MetaMask',
+  coinbaseWalletSDK: 'Coinbase',
+  walletConnect: 'WalletConnect',
+}
+
+export function getConnectorLabel(id: WalletConnectorId): string {
+  return connectorLabels[id]
+}
+
+function getConnector(id: WalletConnectorId) {
   return getConnectors(wagmiConfig).find((connector) => connector.id === id)
 }
 
-export async function connectWallet(): Promise<void> {
-  const walletConnectConnector = getConnector('walletConnect')
-  const injectedConnector = getConnector('injected')
-  const connector = walletConnectConnector ?? injectedConnector
+export async function connectWallet(connectorId: WalletConnectorId): Promise<void> {
+  if (connectorId === 'walletConnect' && !isWalletConnectConfigured()) {
+    throw new Error('Set VITE_WALLETCONNECT_PROJECT_ID at build time to use WalletConnect')
+  }
 
+  const connector = getConnector(connectorId)
   if (!connector) {
-    throw new Error(
-      isWalletConnectConfigured()
-        ? 'No wallet connector available'
-        : 'Set VITE_WALLETCONNECT_PROJECT_ID or use a browser wallet extension',
-    )
+    throw new Error(`${getConnectorLabel(connectorId)} connector is not available`)
   }
 
   await connect(wagmiConfig, { connector })
@@ -62,4 +74,25 @@ export async function tryReconnect(): Promise<void> {
 
 export function shortenAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
+}
+
+export async function fetchConnectedMetaBalance(
+  address: string,
+  chainId: number,
+): Promise<string | null> {
+  if (!isContractConfigured()) {
+    return null
+  }
+
+  const rpcUrl = getRpcUrlForChain(chainId)
+  if (!rpcUrl) {
+    return null
+  }
+
+  try {
+    const snapshot = await fetchWalletSnapshot(address, getContractAddress(), rpcUrl)
+    return snapshot.balance
+  } catch {
+    return null
+  }
 }
