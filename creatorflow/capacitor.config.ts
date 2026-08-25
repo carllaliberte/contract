@@ -11,6 +11,9 @@ const config: CapacitorConfig = {
     contentInset: "automatic",
     scrollEnabled: true,
   },
+  android: {
+    backgroundColor: "#09090b",
+  },
   plugins: {
     StatusBar: {
       style: "DARK",
