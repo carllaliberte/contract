@@ -1,19 +1,7 @@
 {
-  "keystorePassword": "VOTRE_MOT_DE_PASSE",
-  "keyPassword": "VOTRE_MOT_DE_PASSE",
+  "keystorePassword": "REPLACE_ME",
+  "keyPassword": "REPLACE_ME",
   "keyAlias": "meta-upload",
-  "keystoreBase64": "COLLER_ICI_LA_LIGNE_BASE64_DU_KEYSTORE",
-  "playServiceAccountJson": {
-    "type": "service_account",
-    "project_id": "votre-projet",
-    "private_key_id": "...",
-    "private_key": "<PEM from service account JSON — never commit>",
-    "client_email": "play-upload@votre-projet.iam.gserviceaccount.com",
-    "client_id": "...",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "...",
-    "universe_domain": "googleapis.com"
-  }
+  "keystoreBase64": "REPLACE_WITH_BASE64_KEYSTORE",
+  "playServiceAccountJson": "<PASTE_FULL_PLAY_SERVICE_ACCOUNT_JSON_OBJECT_HERE — never commit real credentials>"
 }

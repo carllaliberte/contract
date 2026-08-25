@@ -21,13 +21,16 @@ Workflow : **`.github/workflows/secret-scan.yml`**
 
 - uses: trufflesecurity/trufflehog@main
   with:
-    extra_args: --results=verified,unknown --fail --exclude-paths=.trufflehog-exclude
+    path: ./
+    # Action déjà --fail en interne : ne pas le répéter dans extra_args
+    extra_args: --results=verified,unknown --exclude-paths=.trufflehog-exclude
 ```
 
 | Flag / fichier | Effet |
 |----------------|--------|
+| `path: ./` | Racine du dépôt |
 | `--results=verified,unknown` | Remonte les secrets **vérifiés actifs** et ceux **non vérifiables** (inconnu) — plus strict que `--only-verified` |
-| `--fail` | Exit code 183 si un résultat correspond → **échec du job** (ne pas retirer) |
+| `--fail` (action) | L’action TruffleHog passe déjà `--fail` → **échec du job** sur hit (ne pas le remettre dans `extra_args`) |
 | `.trufflehog-exclude` | Regex de chemins exclus (lockfiles, `node_modules`, assets binaires, exemples) |
 
 ## Fichier `.trufflehog-exclude`
@@ -37,7 +40,7 @@ Une regex par ligne. Exemples inclus :
 - `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
 - `node_modules/`, `dist/`, `build/`
 - `*.svg`, images, polices
-- `META_PLAY_CONFIG.example.json`, `secrets-a-remplir.env.example`
+- `META_PLAY_CONFIG.example.json`, `github-wif.example.json`, `*.env.example`
 
 **Ne pas** y ajouter des chemins `src/` ou workflows pour masquer une fuite réelle.
 
@@ -48,9 +51,9 @@ Les fichiers versionnés ne doivent **pas** contenir de motifs détectables :
 | À éviter | Préférer |
 |----------|----------|
 | `sk-...` ou `sk-abc123…` | `<your-openai-api-key>` |
-| `-----BEGIN PRIVATE KEY-----` | `<PEM from service account JSON — never commit>` |
+| `-----BEGIN PRIVATE KEY-----` / objet SA GCP réaliste | Chaîne placeholder (`<PASTE_…_HERE>`) — pas de PEM ni de `client_email` / `private_key` |
 
-Fichiers concernés : `api/.env.example`, `supabase/functions/generate-script/README.md`, `META_PLAY_CONFIG.example.json`.
+Fichiers concernés : `api/.env.example`, `supabase/functions/generate-script/README.md`, `META_PLAY_CONFIG.example.json`, `github-wif.example.json`.
 
 ## Exécution manuelle
 

@@ -53,12 +53,10 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 
 Workflow : `.github/workflows/deploy-creatorflow.yml`
 
-Variables optionnelles (Settings → Variables) :
+- `VITE_BASE_PATH` et `VITE_ROUTER_BASENAME` sont **forcés** à `/contract/creatorflow/` dans le workflow (Pages).
+- `VITE_API_URL` — variable optionnelle (Settings → Variables) pour l’endpoint scripts IA.
 
-- `VITE_API_URL` — endpoint scripts IA en production
-- `VITE_BASE_PATH`, `VITE_ROUTER_BASENAME` — override rare (Pages utilise les défauts)
-
-Si une variable n’est pas définie, le build utilise les défauts Vite / le comportement démo.
+Si `VITE_API_URL` n’est pas définie, le build utilise le comportement démo.
 
 ### Deploy META dashboard
 

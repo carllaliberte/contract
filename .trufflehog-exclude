@@ -27,6 +27,9 @@
 .*\.woff2?$
 .*\.ico$
 
-# Documented examples (use placeholders, not PEM / sk- patterns)
+# Documented examples / templates (placeholders only — never real PEM or SA JSON)
 .*META_PLAY_CONFIG\.example\.json$
+.*github-wif\.example\.json$
+.*wif\.example.*
 .*secrets-a-remplir\.env\.example$
+.*\.env\.example$
