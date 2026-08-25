@@ -23,14 +23,14 @@ export type Idea = {
 export const demoIdeas: Idea[] = [
   {
     id: "1",
-    title: "5 erreurs débutants en montage vidéo",
-    description: "Tutoriel rapide pour YouTube Shorts avec avant/après.",
+    title: "5 erreurs de montage qui tuent ton retention",
+    description: "Analyse concrète avec avant/après — format Shorts + version longue.",
     status: "production",
     priority: "high",
     platform: "youtube",
     updatedAt: "2026-08-24T10:30:00Z",
     script:
-      "Hook: « Tu fais peut-être ces 5 erreurs sans le savoir… » Point 1: transitions trop longues. Point 2: audio non normalisé.",
+      "HOOK: « Ces 5 erreurs font fuir 70% de ton audience. »\n1. Transitions trop longues\n2. Audio non normalisé\n3. Hook trop lent\n4. Pas de pattern interrupt\n5. CTA mal placé\nCTA: Abonne-toi pour la checklist complète.",
     thumbnail:
       "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80",
     videoUrl:
@@ -38,14 +38,14 @@ export const demoIdeas: Idea[] = [
   },
   {
     id: "2",
-    title: "Routine matinale créateur (60 sec)",
-    description: "Format vertical TikTok — storytelling + B-roll.",
+    title: "Routine créateur 60 secondes",
+    description: "Storytelling vertical — structure matinale pour créateurs solo.",
     status: "script",
     priority: "medium",
     platform: "tiktok",
     updatedAt: "2026-08-23T16:45:00Z",
     script:
-      "Scène 1: réveil + café. Voix off: « Voici comment je structure ma matinée créative. »",
+      "HOOK (0-3s): « Voici comment je structure ma matinée. »\nScène 1: réveil + café\nScène 2: 3 priorités max\nScène 3: deep work block\nCTA: Suis pour le template.",
     thumbnail:
       "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&q=80",
     videoUrl:
@@ -53,8 +53,8 @@ export const demoIdeas: Idea[] = [
   },
   {
     id: "3",
-    title: "Unboxing setup streaming minimaliste",
-    description: "Reels Instagram — ambiance chaleureuse, lumière naturelle.",
+    title: "Setup streaming minimaliste (unboxing)",
+    description: "Reels — lumière naturelle, esthétique chaleureuse, product placement soft.",
     status: "idea",
     priority: "low",
     platform: "reels",
@@ -64,13 +64,14 @@ export const demoIdeas: Idea[] = [
   },
   {
     id: "4",
-    title: "Comment j'organise 30 idées par semaine",
-    description: "Long format YouTube — démonstration CreatorFlow.",
+    title: "Comment j’organise 30 idées par semaine",
+    description: "Long format YouTube — démonstration complète du pipeline CreatorFlow.",
     status: "ready",
     priority: "high",
     platform: "youtube",
     updatedAt: "2026-08-21T14:00:00Z",
-    script: "Intro: problème de surcharge d'idées. Démonstration pipeline.",
+    script:
+      "Intro: le chaos des idées non structurées.\nDémo live du pipeline.\nSystème de priorisation.\nCTA: lien vers la démo.",
     thumbnail:
       "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&q=80",
     videoUrl:
@@ -78,24 +79,25 @@ export const demoIdeas: Idea[] = [
   },
   {
     id: "5",
-    title: "Trend audio du moment — explication",
-    description: "TikTok éducatif sur l'utilisation des sons tendance.",
+    title: "Hook qui arrête le scroll (formule)",
+    description: "TikTok éducatif — formule réutilisable en 3 temps.",
     status: "published",
     priority: "medium",
     platform: "tiktok",
     updatedAt: "2026-08-18T20:30:00Z",
+    script: "Formule: Constat choc → Preuve → Promesse.",
     thumbnail:
       "https://images.unsplash.com/photo-1478737270233-763290ed8258?w=800&q=80",
   },
   {
     id: "6",
-    title: "Behind the scenes tournage Reels",
-    description: "Coulisses d'un tournage en une prise.",
+    title: "Behind the scenes — tournage Reels",
+    description: "Coulisses d’un plan séquence en une prise.",
     status: "script",
     priority: "high",
     platform: "reels",
     updatedAt: "2026-08-20T11:20:00Z",
-    script: "Plan séquence: caméra, lumière, script imprimé.",
+    script: "Plan séquence: caméra → lumière → script imprimé → action.",
     thumbnail:
       "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80",
   },
@@ -176,7 +178,7 @@ export const exampleGallery = [
   },
   {
     src: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=600&q=80",
-    title: "YouTube — Organisation d'idées",
+    title: "YouTube — Organisation d’idées",
     platform: "YouTube",
     aspect: "aspect-video",
   },
