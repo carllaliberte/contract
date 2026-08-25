@@ -1,5 +1,7 @@
+import { LIMITS } from "./limits";
+
 const STORAGE_KEY = "cf-ai-usage";
-const MONTHLY_LIMIT = 8;
+const USAGE_EVENT = "cf-ai-usage-change";
 
 type UsageRecord = { month: string; count: number; limit?: number };
 
@@ -22,11 +24,12 @@ function readUsage(): UsageRecord {
 
 function writeUsage(record: UsageRecord) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+  window.dispatchEvent(new Event(USAGE_EVENT));
 }
 
 export function getAiUsage(): { count: number; limit: number; remaining: number } {
   const { count, limit } = readUsage();
-  const effectiveLimit = limit ?? MONTHLY_LIMIT;
+  const effectiveLimit = limit ?? LIMITS.free;
   return {
     count,
     limit: effectiveLimit,
@@ -36,18 +39,19 @@ export function getAiUsage(): { count: number; limit: number; remaining: number 
 
 export function canUseAiGeneration(): boolean {
   const { count, limit } = readUsage();
-  const effectiveLimit = limit ?? MONTHLY_LIMIT;
+  const effectiveLimit = limit ?? LIMITS.free;
   return count < effectiveLimit;
 }
 
-export function recordAiGeneration(): boolean {
-  const usage = readUsage();
-  const effectiveLimit = usage.limit ?? MONTHLY_LIMIT;
-  if (usage.count >= effectiveLimit) return false;
-  writeUsage({ month: currentMonth(), count: usage.count + 1, limit: usage.limit });
-  return true;
+export function syncAiUsage(usage: { count: number; limit?: number }) {
+  writeUsage({
+    month: currentMonth(),
+    count: usage.count,
+    limit: usage.limit,
+  });
 }
 
-export function syncAiUsage(usage: { count: number; limit?: number }) {
-  writeUsage({ month: currentMonth(), count: usage.count, limit: usage.limit });
+export function subscribeAiUsage(listener: () => void): () => void {
+  window.addEventListener(USAGE_EVENT, listener);
+  return () => window.removeEventListener(USAGE_EVENT, listener);
 }

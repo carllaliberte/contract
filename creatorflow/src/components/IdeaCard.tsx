@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { Button } from "./ui";
@@ -60,7 +60,14 @@ export function IdeaCard({
             onClick={() => onGenerateScript(idea)}
           >
             <Sparkles className="size-3.5" />
-            {isGenerating ? tr("script.generating") : tr("script.generate")}
+            {isGenerating ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                {tr("script.generating")}
+              </>
+            ) : (
+              tr("script.generate")
+            )}
           </Button>
         )}
       </div>

@@ -7,9 +7,17 @@ import type {
 const DEMO_ID_KEY = "cf-demo-id";
 const AUTH_TOKEN_KEY = "cf-auth-token";
 
-function apiUrl(): string {
-  const base = import.meta.env.VITE_API_URL ?? "";
-  return `${base.replace(/\/$/, "")}/ai/generate-script`;
+/** Endpoint: Edge Function URL or local Hono API via Vite proxy. */
+export function resolveGenerateScriptUrl(): string {
+  const configured = import.meta.env.VITE_API_URL?.trim() ?? "";
+  if (!configured) return "/ai/generate-script";
+  if (
+    configured.endsWith("/generate-script") ||
+    configured.endsWith("/ai/generate-script")
+  ) {
+    return configured;
+  }
+  return `${configured.replace(/\/$/, "")}/ai/generate-script`;
 }
 
 function getDemoId(): string {
@@ -37,7 +45,7 @@ function requestHeaders(): Record<string, string> {
 export async function postGenerateScript(
   payload: GenerateScriptRequest,
 ): Promise<GenerateScriptResponse> {
-  const res = await fetch(apiUrl(), {
+  const res = await fetch(resolveGenerateScriptUrl(), {
     method: "POST",
     headers: requestHeaders(),
     body: JSON.stringify({
@@ -51,7 +59,15 @@ export async function postGenerateScript(
     }),
   });
 
-  const data = (await res.json()) as GenerateScriptResponse | GenerateScriptErrorBody;
+  let data: GenerateScriptResponse | GenerateScriptErrorBody;
+  try {
+    data = (await res.json()) as GenerateScriptResponse | GenerateScriptErrorBody;
+  } catch {
+    throw {
+      error: "PROVIDER_ERROR",
+      message: `API error (${res.status})`,
+    } satisfies GenerateScriptErrorBody;
+  }
 
   if (!res.ok) {
     throw data;

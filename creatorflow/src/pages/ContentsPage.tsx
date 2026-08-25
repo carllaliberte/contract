@@ -1,22 +1,25 @@
-import { Play, Sparkles } from "lucide-react";
+import { Play, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
 import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { AiUsageBadge } from "../components/AiUsageBadge";
+import { useAiUsage } from "../hooks/useAiUsage";
 
 export function ContentsPage() {
   const { tr } = useI18n();
   const { ideas, generateScript } = useIdeas();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const aiUsage = useAiUsage();
 
   const withMedia = ideas.filter((i) => i.videoUrl || i.script || i.status === "idea" || i.status === "script");
 
   async function handleGenerate(idea: Idea) {
     if (!canUseAiGeneration()) {
-      setNotice(tr("script.limitReached"));
+      setNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
       return;
     }
     setGeneratingId(idea.id);
@@ -25,12 +28,18 @@ export function ContentsPage() {
       await generateScript(idea.id);
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
-        setNotice(tr("script.limitReached"));
+        setNotice(tr("script.limitReached", { limit: String(aiUsage.limit) }));
       } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
-        setNotice(tr("script.limitReached"));
+        setNotice(
+          tr("script.limitReached", {
+            limit: String(error.usage?.limit ?? aiUsage.limit),
+          }),
+        );
       } else if (isGenerateScriptError(error)) {
         setNotice(error.message);
+      } else {
+        setNotice(tr("script.apiError"));
       }
     } finally {
       setGeneratingId(null);
@@ -39,9 +48,12 @@ export function ContentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">{tr("contents.title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{tr("contents.subtitle")}</p>
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{tr("contents.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{tr("contents.subtitle")}</p>
+        </div>
+        <AiUsageBadge />
       </header>
 
       {notice && (
@@ -100,7 +112,14 @@ export function ContentsPage() {
                   onClick={() => handleGenerate(item)}
                 >
                   <Sparkles className="size-3.5" />
-                  {generatingId === item.id ? tr("script.generating") : tr("script.generate")}
+                  {generatingId === item.id ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                      {tr("script.generating")}
+                    </>
+                  ) : (
+                    tr("script.generate")
+                  )}
                 </Button>
               )}
             </div>
