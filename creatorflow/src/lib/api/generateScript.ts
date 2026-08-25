@@ -7,21 +7,9 @@ import type {
 const DEMO_ID_KEY = "cf-demo-id";
 const AUTH_TOKEN_KEY = "cf-auth-token";
 
-export class GenerateScriptApiError extends Error {
-  readonly code: GenerateScriptErrorBody["error"];
-  readonly usage?: GenerateScriptErrorBody["usage"];
-
-  constructor(body: GenerateScriptErrorBody) {
-    super(body.message);
-    this.name = "GenerateScriptApiError";
-    this.code = body.error;
-    this.usage = body.usage;
-  }
-}
-
-function apiBaseUrl(): string {
-  const base = import.meta.env.VITE_API_BASE_URL ?? "";
-  return base.replace(/\/$/, "");
+function apiUrl(): string {
+  const base = import.meta.env.VITE_API_URL ?? "";
+  return `${base.replace(/\/$/, "")}/ai/generate-script`;
 }
 
 function getDemoId(): string {
@@ -33,44 +21,52 @@ function getDemoId(): string {
   return id;
 }
 
-function authHeaders(): Record<string, string> {
+function requestHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (token) return { Authorization: `Bearer ${token}` };
-  return { "x-demo-id": getDemoId() };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else {
+    headers["x-demo-id"] = getDemoId();
+  }
+  return headers;
 }
 
 export async function postGenerateScript(
   payload: GenerateScriptRequest,
 ): Promise<GenerateScriptResponse> {
-  const url = `${apiBaseUrl()}/api/ai/generate-script`;
-  const response = await fetch(url, {
+  const res = await fetch(apiUrl(), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
+    headers: requestHeaders(),
     body: JSON.stringify({
-      ...payload,
+      ideaId: payload.ideaId,
+      title: payload.title,
+      description: payload.description,
+      platform: payload.platform,
       language: payload.language ?? "fr",
       mode: payload.mode ?? "generate",
+      existingScript: payload.existingScript,
     }),
   });
 
-  const body = (await response.json().catch(() => null)) as
-    | GenerateScriptResponse
-    | GenerateScriptErrorBody
-    | null;
+  const data = (await res.json()) as GenerateScriptResponse | GenerateScriptErrorBody;
 
-  if (!response.ok) {
-    if (body && "error" in body && body.error) {
-      throw new GenerateScriptApiError(body);
-    }
-    throw new Error(`generate-script failed (${response.status})`);
+  if (!res.ok) {
+    throw data;
   }
 
-  if (!body || !("script" in body)) {
-    throw new Error("generate-script returned an invalid payload");
-  }
+  return data as GenerateScriptResponse;
+}
 
-  return body;
+export function isGenerateScriptError(
+  error: unknown,
+): error is GenerateScriptErrorBody {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "error" in error &&
+    typeof (error as GenerateScriptErrorBody).error === "string"
+  );
 }

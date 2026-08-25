@@ -10,11 +10,10 @@ import {
 } from "@dnd-kit/core";
 import { useState } from "react";
 import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
-import { GenerateScriptApiError } from "../lib/api/generateScript";
-import { useIdeas } from "../context/IdeasContext";
+import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea, IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration, getAiUsage } from "../lib/aiUsage";
+import { canUseAiGeneration, getAiUsage, syncAiUsage } from "../lib/aiUsage";
 
 const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
 
@@ -115,9 +114,12 @@ export function PipelinePage() {
     try {
       await generateScript(idea.id);
     } catch (error) {
-      if (error instanceof GenerateScriptApiError && error.code === "LIMIT_REACHED") {
+      if (error instanceof Error && error.message === "LIMIT_REACHED") {
         setAiNotice(tr("script.limitReached"));
-      } else if (error instanceof GenerateScriptApiError) {
+      } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
+        if (error.usage) syncAiUsage(error.usage);
+        setAiNotice(tr("script.limitReached"));
+      } else if (isGenerateScriptError(error)) {
         setAiNotice(error.message);
       }
     } finally {

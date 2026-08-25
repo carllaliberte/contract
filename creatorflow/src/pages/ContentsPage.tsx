@@ -1,11 +1,10 @@
 import { Play, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
-import { GenerateScriptApiError } from "../lib/api/generateScript";
-import { useIdeas } from "../context/IdeasContext";
+import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration } from "../lib/aiUsage";
+import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 
 export function ContentsPage() {
   const { tr } = useI18n();
@@ -25,9 +24,12 @@ export function ContentsPage() {
     try {
       await generateScript(idea.id);
     } catch (error) {
-      if (error instanceof GenerateScriptApiError && error.code === "LIMIT_REACHED") {
+      if (error instanceof Error && error.message === "LIMIT_REACHED") {
         setNotice(tr("script.limitReached"));
-      } else if (error instanceof GenerateScriptApiError) {
+      } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
+        if (error.usage) syncAiUsage(error.usage);
+        setNotice(tr("script.limitReached"));
+      } else if (isGenerateScriptError(error)) {
         setNotice(error.message);
       }
     } finally {

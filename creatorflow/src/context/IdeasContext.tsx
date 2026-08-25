@@ -12,13 +12,12 @@ import {
   type Idea,
   type IdeaStatus,
 } from "../data/demo";
-import { GenerateScriptApiError, postGenerateScript } from "../lib/api/generateScript";
+import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import {
   canUseAiGeneration,
   recordAiGeneration,
   syncAiUsage,
 } from "../lib/aiUsage";
-import { generateScriptLocally } from "../lib/generateScriptLocal";
 
 const STORAGE_KEY = "cf-ideas";
 
@@ -102,49 +101,26 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       const idea = ideas.find((i) => i.id === id);
       if (!idea) return;
 
-      const mode = idea.script ? "improve" : "generate";
-      const language = readLanguage();
-
-      try {
-        const result = await postGenerateScript({
-          ideaId: id,
-          title: idea.title,
-          description: idea.description,
-          platform: idea.platform,
-          language,
-          mode,
-          existingScript: idea.script,
-        });
-        syncAiUsage(result.usage);
-        updateIdea(id, {
-          script: result.script,
-          status: idea.status === "idea" ? "script" : idea.status,
-        });
-        return;
-      } catch (error) {
-        if (error instanceof GenerateScriptApiError) {
-          if (error.usage) syncAiUsage(error.usage);
-          throw error;
-        }
-      }
-
       if (!canUseAiGeneration()) {
-        throw new GenerateScriptApiError({
-          error: "LIMIT_REACHED",
-          message: "Monthly AI generation limit reached.",
-        });
+        throw new Error("LIMIT_REACHED");
       }
 
-      const script = await generateScriptLocally(idea);
-      if (!recordAiGeneration()) {
-        throw new GenerateScriptApiError({
-          error: "LIMIT_REACHED",
-          message: "Monthly AI generation limit reached.",
-        });
-      }
+      const mode = idea.script ? "improve" : "generate";
+      const data = await postGenerateScript({
+        ideaId: idea.id,
+        title: idea.title,
+        description: idea.description,
+        platform: idea.platform,
+        language: readLanguage(),
+        mode,
+        existingScript: idea.script,
+      });
+
+      if (data.usage) syncAiUsage(data.usage);
+      recordAiGeneration();
 
       updateIdea(id, {
-        script,
+        script: data.script,
         status: idea.status === "idea" ? "script" : idea.status,
       });
     },
@@ -171,3 +147,5 @@ export function useIdeas(): IdeasContextValue {
   if (!ctx) throw new Error("useIdeas must be used within IdeasProvider");
   return ctx;
 }
+
+export { isGenerateScriptError };
