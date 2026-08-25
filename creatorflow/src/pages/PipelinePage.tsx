@@ -13,8 +13,7 @@ import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea, IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration, getAiUsage, recordAiGeneration } from "../lib/aiUsage";
-import { generateScript } from "../lib/generateScript";
+import { canUseAiGeneration, getAiUsage } from "../lib/aiUsage";
 
 const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
 
@@ -58,7 +57,7 @@ function DroppableColumn({
 
 export function PipelinePage() {
   const { tr } = useI18n();
-  const { ideas, moveIdea, updateIdea } = useIdeas();
+  const { ideas, moveIdea, generateScript } = useIdeas();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
@@ -112,17 +111,7 @@ export function PipelinePage() {
     }
     setGeneratingId(idea.id);
     setAiNotice(null);
-    await new Promise((r) => setTimeout(r, 480));
-    if (!recordAiGeneration()) {
-      setAiNotice(tr("script.limitReached"));
-      setGeneratingId(null);
-      return;
-    }
-    const script = generateScript(idea);
-    updateIdea(idea.id, {
-      script,
-      status: idea.status === "idea" ? "script" : idea.status,
-    });
+    await generateScript(idea.id);
     setGeneratingId(null);
   }
 

@@ -7,47 +7,99 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { demoIdeas, type Idea, type IdeaStatus } from "../data/demo";
+import {
+  demoIdeas,
+  type Idea,
+  type IdeaStatus,
+} from "../data/demo";
+import { canUseAiGeneration, recordAiGeneration } from "../lib/aiUsage";
 
 const STORAGE_KEY = "cf-ideas";
 
-function loadIdeas(): Idea[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return demoIdeas;
-    const parsed = JSON.parse(raw) as Idea[];
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-  } catch {
-    /* ignore corrupt storage */
-  }
-  return demoIdeas;
-}
-
-type NewIdeaInput = Omit<Idea, "id" | "updatedAt"> &
-  Partial<Pick<Idea, "id" | "updatedAt">>;
-
 type IdeasContextValue = {
   ideas: Idea[];
-  addIdea: (input: NewIdeaInput) => void;
+  addIdea: (partial: Omit<Idea, "id" | "updatedAt">) => void;
   updateIdea: (id: string, patch: Partial<Idea>) => void;
-  moveIdea: (id: string, newStatus: IdeaStatus) => void;
+  moveIdea: (id: string, status: IdeaStatus) => void;
   deleteIdea: (id: string) => void;
+  generateScript: (id: string) => Promise<void>;
 };
 
 const IdeasContext = createContext<IdeasContextValue | null>(null);
 
+function loadIdeas(): Idea[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(demoIdeas);
+    const parsed = JSON.parse(raw) as Idea[];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return structuredClone(demoIdeas);
+    }
+    return parsed;
+  } catch {
+    return structuredClone(demoIdeas);
+  }
+}
+
+function saveIdeas(ideas: Idea[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function buildScript(idea: Idea): string {
+  const title = idea.title;
+  if (idea.platform === "youtube") {
+    return [
+      `HOOK (0-8s)`,
+      `« ${title} — et la plupart des gens se trompent. »`,
+      ``,
+      `POINT 1`,
+      `Explique le problème principal lié à « ${title} ».`,
+      ``,
+      `POINT 2`,
+      `Montre la solution concrète + un exemple visuel.`,
+      ``,
+      `POINT 3`,
+      `Erreur fréquente à éviter + mini démonstration.`,
+      ``,
+      `CTA`,
+      `« Abonne-toi si tu veux la version complète. »`,
+    ].join("\n");
+  }
+  return [
+    `HOOK (0-3s)`,
+    `Texte à l'écran : « ${title} »`,
+    `Voix : accroche ultra courte, ton direct.`,
+    ``,
+    `SCÈNE 1`,
+    `Montre le problème en 1 plan rapide.`,
+    ``,
+    `SCÈNE 2`,
+    `La solution en action (B-roll + voix off).`,
+    ``,
+    `SCÈNE 3`,
+    `Résultat / avant-après.`,
+    ``,
+    `CTA final`,
+    `« Suis pour la suite » + emoji fort.`,
+  ].join("\n");
+}
+
 export function IdeasProvider({ children }: { children: ReactNode }) {
-  const [ideas, setIdeas] = useState<Idea[]>(loadIdeas);
+  const [ideas, setIdeas] = useState<Idea[]>(() => loadIdeas());
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
+    saveIdeas(ideas);
   }, [ideas]);
 
-  const addIdea = useCallback((input: NewIdeaInput) => {
+  const addIdea = useCallback((partial: Omit<Idea, "id" | "updatedAt">) => {
     const idea: Idea = {
-      ...input,
-      id: input.id ?? crypto.randomUUID(),
-      updatedAt: input.updatedAt ?? new Date().toISOString(),
+      ...partial,
+      id: crypto.randomUUID(),
+      updatedAt: new Date().toISOString(),
     };
     setIdeas((prev) => [idea, ...prev]);
   }, []);
@@ -63,8 +115,8 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const moveIdea = useCallback(
-    (id: string, newStatus: IdeaStatus) => {
-      updateIdea(id, { status: newStatus });
+    (id: string, status: IdeaStatus) => {
+      updateIdea(id, { status });
     },
     [updateIdea],
   );
@@ -73,9 +125,32 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     setIdeas((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
+  const generateScript = useCallback(
+    async (id: string) => {
+      if (!canUseAiGeneration()) return;
+      await new Promise((r) => setTimeout(r, 480));
+      if (!recordAiGeneration()) return;
+      const idea = ideas.find((i) => i.id === id);
+      if (!idea) return;
+      const script = buildScript(idea);
+      updateIdea(id, {
+        script,
+        status: idea.status === "idea" ? "script" : idea.status,
+      });
+    },
+    [ideas, updateIdea],
+  );
+
   const value = useMemo(
-    () => ({ ideas, addIdea, updateIdea, moveIdea, deleteIdea }),
-    [ideas, addIdea, updateIdea, moveIdea, deleteIdea],
+    () => ({
+      ideas,
+      addIdea,
+      updateIdea,
+      moveIdea,
+      deleteIdea,
+      generateScript,
+    }),
+    [ideas, addIdea, updateIdea, moveIdea, deleteIdea, generateScript],
   );
 
   return <IdeasContext.Provider value={value}>{children}</IdeasContext.Provider>;

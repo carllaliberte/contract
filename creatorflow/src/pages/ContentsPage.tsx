@@ -4,12 +4,11 @@ import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration, recordAiGeneration } from "../lib/aiUsage";
-import { generateScript } from "../lib/generateScript";
+import { canUseAiGeneration } from "../lib/aiUsage";
 
 export function ContentsPage() {
   const { tr } = useI18n();
-  const { ideas, updateIdea } = useIdeas();
+  const { ideas, generateScript } = useIdeas();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -22,16 +21,7 @@ export function ContentsPage() {
     }
     setGeneratingId(idea.id);
     setNotice(null);
-    await new Promise((r) => setTimeout(r, 480));
-    if (!recordAiGeneration()) {
-      setNotice(tr("script.limitReached"));
-      setGeneratingId(null);
-      return;
-    }
-    updateIdea(idea.id, {
-      script: generateScript(idea),
-      status: idea.status === "idea" ? "script" : idea.status,
-    });
+    await generateScript(idea.id);
     setGeneratingId(null);
   }
 
