@@ -20,9 +20,9 @@
     "@capacitor/cli": "^7.4.3",
     "firebase-tools": "^15.28.1",
     "gh-pages": "^6.3.0",
-    "sharp": "^0.34.3",
-    "solc": "^0.6.12",
-    "typescript": "~6.0.2",
+    "sharp": "^0.35.3",
+    "solc": "^0.8.36",
+    "typescript": "~7.0.2",
     "vite": "^8.2.2"
   },
   "dependencies": {
