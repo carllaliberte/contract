@@ -1,7 +1,7 @@
 {
-  "projectId": "carllaliberte-meta-dashboard",
-  "projectNumber": "REMPLACER",
-  "workloadIdentityProvider": "projects/REMPLACER/locations/global/workloadIdentityPools/github-pool/providers/github-provider",
-  "serviceAccount": "play-upload@carllaliberte-meta-dashboard.iam.gserviceaccount.com",
-  "repository": "carllaliberte/contract"
+  "projectId": "YOUR_GCP_PROJECT_ID",
+  "projectNumber": "YOUR_PROJECT_NUMBER",
+  "workloadIdentityProvider": "projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/YOUR_POOL/providers/YOUR_PROVIDER",
+  "serviceAccount": "YOUR_SA@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com",
+  "repository": "OWNER/REPO"
 }
