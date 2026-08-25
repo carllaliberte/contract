@@ -7,6 +7,10 @@ interface ImportMetaEnv {
   readonly VITE_BASE_PATH?: string
 }
 
+interface Window {
+  ethereum?: unknown
+}
+
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }

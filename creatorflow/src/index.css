@@ -110,13 +110,17 @@ body {
   padding-right: var(--safe-right);
 }
 
-.native-ios {
+.native-ios,
+.native-android {
   --app-header-offset: var(--safe-top);
 }
 
 .native-ios input,
 .native-ios textarea,
-.native-ios select {
+.native-ios select,
+.native-android input,
+.native-android textarea,
+.native-android select {
   font-size: 16px;
 }
 

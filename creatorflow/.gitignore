@@ -9,3 +9,11 @@ dist
 ios/App/Pods
 ios/App/build
 ios/DerivedData
+
+# Capacitor Android (see also android/.gitignore)
+android/.gradle/
+android/**/build/
+*.keystore
+*.jks
+local.properties
+test-results/

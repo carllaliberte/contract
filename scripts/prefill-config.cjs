@@ -30,6 +30,18 @@ function updateAppsScript(deployment) {
   fs.writeFileSync(appsScriptPath, content);
 }
 
+function updateMetaEntitlements(deployment) {
+  const entitlementsPath = path.join(__dirname, "..", "shared", "meta-entitlements.json");
+  if (!fs.existsSync(entitlementsPath)) return;
+
+  const entitlements = JSON.parse(fs.readFileSync(entitlementsPath, "utf8"));
+  entitlements.contractAddress = deployment.contractAddress;
+  if (deployment.chainId) {
+    entitlements.chainId = deployment.chainId;
+  }
+  fs.writeFileSync(entitlementsPath, `${JSON.stringify(entitlements, null, 2)}\n`);
+}
+
 function main() {
   const deployment = readDeployment();
   const envVars = {
@@ -40,6 +52,7 @@ function main() {
   writeEnvFile(path.join(googleAppDir, ".env"), envVars);
   writeEnvFile(path.join(googleAppDir, ".env.production"), envVars);
   updateAppsScript(deployment);
+  updateMetaEntitlements(deployment);
 
   const configTsPath = path.join(googleAppDir, "src", "config.ts");
   let configTs = fs.readFileSync(configTsPath, "utf8");

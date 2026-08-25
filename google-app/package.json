@@ -28,6 +28,7 @@
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
+    "@coinbase/wallet-sdk": "^4.3.7",
     "@wagmi/connectors": "^8.1.0",
     "@wagmi/core": "^3.6.4",
     "ethers": "^6.17.0",

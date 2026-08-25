@@ -6,6 +6,8 @@ import { useI18n } from "../i18n/context";
 import { useAiUsage } from "../hooks/useAiUsage";
 import { usePlan } from "../hooks/usePlan";
 import { PLAN_LIMITS } from "../lib/plans";
+import { META_HOLDER_BONUS_AI } from "../lib/limits";
+import { metaEntitlements } from "../../../shared/meta-entitlements";
 
 export function SettingsPage() {
   const { tr } = useI18n();
@@ -90,6 +92,16 @@ export function SettingsPage() {
             {tr("plan.longMaxHint", { minutes: String(limits.maxLongMinutes) })}
           </p>
         </div>
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold">META (utilitaire)</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Jeton utilitaire pour l&apos;écosystème — pas un produit d&apos;investissement. À terme :
+          wallet connecté + solde ≥ {metaEntitlements.thresholds.holder} META → +{META_HOLDER_BONUS_AI}{" "}
+          générations IA / mois (bonus holder). Pro iOS via achat in-app (IAP).
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
       </Card>
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
