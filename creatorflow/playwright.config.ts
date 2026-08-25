@@ -4,7 +4,8 @@ const port = 4321;
 const basePath = "/contract/creatorflow/";
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: "./src/e2e",
+  testMatch: "**/*.spec.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
