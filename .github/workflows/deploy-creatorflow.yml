@@ -18,11 +18,10 @@ permissions:
 
 concurrency:
   group: deploy-creatorflow
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy-github-pages:
-    timeout-minutes: 12
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
@@ -43,21 +42,33 @@ jobs:
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
 
-      - name: Build CreatorFlow (SEO prerender)
+      - name: Build CreatorFlow
         working-directory: creatorflow
         env:
+          VITE_BASE_PATH: /contract/creatorflow/
+          VITE_ROUTER_BASENAME: /contract/creatorflow
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-          VITE_BASE_PATH: /contract/creatorflow/
-          VITE_ROUTER_BASENAME: /contract/creatorflow
-        run: npm ci && npm run build:seo
+        run: npm ci && npm run build
 
-      - name: Verify dist artifacts
+      - name: Require index + privacy
         working-directory: creatorflow
-        run: test -f dist/index.html && test -f dist/privacy.html
+        run: |
+          test -f dist/index.html
+          test -f dist/privacy.html
 
-      - name: Deploy to GitHub Pages
+      - name: Optional SEO prerender (must not block Pages)
+        working-directory: creatorflow
+        continue-on-error: true
+        env:
+          VITE_BASE_PATH: /contract/creatorflow/
+          PRERENDER_TIMEOUT_MS: "45000"
+          NODE_OPTIONS: --max-old-space-size=192
+          UV_THREADPOOL_SIZE: "2"
+        run: node scripts/prerender.mjs
+
+      - name: Publish to gh-pages/creatorflow
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -65,6 +76,8 @@ jobs:
           destination_dir: creatorflow
           keep_files: true
           commit_message: Deploy CreatorFlow [skip ci]
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
 
       - name: Live URLs
         run: |
