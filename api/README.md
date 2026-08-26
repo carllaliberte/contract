@@ -59,6 +59,11 @@ Health check: `GET /health`
 
 ### CreatorFlow frontend
 
-Set `VITE_API_URL` to the API origin (no trailing slash), e.g. `http://localhost:3000`.
+Set `VITE_API_URL` to the API origin (no trailing slash):
+
+- **Production (Fly.io):** `https://creatorflow-api.fly.dev`
+- **Local:** `http://localhost:3000`
+
+GitHub Actions: set repo variable `VITE_API_URL` (or rely on deploy workflow default).
 
 Local Vite proxy (optional): `/ai` → `http://localhost:3000`.
