@@ -14,6 +14,7 @@ import {
 } from "../data/demo";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { buildDuplicateIdea } from "../lib/ideaActions";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 const STORAGE_KEY = "cf-ideas";
@@ -24,6 +25,7 @@ type IdeasContextValue = {
   updateIdea: (id: string, patch: Partial<Idea>) => void;
   moveIdea: (id: string, status: IdeaStatus) => void;
   deleteIdea: (id: string) => void;
+  duplicateIdea: (id: string) => void;
   generateScript: (id: string, options?: ScriptGenerateOptions) => Promise<void>;
 };
 
@@ -93,6 +95,16 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     setIdeas((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
+  const duplicateIdea = useCallback(
+    (id: string) => {
+      const source = ideas.find((item) => item.id === id);
+      if (!source) return;
+      const suffix = readLanguage() === "en" ? " (copy)" : " (copie)";
+      addIdea(buildDuplicateIdea(source, suffix));
+    },
+    [ideas, addIdea],
+  );
+
   const generateScript = useCallback(
     async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
       const idea = ideas.find((i) => i.id === id);
@@ -132,9 +144,10 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       updateIdea,
       moveIdea,
       deleteIdea,
+      duplicateIdea,
       generateScript,
     }),
-    [ideas, addIdea, updateIdea, moveIdea, deleteIdea, generateScript],
+    [ideas, addIdea, updateIdea, moveIdea, deleteIdea, duplicateIdea, generateScript],
   );
 
   return <IdeasContext.Provider value={value}>{children}</IdeasContext.Provider>;

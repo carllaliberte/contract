@@ -1,8 +1,10 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Copy, CopyPlus, Sparkles, Loader2 } from "lucide-react";
+import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { copyScriptToClipboard } from "../lib/ideaActions";
 import { canAdvanceStatus } from "../lib/pipelineActions";
 import { Button } from "./ui";
 
@@ -16,6 +18,7 @@ type IdeaCardProps = {
   idea: Idea;
   onGenerateScript?: (idea: Idea) => void;
   onAdvance?: (idea: Idea) => void;
+  onDuplicate?: (idea: Idea) => void;
   isGenerating?: boolean;
   dragOverlay?: boolean;
 };
@@ -24,13 +27,24 @@ export function IdeaCard({
   idea,
   onGenerateScript,
   onAdvance,
+  onDuplicate,
   isGenerating,
   dragOverlay,
 }: IdeaCardProps) {
   const { tr } = useI18n();
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const canGenerate =
     onGenerateScript && (idea.status === "idea" || idea.status === "script");
   const canAdvance = onAdvance && canAdvanceStatus(idea.status);
+  const canCopy = Boolean(idea.script?.trim());
+  const canDuplicate = Boolean(onDuplicate);
+
+  async function handleCopyCaptions() {
+    if (!idea.script) return;
+    const ok = await copyScriptToClipboard(idea.script);
+    setCopyState(ok ? "copied" : "failed");
+    window.setTimeout(() => setCopyState("idle"), 2000);
+  }
 
   return (
     <article
@@ -55,37 +69,69 @@ export function IdeaCard({
         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           {idea.description}
         </p>
-        {(canGenerate || canAdvance) && (
-          <div className="mt-2.5 flex gap-2">
-            {canGenerate && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-9 flex-1 text-xs"
-                disabled={isGenerating}
-                onClick={() => onGenerateScript(idea)}
-              >
-                <Sparkles className="size-3.5" />
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                    {tr("script.generating")}
-                  </>
-                ) : (
-                  tr("script.generate")
+        {(canGenerate || canAdvance || canCopy || canDuplicate) && (
+          <div className="mt-2.5 flex flex-col gap-2">
+            <div className="flex gap-2">
+              {canGenerate && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-9 flex-1 text-xs"
+                  disabled={isGenerating}
+                  onClick={() => onGenerateScript(idea)}
+                >
+                  <Sparkles className="size-3.5" />
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                      {tr("script.generating")}
+                    </>
+                  ) : (
+                    tr("script.generate")
+                  )}
+                </Button>
+              )}
+              {canAdvance && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0 px-2.5 text-xs"
+                  aria-label={tr("pipeline.advance")}
+                  onClick={() => onAdvance(idea)}
+                >
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              )}
+            </div>
+            {(canCopy || canDuplicate) && (
+              <div className="flex gap-2">
+                {canCopy && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8 flex-1 text-xs"
+                    onClick={() => void handleCopyCaptions()}
+                  >
+                    <Copy className="size-3.5" />
+                    {copyState === "copied"
+                      ? tr("script.copied")
+                      : copyState === "failed"
+                        ? tr("script.copyFailed")
+                        : tr("script.copyCaptions")}
+                  </Button>
                 )}
-              </Button>
-            )}
-            {canAdvance && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 shrink-0 px-2.5 text-xs"
-                aria-label={tr("pipeline.advance")}
-                onClick={() => onAdvance(idea)}
-              >
-                <ArrowRight className="size-3.5" />
-              </Button>
+                {canDuplicate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8 shrink-0 px-2.5 text-xs"
+                    aria-label={tr("idea.duplicate")}
+                    onClick={() => onDuplicate?.(idea)}
+                  >
+                    <CopyPlus className="size-3.5" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         )}
