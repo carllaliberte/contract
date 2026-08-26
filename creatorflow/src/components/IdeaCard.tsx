@@ -9,6 +9,7 @@ const platformLabel: Record<string, string> = {
   youtube: "YouTube",
   tiktok: "TikTok",
   reels: "Reels",
+  x: "X",
 };
 
 type IdeaCardProps = {
