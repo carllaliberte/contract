@@ -1,3 +1,5 @@
+import type { Platform } from "../lib/api/types";
+
 export type IdeaStatus =
   | "idea"
   | "script"
@@ -13,7 +15,7 @@ export type Idea = {
   description: string;
   status: IdeaStatus;
   priority: Priority;
-  platform: "youtube" | "tiktok" | "reels" | "x";
+  platform: Platform;
   updatedAt: string;
   script?: string;
   thumbnail: string;

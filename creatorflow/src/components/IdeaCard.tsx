@@ -3,14 +3,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { Sparkles, Loader2 } from "lucide-react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { labelForPlatform } from "../lib/platforms";
 import { Button } from "./ui";
-
-const platformLabel: Record<string, string> = {
-  youtube: "YouTube",
-  tiktok: "TikTok",
-  reels: "Reels",
-  x: "X",
-};
 
 type IdeaCardProps = {
   idea: Idea;
@@ -44,7 +38,7 @@ export function IdeaCard({
         />
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
-          {platformLabel[idea.platform] ?? idea.platform}
+          {labelForPlatform(idea.platform)}
         </span>
       </div>
       <div className="p-3">
