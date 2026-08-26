@@ -77,6 +77,17 @@ describe("resolveAppleAuthUrl", () => {
     );
     expect(() => resolveAppleAuthUrl()).toThrow(/callback page/i);
   });
+
+  it("does not treat malformed URLs as the iOS callback page", () => {
+    vi.stubEnv(
+      "VITE_AUTH_APPLE_URL",
+      "not-a-valid-url carllaliberte.github.io/contract/creatorflow/auth/apple",
+    );
+    expect(() => resolveAppleAuthUrl()).not.toThrow();
+    expect(resolveAppleAuthUrl()).toBe(
+      "not-a-valid-url carllaliberte.github.io/contract/creatorflow/auth/apple",
+    );
+  });
 });
 
 describe("resolveHealthUrl", () => {

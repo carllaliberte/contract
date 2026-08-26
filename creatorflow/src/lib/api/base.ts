@@ -17,10 +17,7 @@ function isIosCallbackUrl(url: string): boolean {
       parsed.pathname.replace(/\/$/, "") === IOS_CALLBACK_PATH
     );
   } catch {
-    return (
-      url.includes("carllaliberte.github.io") &&
-      url.includes("/contract/creatorflow/auth/apple")
-    );
+    return false;
   }
 }
 
