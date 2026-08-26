@@ -45,6 +45,8 @@ jobs:
         working-directory: creatorflow
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_BASE_PATH: /contract/creatorflow/
           VITE_ROUTER_BASENAME: /contract/creatorflow
         run: npm run build:seo
@@ -109,6 +111,8 @@ jobs:
         working-directory: creatorflow
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_BASE_PATH: /contract/creatorflow/pr-${{ steps.pr.outputs.number }}/
           VITE_ROUTER_BASENAME: /contract/creatorflow/pr-${{ steps.pr.outputs.number }}
         run: npm run build:seo
