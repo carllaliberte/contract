@@ -72,6 +72,24 @@ Then re-run **Deploy CreatorFlow** workflow. Settings → **API en ligne** when 
 
 ### CreatorFlow frontend
 
-Set `VITE_API_URL` to the API origin (no trailing slash), e.g. `http://localhost:3000`.
+Set `VITE_API_URL` to the API origin (no trailing slash):
+
+- **Local:** `http://localhost:3000`
+- **Fly.io:** `https://creatorflow-api.fly.dev` (see `api/fly.toml`; deploy workflow default)
+- **Render:** `https://creatorflow-api.onrender.com` (see `render.yaml` blueprint)
+
+GitHub Actions: set repo variable `VITE_API_URL`, or rely on the deploy workflow default (`creatorflow-api.fly.dev`).
+
+### Render (production)
+
+1. Render Dashboard → **New** → **Blueprint** → connect this repo.
+2. The blueprint (`render.yaml`) deploys `creatorflow-api` from the `api/` directory.
+3. Set secrets in Render: `SUPABASE_*`, `OPENAI_API_KEY` (optional: set `MEMORY_STORE=false`, `MOCK_LLM=false`).
+4. GitHub Actions variable: `VITE_API_URL=https://creatorflow-api.onrender.com` → redeploy CreatorFlow.
+
+### Fly.io (alternative)
+
+1. `cd api && fly deploy` (requires `fly.toml` and Fly CLI auth).
+2. GitHub Actions variable: `VITE_API_URL=https://creatorflow-api.fly.dev` → redeploy CreatorFlow.
 
 Local Vite proxy (optional): `/ai` → `http://localhost:3000`.

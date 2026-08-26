@@ -43,6 +43,8 @@ Le script pousse uniquement les valeurs **non vides** :
 |----------|----------------|
 | `VITE_API_URL` | `creatorflow/.env.local` — ex. `https://TON-PROJET.supabase.co/functions/v1/generate-script` |
 | `VITE_AUTH_APPLE_URL` | optionnel — ex. `https://TON-PROJET.supabase.co/functions/v1/auth-apple` |
+| `VITE_SUPABASE_URL` | `creatorflow/.env.local` |
+| `VITE_SUPABASE_ANON_KEY` | `creatorflow/.env.local` |
 | `VITE_WALLETCONNECT_PROJECT_ID` | `google-app/.env` |
 | `VITE_CONTRACT_ADDRESS` | `google-app/.env` ou `google-app/deployment.json` |
 | `VITE_RPC_URL` | `google-app/.env` ou `google-app/deployment.json` |

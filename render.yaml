@@ -1,15 +1,12 @@
 # Render Blueprint — CreatorFlow API
-# https://render.com/docs/blueprint-spec
-#
-# Deploy: Render Dashboard → New → Blueprint → connect carllaliberte/contract
+# Dashboard: New → Blueprint → connect this repo → deploy
 # Live URL: https://creatorflow-api.onrender.com
-
 services:
   - type: web
     name: creatorflow-api
     runtime: node
-    plan: free
     region: oregon
+    plan: free
     rootDir: api
     buildCommand: npm ci && npm run build
     startCommand: npm start

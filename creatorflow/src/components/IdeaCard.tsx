@@ -1,19 +1,22 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { canAdvanceStatus } from "../lib/pipelineActions";
 import { Button } from "./ui";
 
 const platformLabel: Record<string, string> = {
   youtube: "YouTube",
   tiktok: "TikTok",
   reels: "Reels",
+  x: "X",
 };
 
 type IdeaCardProps = {
   idea: Idea;
   onGenerateScript?: (idea: Idea) => void;
+  onAdvance?: (idea: Idea) => void;
   isGenerating?: boolean;
   dragOverlay?: boolean;
 };
@@ -21,12 +24,14 @@ type IdeaCardProps = {
 export function IdeaCard({
   idea,
   onGenerateScript,
+  onAdvance,
   isGenerating,
   dragOverlay,
 }: IdeaCardProps) {
   const { tr } = useI18n();
   const canGenerate =
     onGenerateScript && (idea.status === "idea" || idea.status === "script");
+  const canAdvance = onAdvance && canAdvanceStatus(idea.status);
 
   return (
     <article
@@ -51,24 +56,39 @@ export function IdeaCard({
         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           {idea.description}
         </p>
-        {canGenerate && (
-          <Button
-            type="button"
-            variant="secondary"
-            className="mt-2.5 h-9 w-full text-xs"
-            disabled={isGenerating}
-            onClick={() => onGenerateScript(idea)}
-          >
-            <Sparkles className="size-3.5" />
-            {isGenerating ? (
-              <>
-                <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                {tr("script.generating")}
-              </>
-            ) : (
-              tr("script.generate")
+        {(canGenerate || canAdvance) && (
+          <div className="mt-2.5 flex gap-2">
+            {canGenerate && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-9 flex-1 text-xs"
+                disabled={isGenerating}
+                onClick={() => onGenerateScript(idea)}
+              >
+                <Sparkles className="size-3.5" />
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                    {tr("script.generating")}
+                  </>
+                ) : (
+                  tr("script.generate")
+                )}
+              </Button>
             )}
-          </Button>
+            {canAdvance && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 shrink-0 px-2.5 text-xs"
+                aria-label={tr("pipeline.advance")}
+                onClick={() => onAdvance(idea)}
+              >
+                <ArrowRight className="size-3.5" />
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </article>

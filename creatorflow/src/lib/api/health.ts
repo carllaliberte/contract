@@ -1,5 +1,3 @@
-export type ApiHealthState = "online" | "offline" | "demo";
-
 /** Raw value from build-time env (e.g. .../functions/v1/generate-script). */
 export function resolveConfiguredApiUrl(): string | null {
   const configured = import.meta.env.VITE_API_URL?.trim() ?? "";
@@ -16,27 +14,33 @@ export function resolveApiBaseUrl(): string | null {
   return configured;
 }
 
-export function resolveHealthUrl(baseUrl: string): string {
+function resolveHealthUrl(baseUrl: string): string {
   if (baseUrl.includes(".supabase.co/functions/v1")) {
     return `${baseUrl.replace(/\/$/, "")}/health`;
   }
   return `${baseUrl.replace(/\/$/, "")}/health`;
 }
 
-export async function checkApiHealth(baseUrl: string): Promise<boolean> {
+export async function checkApiHealth(): Promise<{
+  online: boolean;
+  url: string | null;
+}> {
+  const configured = resolveConfiguredApiUrl();
+  const healthBase = resolveApiBaseUrl();
+  if (!healthBase) return { online: false, url: null };
+
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 12_000);
-  const healthUrl = resolveHealthUrl(baseUrl);
   try {
-    const res = await fetch(healthUrl, {
+    const res = await fetch(resolveHealthUrl(healthBase), {
       method: "GET",
       signal: controller.signal,
     });
-    if (!res.ok) return false;
+    if (!res.ok) return { online: false, url: configured };
     const data = (await res.json()) as { ok?: boolean };
-    return data.ok === true;
+    return { online: data.ok === true, url: configured };
   } catch {
-    return false;
+    return { online: false, url: configured };
   } finally {
     window.clearTimeout(timeout);
   }
