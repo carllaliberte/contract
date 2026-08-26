@@ -12,6 +12,7 @@ import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
+import { TtsPlayButton } from "../components/TtsPlayButton";
 import { useAiUsage } from "../hooks/useAiUsage";
 
 export function ContentsPage() {
@@ -119,9 +120,12 @@ export function ContentsPage() {
                 )}
               </div>
               {item.script && (
-                <p className="mt-3 line-clamp-4 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
-                  {item.script}
-                </p>
+                <>
+                  <p className="mt-3 line-clamp-4 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
+                    {item.script}
+                  </p>
+                  <TtsPlayButton text={item.script} className="mt-2" />
+                </>
               )}
               {(item.status === "idea" || item.status === "script") && (
                 <Button

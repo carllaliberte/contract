@@ -42,6 +42,8 @@ Le script pousse uniquement les valeurs **non vides** :
 | Variable | Source typique |
 |----------|----------------|
 | `VITE_API_URL` | `creatorflow/.env.local` |
+| `VITE_SUPABASE_URL` | `creatorflow/.env.local` |
+| `VITE_SUPABASE_ANON_KEY` | `creatorflow/.env.local` |
 | `VITE_WALLETCONNECT_PROJECT_ID` | `google-app/.env` |
 | `VITE_CONTRACT_ADDRESS` | `google-app/.env` ou `google-app/deployment.json` |
 | `VITE_RPC_URL` | `google-app/.env` ou `google-app/deployment.json` |

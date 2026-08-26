@@ -91,6 +91,25 @@ export async function clearSession(): Promise<void> {
   await secureClear(Object.values(SESSION_KEYS));
 }
 
+/** App data keys in localStorage (not Keychain). Locale is preserved. */
+const LOCAL_APP_DATA_KEYS = [
+  DEMO_FLAG,
+  "cf-ideas",
+  "cf-ai-usage",
+  "cf-plan",
+  "cf-demo-id",
+] as const;
+
+/**
+ * Account deletion (Guideline 5.1.1(v)): wipe on-device app data and sign out.
+ */
+export async function deleteAccount(): Promise<void> {
+  for (const key of LOCAL_APP_DATA_KEYS) {
+    localStorage.removeItem(key);
+  }
+  await clearSession();
+}
+
 export async function resolveSessionKind(): Promise<SessionKind> {
   const [kind, token] = await Promise.all([
     secureGet(SESSION_KEYS.SESSION_KIND),
