@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import { usePlan } from "../hooks/usePlan";
 import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
 import { getAppleProfile } from "../lib/auth/session";
+import { checkApiHealth, resolveApiBaseUrl } from "../lib/api/health";
 import { restorePurchases } from "../lib/iap";
 import { PLAN_LIMITS } from "../lib/plans";
 import { META_HOLDER_BONUS_AI } from "../lib/limits";
@@ -24,6 +25,9 @@ export function SettingsPage() {
   const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
+  const [apiChecking, setApiChecking] = useState(false);
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const apiBaseUrl = resolveApiBaseUrl();
 
   const limits = PLAN_LIMITS[plan];
   const shortPct = limits.short
@@ -55,6 +59,23 @@ export function SettingsPage() {
       cancelled = true;
     };
   }, [isAuthenticated, isDemo, tr]);
+
+  useEffect(() => {
+    if (!apiBaseUrl) {
+      setApiOnline(null);
+      return;
+    }
+    let cancelled = false;
+    setApiChecking(true);
+    void checkApiHealth().then(({ online }) => {
+      if (cancelled) return;
+      setApiOnline(online);
+      setApiChecking(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl]);
 
   async function handleRestore() {
     setRestoreBusy(true);
@@ -176,6 +197,33 @@ export function SettingsPage() {
             <p className="text-xs text-muted-foreground">{restoreNotice}</p>
           ) : null}
         </div>
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold">{tr("settings.apiTitle")}</h2>
+        <div className="mt-3 flex items-center gap-2">
+          {apiChecking ? (
+            <>
+              <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
+              <p className="text-sm text-muted-foreground">{tr("settings.apiChecking")}</p>
+            </>
+          ) : apiBaseUrl ? (
+            <>
+              <span
+                className={`size-2.5 rounded-full ${apiOnline ? "bg-emerald-500" : "bg-destructive"}`}
+                aria-hidden
+              />
+              <p className="text-sm">
+                {apiOnline ? tr("settings.apiOnline") : tr("settings.apiOffline")}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">{tr("settings.apiDemo")}</p>
+          )}
+        </div>
+        {apiBaseUrl ? (
+          <p className="mt-2 break-all text-xs text-muted-foreground">{apiBaseUrl}</p>
+        ) : null}
       </Card>
 
       <Card className="p-5">
