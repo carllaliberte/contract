@@ -64,6 +64,8 @@ fi
 
 bold "Variables (public VITE_* — injected at build, visible in client bundle)"
 status_var VITE_API_URL
+status_var VITE_SUPABASE_URL
+status_var VITE_SUPABASE_ANON_KEY
 status_var VITE_WALLETCONNECT_PROJECT_ID
 status_var VITE_CONTRACT_ADDRESS
 status_var VITE_RPC_URL
@@ -85,7 +87,7 @@ echo ""
 
 bold "Workflows — secrets required?"
 echo "  CI CreatorFlow / API CI / Secret scan  → none"
-echo "  Deploy CreatorFlow                     → optional VITE_API_URL (variable)"
+echo "  Deploy CreatorFlow                     → optional VITE_API_URL, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY"
 echo "  Deploy META dashboard                  → optional VITE_* variables"
 echo "  Build Android release (Google Play)    → META_PLAY_CONFIG (or upload skipped)"
 echo ""

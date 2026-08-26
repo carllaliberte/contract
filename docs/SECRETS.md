@@ -28,6 +28,7 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 | Domaine | Nom | Type | Où le définir | Obligatoire |
 |---------|-----|------|---------------|-------------|
 | **CreatorFlow** | `VITE_API_URL` | Public (var) | `creatorflow/.env`, Actions **var** `VITE_API_URL` | Non — vide = démo / chemin relatif |
+| **CreatorFlow** | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Public (var) | `creatorflow/.env.local`, Actions **vars** | Non — vide = ideas en localStorage seulement |
 | **CreatorFlow** | `VITE_BASE_PATH` | Public (var) | Local ou Actions **var** | Non — défaut `/contract/creatorflow/` |
 | **CreatorFlow** | `VITE_ROUTER_BASENAME` | Public (var) | Local ou Actions **var** | Non — défaut aligné GitHub Pages |
 | **CreatorFlow** | `OPENAI_API_KEY` | **Secret** | Supabase Edge / API serveur uniquement | Non côté client |
@@ -131,7 +132,7 @@ bash scripts/print-ci-secrets-checklist.sh   # audit Variables vs Secrets
 bash scripts/setup-github-ci-env.sh          # pousse les VITE_* non vides
 ```
 
-- **Variables** (`gh variable set`) : `VITE_API_URL`, `VITE_WALLETCONNECT_PROJECT_ID`, `VITE_CONTRACT_ADDRESS`, `VITE_RPC_URL`
+- **Variables** (`gh variable set`) : `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WALLETCONNECT_PROJECT_ID`, `VITE_CONTRACT_ADDRESS`, `VITE_RPC_URL`
 - **Secrets** (`gh secret set`) : `META_PLAY_CONFIG` (Play), `FIREBASE_TOKEN` (optionnel)
 - Ne pas ajouter `OPENAI_API_KEY` ni `VITE_BASE_PATH=/` dans GitHub Actions (voir checklist)
 
