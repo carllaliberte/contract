@@ -41,7 +41,8 @@ async function waitForServer(url, timeoutMs = 120_000) {
 }
 
 function startPreview() {
-  const child = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
+  const viteBin = join(ROOT, "node_modules", ".bin", "vite");
+  const child = spawn(viteBin, ["preview", "--port", String(PORT), "--strictPort"], {
     cwd: ROOT,
     stdio: "pipe",
     shell: false,
@@ -59,11 +60,22 @@ function startPreview() {
 
 async function stopPreview(child) {
   if (!child.pid) return;
-  child.kill("SIGTERM");
-  await new Promise((resolve) => {
+
+  const exited = new Promise((resolve) => {
     child.once("exit", resolve);
-    setTimeout(() => child.kill("SIGKILL"), 5000);
   });
+
+  child.kill("SIGTERM");
+
+  const stoppedInTime = await Promise.race([
+    exited.then(() => true),
+    new Promise((resolve) => setTimeout(() => resolve(false), 5_000)),
+  ]);
+
+  if (!stoppedInTime && !child.killed) {
+    child.kill("SIGKILL");
+    await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+  }
 }
 
 async function prerenderLanding() {
@@ -96,7 +108,7 @@ async function prerenderLanding() {
       console.error(`[prerender:page] ${error.message}`);
     });
 
-    await page.goto(PREVIEW_URL, { waitUntil: "networkidle" });
+    await page.goto(PREVIEW_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await page.waitForSelector("h1", { timeout: 30_000 });
 
     try {
@@ -104,6 +116,16 @@ async function prerenderLanding() {
     } catch (error) {
       console.error(
         `[prerender] #faq not found (non-blocking): ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    try {
+      await page.waitForSelector("#cf-faq-jsonld", { state: "attached", timeout: 10_000 });
+    } catch (error) {
+      console.error(
+        `[prerender] #cf-faq-jsonld not found (non-blocking): ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
