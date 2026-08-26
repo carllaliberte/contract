@@ -4,13 +4,14 @@ on:
   workflow_run:
     workflows: ["CI CreatorFlow"]
     types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: deploy-creatorflow-${{ github.event.workflow_run.head_branch || github.ref }}
+  group: deploy-creatorflow
   cancel-in-progress: true
 
 jobs:
@@ -22,8 +23,6 @@ jobs:
         github.event.workflow_run.head_branch == 'main' &&
         github.event.workflow_run.event != 'pull_request'
       )
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,125 +66,3 @@ jobs:
 
       - name: Live URL
         run: echo "https://carllaliberte.github.io/contract/creatorflow/"
-
-  deploy-pr-preview:
-    if: >
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request'
-    permissions:
-      contents: read
-      pull-requests: read
-    runs-on: ubuntu-latest
-    outputs:
-      pr_number: ${{ steps.pr.outputs.number }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Resolve PR number
-        id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.payload.workflow_run.head_sha,
-            });
-            const pr = prs[0];
-            if (!pr) {
-              core.setFailed('No pull request found for CI run');
-              return;
-            }
-            core.setOutput('number', String(pr.number));
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          # Untrusted PR ref — do not share npm cache with default-branch workflows.
-          cache: false
-
-      - name: Install deps & Playwright Chromium
-        working-directory: creatorflow
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-
-      - name: Build CreatorFlow (PR preview)
-        working-directory: creatorflow
-        env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-          VITE_BASE_PATH: /contract/creatorflow/pr-${{ steps.pr.outputs.number }}/
-          VITE_ROUTER_BASENAME: /contract/creatorflow/pr-${{ steps.pr.outputs.number }}
-        run: npm run build:seo
-
-      - name: Upload PR preview build
-        uses: actions/upload-artifact@v4
-        with:
-          name: creatorflow-pr-preview-${{ steps.pr.outputs.number }}
-          path: creatorflow/dist
-          retention-days: 1
-
-  publish-pr-preview:
-    needs: deploy-pr-preview
-    if: needs.deploy-pr-preview.result == 'success'
-    permissions:
-      contents: write
-      pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download PR preview build
-        uses: actions/download-artifact@v4
-        with:
-          name: creatorflow-pr-preview-${{ needs.deploy-pr-preview.outputs.pr_number }}
-          path: creatorflow/dist
-
-      - name: Publish PR preview to gh-pages
-        working-directory: creatorflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          npx gh-pages@6.3.0 -d dist \
-            --dest "creatorflow/pr-${{ needs.deploy-pr-preview.outputs.pr_number }}" \
-            --add \
-            -m "Deploy CreatorFlow PR preview #${{ needs.deploy-pr-preview.outputs.pr_number }} [skip ci]" \
-            -r "https://x-access-token:${GITHUB_TOKEN}@github.com/carllaliberte/contract.git"
-
-      - name: Comment preview URL on PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = Number('${{ needs.deploy-pr-preview.outputs.pr_number }}');
-            const previewUrl = `https://carllaliberte.github.io/contract/creatorflow/pr-${prNumber}/`;
-            const marker = '<!-- creatorflow-pr-preview -->';
-            const body = `${marker}\n**CreatorFlow PR preview:** ${previewUrl}`;
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-            const existing = comments.find((c) => c.body?.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
-
-      - name: Preview URL
-        run: echo "https://carllaliberte.github.io/contract/creatorflow/pr-${{ needs.deploy-pr-preview.outputs.pr_number }}/"
