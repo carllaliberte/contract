@@ -87,7 +87,9 @@ export function SettingsPage() {
   }
 
   const profileInitial = profileName.trim().charAt(0).toUpperCase() || "?";
-  const showMetaBlock = !isNativePlatform();
+  const native = isNativePlatform();
+  const showMetaBlock = !native;
+  const showIapActions = !native;
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -156,7 +158,7 @@ export function SettingsPage() {
               {plan === "pro" ? tr("plan.proName") : tr("plan.freeName")}
             </p>
           </div>
-          {plan === "free" && (
+          {plan === "free" && showIapActions && (
             <Button type="button" className="h-9 px-3 text-xs" onClick={() => setPaywallOpen(true)}>
               {tr("paywall.upgrade")}
             </Button>
@@ -191,27 +193,29 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10"
-            disabled={restoreBusy}
-            onClick={() => void handleRestore()}
-          >
-            {restoreBusy ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {tr("paywall.restoring")}
-              </>
-            ) : (
-              tr("paywall.restore")
-            )}
-          </Button>
-          {restoreNotice ? (
-            <p className="text-xs text-muted-foreground">{restoreNotice}</p>
-          ) : null}
-        </div>
+        {showIapActions && (
+          <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10"
+              disabled={restoreBusy}
+              onClick={() => void handleRestore()}
+            >
+              {restoreBusy ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {tr("paywall.restoring")}
+                </>
+              ) : (
+                tr("paywall.restore")
+              )}
+            </Button>
+            {restoreNotice ? (
+              <p className="text-xs text-muted-foreground">{restoreNotice}</p>
+            ) : null}
+          </div>
+        )}
       </Card>
 
       <Card className="p-5">

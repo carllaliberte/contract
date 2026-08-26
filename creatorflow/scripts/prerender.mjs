@@ -74,7 +74,17 @@ async function prerenderLanding() {
   try {
     await waitForServer(PREVIEW_URL);
 
-    const browser = await chromium.launch({ headless: true });
+    let browser;
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (error) {
+      console.error(
+        `[prerender] Chromium launch failed — skipping prerender (Pages deploy continues): ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return;
+    }
     const page = await browser.newPage();
 
     page.on("console", (message) => {
