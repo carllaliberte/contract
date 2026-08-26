@@ -1,5 +1,6 @@
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { PaywallSheet } from "../components/PaywallSheet";
 import { Button, Card } from "../components/ui";
@@ -10,18 +11,21 @@ import { usePlan } from "../hooks/usePlan";
 import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
 import { getAppleProfile } from "../lib/auth/session";
 import { restorePurchases } from "../lib/iap";
+import { isNativePlatform } from "../lib/platform";
 import { PLAN_LIMITS } from "../lib/plans";
 import { META_HOLDER_BONUS_AI } from "../lib/limits";
 import { metaEntitlements } from "../../../shared/meta-entitlements";
 
 export function SettingsPage() {
   const { tr } = useI18n();
+  const navigate = useNavigate();
   const plan = usePlan();
   const usage = useAiUsage();
-  const { isAuthenticated, isDemo } = useAuth();
+  const { isAuthenticated, isDemo, deleteAccount } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
 
@@ -74,7 +78,16 @@ export function SettingsPage() {
     );
   }
 
+  async function handleDeleteAccount() {
+    if (!window.confirm(tr("settings.deleteAccountConfirm"))) return;
+    setDeleteBusy(true);
+    await deleteAccount();
+    setDeleteBusy(false);
+    navigate("/");
+  }
+
   const profileInitial = profileName.trim().charAt(0).toUpperCase() || "?";
+  const showMetaBlock = !isNativePlatform();
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -111,6 +124,29 @@ export function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      {isAuthenticated && (
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold">{tr("settings.accountTitle")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{tr("settings.deleteAccountHint")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 h-10 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            disabled={deleteBusy}
+            onClick={() => void handleDeleteAccount()}
+          >
+            {deleteBusy ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                {tr("settings.deleteAccountBusy")}
+              </>
+            ) : (
+              tr("settings.deleteAccount")
+            )}
+          </Button>
+        </Card>
+      )}
 
       <Card className="p-5">
         <div className="flex items-start justify-between gap-3">
@@ -202,6 +238,7 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      {showMetaBlock && (
       <Card className="p-5">
         <h2 className="text-sm font-semibold">META (utilitaire)</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -211,6 +248,7 @@ export function SettingsPage() {
         </p>
         <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
       </Card>
+      )}
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </div>
