@@ -104,8 +104,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: creatorflow/package-lock.json
+          # Untrusted PR ref — do not share npm cache with default-branch workflows.
+          cache: false
 
       - name: Install deps & Playwright Chromium
         working-directory: creatorflow
