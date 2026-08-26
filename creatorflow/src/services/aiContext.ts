@@ -1,34 +1,28 @@
-import { Preferences } from "@capacitor/preferences";
 import type {
   AIContext,
+  AIContextOptions,
   ContentPackage,
-  PromptStyleContext,
-  StructurePreferences,
+  StyleMemoryEntry,
+  StyleTone,
   UserStyleProfile,
-  VoicePreference,
 } from "../types/aiContext";
-import { STYLE_PROFILE_VERSION } from "../types/aiContext";
+import type { Language } from "../lib/api/types";
 
-const CONTEXT_STORAGE_KEY = "cf-ai-context";
-const STYLE_CHANGE_EVENT = "cf-style-memory-change";
+const STORAGE_KEY = "cf-style-profile";
+const STYLE_EVENT = "cf-style-profile-change";
 
-const MAX_TONES = 12;
-const MAX_PLATFORMS = 6;
-const MAX_VOCABULARY = 24;
-const MAX_RECENT_PACKAGES = 20;
-const STRUCTURE_EMA_ALPHA = 0.35;
-const LENGTH_EMA_ALPHA = 0.4;
+const MAX_VOCABULARY = 40;
+const MAX_HOOK_PATTERNS = 12;
+const MAX_CTA_PATTERNS = 8;
+const MAX_MEMORY_ENTRIES = 24;
+const DEFAULT_VOICE_ID = "alloy";
+const DEFAULT_TTS_SPEED = 1;
 
 const STOP_WORDS = new Set([
   "a",
-  "an",
-  "and",
-  "are",
-  "as",
-  "at",
-  "be",
-  "but",
-  "by",
+  "au",
+  "aux",
+  "avec",
   "ce",
   "ces",
   "cette",
@@ -36,461 +30,347 @@ const STOP_WORDS = new Set([
   "de",
   "des",
   "du",
-  "elle",
   "en",
-  "est",
   "et",
+  "est",
   "for",
-  "from",
-  "have",
   "il",
-  "in",
-  "is",
-  "it",
   "la",
   "le",
   "les",
-  "leur",
-  "mais",
-  "ne",
-  "nos",
-  "not",
   "on",
-  "or",
   "ou",
-  "our",
   "par",
-  "pas",
   "pour",
   "que",
   "qui",
   "se",
-  "son",
   "sur",
-  "that",
   "the",
-  "their",
-  "this",
   "to",
   "un",
   "une",
   "vos",
-  "was",
-  "with",
   "vous",
   "your",
 ]);
 
-let cachedContext: AIContext | null = null;
-let hydratePromise: Promise<AIContext> | null = null;
-
-function defaultStructurePreferences(): StructurePreferences {
-  return {
-    strongHook: 0.5,
-    educational: 0.5,
-    highEnergy: 0.5,
-    narrative: 0.5,
-    shortFormOptimized: 0.5,
-  };
+function readLanguage(): Language {
+  const saved = localStorage.getItem("cf-locale");
+  return saved === "en" ? "en" : "fr";
 }
 
-export function createDefaultStyleProfile(): UserStyleProfile {
+function createDefaultProfile(): UserStyleProfile {
   const now = new Date().toISOString();
   return {
-    preferredTones: [],
-    preferredPlatforms: [],
-    preferredVoices: {},
-    averageLengthByPlatform: {},
-    vocabularyPreferences: [],
-    structurePreferences: defaultStructurePreferences(),
-    recentSuccessfulPackages: [],
-    lastUpdatedAt: now,
-    version: STYLE_PROFILE_VERSION,
+    version: 1,
+    tone: "direct",
+    vocabulary: [],
+    hookPatterns: [],
+    ctaPatterns: [],
+    avgScriptLength: "medium",
+    preferredLanguage: readLanguage(),
+    tts: {
+      voiceId: DEFAULT_VOICE_ID,
+      speed: DEFAULT_TTS_SPEED,
+    },
+    memory: [],
+    sampleCount: 0,
+    updatedAt: now,
   };
 }
 
-function createDefaultContext(): AIContext {
-  return {
-    useStyleMemory: true,
-    styleProfile: createDefaultStyleProfile(),
-  };
+function readProfile(): UserStyleProfile {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return createDefaultProfile();
+    const parsed = JSON.parse(raw) as Partial<UserStyleProfile>;
+    if (parsed.version !== 1) return createDefaultProfile();
+    return {
+      ...createDefaultProfile(),
+      ...parsed,
+      tts: {
+        voiceId: parsed.tts?.voiceId ?? DEFAULT_VOICE_ID,
+        speed: parsed.tts?.speed ?? DEFAULT_TTS_SPEED,
+      },
+      memory: Array.isArray(parsed.memory) ? parsed.memory : [],
+      vocabulary: Array.isArray(parsed.vocabulary) ? parsed.vocabulary : [],
+      hookPatterns: Array.isArray(parsed.hookPatterns) ? parsed.hookPatterns : [],
+      ctaPatterns: Array.isArray(parsed.ctaPatterns) ? parsed.ctaPatterns : [],
+    };
+  } catch {
+    return createDefaultProfile();
+  }
 }
 
-function normalizeStructurePreferences(
-  value: Partial<StructurePreferences> | undefined,
-): StructurePreferences {
-  const defaults = defaultStructurePreferences();
-  if (!value) return defaults;
-  return {
-    strongHook: clamp01(value.strongHook ?? defaults.strongHook),
-    educational: clamp01(value.educational ?? defaults.educational),
-    highEnergy: clamp01(value.highEnergy ?? defaults.highEnergy),
-    narrative: clamp01(value.narrative ?? defaults.narrative),
-    shortFormOptimized: clamp01(value.shortFormOptimized ?? defaults.shortFormOptimized),
-  };
+function writeProfile(profile: UserStyleProfile): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  window.dispatchEvent(new Event(STYLE_EVENT));
 }
 
-function clamp01(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(1, Math.max(0, value));
-}
-
-function mergeUniqueStrings(existing: string[], incoming: string[], max: number): string[] {
-  const merged = [...incoming, ...existing];
+function uniqueTail(values: string[], limit: number): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
-  for (const item of merged) {
-    const normalized = item.trim().toLowerCase();
-    if (!normalized || seen.has(normalized)) continue;
-    seen.add(normalized);
-    result.push(item.trim());
-    if (result.length >= max) break;
+  for (let i = values.length - 1; i >= 0; i -= 1) {
+    const normalized = values[i].trim();
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.unshift(normalized);
+    if (result.length >= limit) break;
   }
   return result;
 }
 
-function extractVocabulary(script: string): string[] {
-  const tokens = script
+function tokenize(text: string): string[] {
+  return text
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
     .split(/\s+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 4 && !STOP_WORDS.has(token));
+    .filter((word) => word.length > 3 && !STOP_WORDS.has(word));
+}
 
-  const counts = new Map<string, number>();
-  for (const token of tokens) {
-    counts.set(token, (counts.get(token) ?? 0) + 1);
+function extractHook(script: string): string | null {
+  const lines = script
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+
+  const hookLine =
+    lines.find((line) => /^hook\b/i.test(line)) ??
+    lines.find((line) => /^(chapitre|chapter)\s*0/i.test(line)) ??
+    lines[0];
+
+  return hookLine.replace(/^hook\s*:\s*/i, "").trim() || null;
+}
+
+function extractCta(script: string): string | null {
+  const lines = script
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+
+  const ctaLine =
+    [...lines]
+      .reverse()
+      .find((line) => /^cta\b/i.test(line) || /\b(abonne|subscribe|follow|suis)\b/i.test(line)) ??
+    lines[lines.length - 1];
+
+  return ctaLine.replace(/^cta\s*:\s*/i, "").trim() || null;
+}
+
+function inferScriptLength(script: string): UserStyleProfile["avgScriptLength"] {
+  const words = script.trim().split(/\s+/).filter(Boolean).length;
+  if (words < 120) return "short";
+  if (words < 350) return "medium";
+  return "long";
+}
+
+function blendScriptLength(
+  current: UserStyleProfile["avgScriptLength"],
+  next: UserStyleProfile["avgScriptLength"],
+): UserStyleProfile["avgScriptLength"] {
+  const rank = { short: 0, medium: 1, long: 2 };
+  const blended = Math.round((rank[current] + rank[next]) / 2);
+  if (blended <= 0) return "short";
+  if (blended >= 2) return "long";
+  return "medium";
+}
+
+function inferTone(script: string, current: StyleTone): StyleTone {
+  const sample = script.toLowerCase();
+  if (/\b(lol|mdr|fun|drôle|humou)\b/.test(sample)) return "humorous";
+  if (/\b(apprend|learn|tutorial|guide|étape|step)\b/.test(sample)) {
+    return "educational";
   }
+  if (/\b(rêve|inspire|motiv|dream|believe)\b/.test(sample)) {
+    return "inspirational";
+  }
+  if (/\b(salut|hey|coucou|yo)\b/.test(sample)) return "casual";
+  return current;
+}
 
-  return [...counts.entries()]
+function mergeVocabulary(existing: string[], script: string, titles?: string[]): string[] {
+  const fromScript = tokenize(script);
+  const fromTitles = (titles ?? []).flatMap((title) => tokenize(title));
+  const merged = [...existing, ...fromScript, ...fromTitles];
+  const frequency = new Map<string, number>();
+  for (const word of merged) {
+    frequency.set(word, (frequency.get(word) ?? 0) + 1);
+  }
+  return [...frequency.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, MAX_VOCABULARY)
     .map(([word]) => word);
 }
 
-function inferStructureFromScript(script: string): Partial<StructurePreferences> {
-  const lower = script.toLowerCase();
-  const firstLines = lower.split("\n").slice(0, 3).join(" ");
-  const hasQuestion = /\?/.test(firstLines);
-  const hasHookWords = /(attention|regarde|secret|astuce|tip|hook|stop scrolling)/i.test(
-    firstLines,
-  );
+function buildStylePrompt(profile: UserStyleProfile, language: Language): string {
+  const toneLabel: Record<StyleTone, { fr: string; en: string }> = {
+    direct: { fr: "direct et punchy", en: "direct and punchy" },
+    educational: { fr: "pédagogique et clair", en: "educational and clear" },
+    humorous: { fr: "léger et humoristique", en: "light and humorous" },
+    inspirational: { fr: "inspirant et motivant", en: "inspirational and motivating" },
+    casual: { fr: "décontracté et conversationnel", en: "casual and conversational" },
+  };
+
+  const tone = toneLabel[profile.tone][language];
+  const vocab =
+    profile.vocabulary.length > 0
+      ? profile.vocabulary.slice(0, 12).join(", ")
+      : language === "fr"
+        ? "aucun mot récurrent détecté"
+        : "no recurring vocabulary detected";
+
+  const hooks =
+    profile.hookPatterns.length > 0
+      ? profile.hookPatterns.slice(-3).join(" | ")
+      : language === "fr"
+        ? "hooks percutants"
+        : "punchy hooks";
+
+  const ctas =
+    profile.ctaPatterns.length > 0
+      ? profile.ctaPatterns.slice(-2).join(" | ")
+      : language === "fr"
+        ? "CTA naturels"
+        : "natural CTAs";
+
+  if (language === "fr") {
+    return [
+      "Style du créateur à respecter :",
+      `- Ton : ${tone}`,
+      `- Longueur habituelle : ${profile.avgScriptLength}`,
+      `- Vocabulaire récurrent : ${vocab}`,
+      `- Hooks typiques : ${hooks}`,
+      `- CTAs typiques : ${ctas}`,
+    ].join("\n");
+  }
+
+  return [
+    "Creator style to respect:",
+    `- Tone: ${tone}`,
+    `- Usual length: ${profile.avgScriptLength}`,
+    `- Recurring vocabulary: ${vocab}`,
+    `- Typical hooks: ${hooks}`,
+    `- Typical CTAs: ${ctas}`,
+  ].join("\n");
+}
+
+function filterMemory(
+  memory: StyleMemoryEntry[],
+  options: AIContextOptions,
+): StyleMemoryEntry[] {
+  return memory.filter((entry) => {
+    if (options.platform && entry.platform !== options.platform) return false;
+    if (options.language && entry.language !== options.language) return false;
+    return true;
+  });
+}
+
+export function getStyleProfile(): UserStyleProfile {
+  return readProfile();
+}
+
+export function getContext(options: AIContextOptions = {}): AIContext {
+  const profile = readProfile();
+  const language = options.language ?? profile.preferredLanguage;
+  const includeMemory = options.includeMemory !== false;
+  const memoryLimit = options.memoryLimit ?? 3;
+
+  const memoryExcerpts = includeMemory
+    ? filterMemory(profile.memory, options)
+        .slice(-memoryLimit)
+        .map((entry) => entry.excerpt)
+    : [];
 
   return {
-    strongHook: hasQuestion || hasHookWords ? 0.85 : 0.45,
-    educational: /(comment|how to|étape|step|learn|apprendre|guide)/i.test(lower) ? 0.8 : 0.4,
-    highEnergy: /(!|incroyable|wow|let's go|allez)/i.test(lower) ? 0.8 : 0.45,
-    narrative: /(hier|today|story|histoire|quand j)/i.test(lower) ? 0.75 : 0.4,
-    shortFormOptimized: script.length <= 900 ? 0.85 : 0.35,
+    profile,
+    stylePrompt: buildStylePrompt(profile, language),
+    tts: { ...profile.tts },
+    platform: options.platform,
+    language,
+    memoryExcerpts,
   };
 }
 
-function blendStructure(
-  current: StructurePreferences,
-  incoming: Partial<StructurePreferences>,
-): StructurePreferences {
-  const keys = Object.keys(current) as (keyof StructurePreferences)[];
-  const next = { ...current };
-  for (const key of keys) {
-    const value = incoming[key];
-    if (value === undefined) continue;
-    next[key] = clamp01(current[key] * (1 - STRUCTURE_EMA_ALPHA) + clamp01(value) * STRUCTURE_EMA_ALPHA);
-  }
-  return next;
-}
+export function updateStyleFromPackage(pkg: ContentPackage): UserStyleProfile {
+  const current = readProfile();
+  const hook = extractHook(pkg.script);
+  const cta = extractCta(pkg.script);
+  const scriptLength = inferScriptLength(pkg.script);
 
-function updateAverageLength(
-  current: Record<string, number>,
-  platform: string,
-  length: number,
-): Record<string, number> {
-  const key = platform.trim().toLowerCase();
-  const previous = current[key];
-  if (previous === undefined) {
-    return { ...current, [key]: length };
-  }
-  return {
+  const memoryEntry: StyleMemoryEntry | null = hook
+    ? {
+        id: crypto.randomUUID(),
+        excerpt: hook,
+        platform: pkg.platform,
+        language: pkg.language,
+        capturedAt: pkg.createdAt ?? new Date().toISOString(),
+      }
+    : null;
+
+  const nextMemory = memoryEntry
+    ? [...current.memory, memoryEntry].slice(-MAX_MEMORY_ENTRIES)
+    : current.memory;
+
+  const updated: UserStyleProfile = {
     ...current,
-    [key]: Math.round(previous * (1 - LENGTH_EMA_ALPHA) + length * LENGTH_EMA_ALPHA),
+    tone: inferTone(pkg.script, current.tone),
+    vocabulary: mergeVocabulary(current.vocabulary, pkg.script, pkg.titles),
+    hookPatterns: hook
+      ? uniqueTail([...current.hookPatterns, hook], MAX_HOOK_PATTERNS)
+      : current.hookPatterns,
+    ctaPatterns: cta
+      ? uniqueTail([...current.ctaPatterns, cta], MAX_CTA_PATTERNS)
+      : current.ctaPatterns,
+    avgScriptLength: blendScriptLength(current.avgScriptLength, scriptLength),
+    preferredLanguage: pkg.language,
+    memory: nextMemory,
+    sampleCount: current.sampleCount + 1,
+    updatedAt: new Date().toISOString(),
   };
+
+  writeProfile(updated);
+  return updated;
 }
 
-function parseStoredContext(raw: string | null): AIContext {
-  if (!raw) return createDefaultContext();
-  try {
-    const parsed = JSON.parse(raw) as Partial<AIContext>;
-    const profile = parsed.styleProfile ?? createDefaultStyleProfile();
-    return {
-      useStyleMemory: parsed.useStyleMemory ?? true,
-      styleProfile: {
-        ...createDefaultStyleProfile(),
-        ...profile,
-        structurePreferences: normalizeStructurePreferences(profile.structurePreferences),
-        version: profile.version ?? STYLE_PROFILE_VERSION,
-      },
-    };
-  } catch {
-    return createDefaultContext();
-  }
-}
-
-async function readContextFromStorage(): Promise<AIContext> {
-  const { value } = await Preferences.get({ key: CONTEXT_STORAGE_KEY });
-  return parseStoredContext(value);
-}
-
-async function writeContextToStorage(context: AIContext): Promise<void> {
-  await Preferences.set({
-    key: CONTEXT_STORAGE_KEY,
-    value: JSON.stringify(context),
-  });
-}
-
-function notifyStyleMemoryChange(): void {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(STYLE_CHANGE_EVENT));
-  }
-}
-
-async function persistContext(context: AIContext): Promise<AIContext> {
-  cachedContext = context;
-  await writeContextToStorage(context);
-  notifyStyleMemoryChange();
-  return context;
-}
-
-/**
- * Loads context from Capacitor Preferences into the in-memory cache.
- * Safe to call multiple times; subsequent calls reuse the same hydration promise.
- */
-export async function hydrateAiContext(): Promise<AIContext> {
-  if (cachedContext) return cachedContext;
-  if (!hydratePromise) {
-    hydratePromise = readContextFromStorage().then((context) => {
-      cachedContext = context;
-      return context;
-    });
-  }
-  return hydratePromise;
-}
-
-/** Returns the learned style profile (hydrates storage on first access). */
-export async function getStyleProfile(): Promise<UserStyleProfile> {
-  const context = await hydrateAiContext();
-  return context.styleProfile;
-}
-
-/** Returns the full AI context including the style-memory toggle. */
-export async function getContext(): Promise<AIContext> {
-  return hydrateAiContext();
-}
-
-/**
- * Learns tone, platform, length, vocabulary and structure from a content package.
- * Respects `useStyleMemory` — no-op when the toggle is off.
- */
-export async function updateStyleFromPackage(pkg: ContentPackage): Promise<UserStyleProfile> {
-  const context = await hydrateAiContext();
-  if (!context.useStyleMemory) {
-    return context.styleProfile;
-  }
-  if (pkg.successful === false) {
-    return context.styleProfile;
-  }
-
-  const profile = { ...context.styleProfile };
-  const now = new Date().toISOString();
-
-  if (pkg.tones?.length) {
-    profile.preferredTones = mergeUniqueStrings(profile.preferredTones, pkg.tones, MAX_TONES);
-  }
-
-  if (pkg.platform) {
-    profile.preferredPlatforms = mergeUniqueStrings(
-      profile.preferredPlatforms,
-      [String(pkg.platform)],
-      MAX_PLATFORMS,
-    );
-  }
-
-  const scriptLength =
-    pkg.length ?? (pkg.script ? pkg.script.trim().length : undefined);
-  if (scriptLength !== undefined && pkg.platform) {
-    profile.averageLengthByPlatform = updateAverageLength(
-      profile.averageLengthByPlatform,
-      String(pkg.platform),
-      scriptLength,
-    );
-  }
-
-  const vocabulary =
-    pkg.vocabulary ?? (pkg.script ? extractVocabulary(pkg.script) : []);
-  if (vocabulary.length) {
-    profile.vocabularyPreferences = mergeUniqueStrings(
-      profile.vocabularyPreferences,
-      vocabulary,
-      MAX_VOCABULARY,
-    );
-  }
-
-  const structure =
-    pkg.structure ?? (pkg.script ? inferStructureFromScript(pkg.script) : undefined);
-  if (structure) {
-    profile.structurePreferences = blendStructure(profile.structurePreferences, structure);
-  }
-
-  if (pkg.id) {
-    profile.recentSuccessfulPackages = mergeUniqueStrings(
-      profile.recentSuccessfulPackages,
-      [pkg.id],
-      MAX_RECENT_PACKAGES,
-    );
-  }
-
-  if (pkg.voiceId && pkg.voiceName) {
-    profile.preferredVoices = {
-      ...profile.preferredVoices,
-      [pkg.voiceId]: {
-        voiceName: pkg.voiceName,
-        usageCount: (profile.preferredVoices[pkg.voiceId]?.usageCount ?? 0) + 1,
-        lastUsedAt: now,
-      },
-    };
-  }
-
-  profile.lastUpdatedAt = now;
-  profile.version = STYLE_PROFILE_VERSION;
-
-  const nextContext: AIContext = {
-    ...context,
-    styleProfile: profile,
-  };
-  await persistContext(nextContext);
-  return profile;
-}
-
-/** Records a voice selection to reinforce future voice-over defaults. */
-export async function recordVoicePreference(
-  voiceId: string,
-  voiceName: string,
-): Promise<UserStyleProfile> {
-  const context = await hydrateAiContext();
-  const now = new Date().toISOString();
-  const previous = context.styleProfile.preferredVoices[voiceId];
-
-  const profile: UserStyleProfile = {
-    ...context.styleProfile,
-    preferredVoices: {
-      ...context.styleProfile.preferredVoices,
-      [voiceId]: {
-        voiceName,
-        usageCount: (previous?.usageCount ?? 0) + 1,
-        lastUsedAt: now,
-      },
+export function updateTtsPreferences(prefs: {
+  voiceId?: string;
+  speed?: number;
+}): UserStyleProfile {
+  const current = readProfile();
+  const updated: UserStyleProfile = {
+    ...current,
+    tts: {
+      voiceId: prefs.voiceId ?? current.tts.voiceId,
+      speed: prefs.speed ?? current.tts.speed,
     },
-    lastUpdatedAt: now,
-    version: STYLE_PROFILE_VERSION,
+    updatedAt: new Date().toISOString(),
   };
-
-  await persistContext({ ...context, styleProfile: profile });
-  return profile;
+  writeProfile(updated);
+  return updated;
 }
 
-/** Enables or disables style memory for all AI features. */
-export async function setUseStyleMemory(enabled: boolean): Promise<AIContext> {
-  const context = await hydrateAiContext();
-  if (context.useStyleMemory === enabled) {
-    return context;
-  }
-  return persistContext({ ...context, useStyleMemory: enabled });
+export function resetStyleProfile(): UserStyleProfile {
+  const fresh = createDefaultProfile();
+  writeProfile(fresh);
+  return fresh;
 }
 
-/** Clears all learned preferences and restores factory defaults. */
-export async function resetStyleMemory(): Promise<AIContext> {
-  const context = await hydrateAiContext();
-  return persistContext({
-    useStyleMemory: context.useStyleMemory,
-    styleProfile: createDefaultStyleProfile(),
-  });
+export function subscribeStyleProfile(listener: () => void): () => void {
+  window.addEventListener(STYLE_EVENT, listener);
+  return () => window.removeEventListener(STYLE_EVENT, listener);
 }
 
-function formatStructureHints(structure: StructurePreferences): string[] {
-  const hints: string[] = [];
-  if (structure.strongHook >= 0.65) hints.push("accroche forte en ouverture");
-  if (structure.educational >= 0.65) hints.push("ton éducatif et pédagogique");
-  if (structure.highEnergy >= 0.65) hints.push("énergie élevée");
-  if (structure.narrative >= 0.65) hints.push("structure narrative");
-  if (structure.shortFormOptimized >= 0.65) hints.push("optimisé format court");
-  return hints;
-}
-
-function topVoices(profile: UserStyleProfile, limit = 3): VoicePreference[] {
-  return Object.values(profile.preferredVoices)
-    .sort((a, b) => b.usageCount - a.usageCount || b.lastUsedAt.localeCompare(a.lastUsedAt))
-    .slice(0, limit);
-}
-
-/**
- * Builds a compact text block for LLM system/user prompts.
- * Returns empty text when style memory is disabled.
- */
-export async function buildPromptContext(): Promise<PromptStyleContext> {
-  const context = await hydrateAiContext();
-  const { styleProfile: profile, useStyleMemory } = context;
-
-  if (!useStyleMemory) {
-    return { enabled: false, text: "", profile };
-  }
-
-  const lines: string[] = ["Style du créateur (mémoire locale) :"];
-
-  if (profile.preferredTones.length) {
-    lines.push(`- Tons préférés : ${profile.preferredTones.join(", ")}`);
-  }
-  if (profile.preferredPlatforms.length) {
-    lines.push(`- Plateformes habituelles : ${profile.preferredPlatforms.join(", ")}`);
-  }
-
-  const lengthEntries = Object.entries(profile.averageLengthByPlatform);
-  if (lengthEntries.length) {
-    const lengths = lengthEntries
-      .map(([platform, avg]) => `${platform} ~${avg} car.`)
-      .join(", ");
-    lines.push(`- Longueurs moyennes : ${lengths}`);
-  }
-
-  const structureHints = formatStructureHints(profile.structurePreferences);
-  if (structureHints.length) {
-    lines.push(`- Structure : ${structureHints.join(", ")}`);
-  }
-
-  if (profile.vocabularyPreferences.length) {
-    lines.push(
-      `- Vocabulaire récurrent : ${profile.vocabularyPreferences.slice(0, 10).join(", ")}`,
-    );
-  }
-
-  const voices = topVoices(profile);
-  if (voices.length) {
-    lines.push(`- Voix préférées : ${voices.map((v) => v.voiceName).join(", ")}`);
-  }
-
-  const text = lines.length > 1 ? lines.join("\n") : "";
-  return { enabled: true, text, profile };
-}
-
-/** Subscribe to style-memory updates (for React hooks). */
-export function subscribeStyleMemory(listener: () => void): () => void {
-  if (typeof window === "undefined") {
-    return () => undefined;
-  }
-  window.addEventListener(STYLE_CHANGE_EVENT, listener);
-  return () => window.removeEventListener(STYLE_CHANGE_EVENT, listener);
-}
-
-/** Test helper — clears cache and storage. */
-export async function __resetAiContextForTests(): Promise<void> {
-  cachedContext = null;
-  hydratePromise = null;
-  await Preferences.remove({ key: CONTEXT_STORAGE_KEY });
-}
+/** Singleton-style export for feature modules (script gen, TTS, etc.). */
+export const aiContext = {
+  getStyleProfile,
+  getContext,
+  updateStyleFromPackage,
+  updateTtsPreferences,
+  resetStyleProfile,
+  subscribeStyleProfile,
+};

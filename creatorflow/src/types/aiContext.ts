@@ -1,79 +1,78 @@
-import type { Platform } from "../lib/api/types";
+import type { Language, Platform, ScriptFormat } from "../lib/api/types";
 
-/** Current schema version for migrations. */
-export const STYLE_PROFILE_VERSION = 1;
+/** Learned tone fingerprint used across script generation and TTS. */
+export type StyleTone =
+  | "direct"
+  | "educational"
+  | "humorous"
+  | "inspirational"
+  | "casual";
 
-/** Affinity scores (0–1) for structural patterns the creator tends to use. */
-export type StructurePreferences = {
-  strongHook: number;
-  educational: number;
-  highEnergy: number;
-  narrative: number;
-  shortFormOptimized: number;
+/** Single remembered style snippet from a past content package. */
+export type StyleMemoryEntry = {
+  id: string;
+  excerpt: string;
+  platform: Platform;
+  language: Language;
+  capturedAt: string;
 };
 
-/** A voice the creator has selected or reused over time. */
-export type VoicePreference = {
-  voiceName: string;
-  usageCount: number;
-  lastUsedAt: string;
-};
-
-/**
- * Learned style profile persisted locally.
- * Updated automatically from successful content packages and voice selections.
- */
+/** Persistent user style profile — the long-term "voice" of the creator. */
 export type UserStyleProfile = {
-  preferredTones: string[];
-  preferredPlatforms: string[];
-  preferredVoices: Record<string, VoicePreference>;
-  averageLengthByPlatform: Record<string, number>;
-  vocabularyPreferences: string[];
-  structurePreferences: StructurePreferences;
-  /** IDs of recently successful content packages (most recent first). */
-  recentSuccessfulPackages: string[];
-  lastUpdatedAt: string;
-  version: number;
+  version: 1;
+  tone: StyleTone;
+  vocabulary: string[];
+  hookPatterns: string[];
+  ctaPatterns: string[];
+  avgScriptLength: "short" | "medium" | "long";
+  preferredLanguage: Language;
+  tts: {
+    voiceId: string;
+    speed: number;
+  };
+  memory: StyleMemoryEntry[];
+  sampleCount: number;
+  updatedAt: string;
 };
 
 /**
- * Full AI context: toggle + learned profile.
- * This is the shared brain consumed by script generation, voice-over, etc.
- */
-export type AIContext = {
-  /** When false, `buildPromptContext()` returns an empty string. */
-  useStyleMemory: boolean;
-  styleProfile: UserStyleProfile;
-};
-
-/**
- * A content unit produced or approved by the creator.
- * Used to feed automatic style learning.
+ * Multi-output content bundle produced or accepted by the user.
+ * Feeds StyleMemory when passed to `updateStyleFromPackage`.
  */
 export type ContentPackage = {
-  id: string;
-  platform: Platform | string;
-  /** Detected or declared tones (e.g. "éducatif", "énergique"). */
-  tones?: string[];
-  script?: string;
-  /** Stable voice identifier (provider-specific). */
-  voiceId?: string;
-  voiceName?: string;
-  /** Script length in characters (used for per-platform averages). */
-  length?: number;
-  vocabulary?: string[];
-  structure?: Partial<StructurePreferences>;
+  ideaId?: string;
+  platform: Platform;
+  language: Language;
+  format?: ScriptFormat;
+  script: string;
+  titles?: string[];
+  description?: string;
+  hashtags?: string[];
+  source?: "generated" | "edited" | "accepted";
   createdAt?: string;
-  /**
-   * When true (default), the package contributes to style learning.
-   * Set to false for experiments the creator does not want to reinforce.
-   */
-  successful?: boolean;
 };
 
-/** Prompt-ready context returned by `buildPromptContext()`. */
-export type PromptStyleContext = {
-  enabled: boolean;
-  text: string;
+/** Options when assembling an AIContext for a specific feature call. */
+export type AIContextOptions = {
+  platform?: Platform;
+  language?: Language;
+  format?: ScriptFormat;
+  includeMemory?: boolean;
+  memoryLimit?: number;
+};
+
+/**
+ * Assembled context shared by script generation, TTS, and future AI features.
+ * Serializable and ready to attach to API payloads.
+ */
+export type AIContext = {
   profile: UserStyleProfile;
+  stylePrompt: string;
+  tts: {
+    voiceId: string;
+    speed: number;
+  };
+  platform?: Platform;
+  language: Language;
+  memoryExcerpts: string[];
 };

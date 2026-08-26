@@ -1,98 +1,105 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  __resetAiContextForTests,
-  buildPromptContext,
+  aiContext,
   getContext,
   getStyleProfile,
-  recordVoicePreference,
-  resetStyleMemory,
-  setUseStyleMemory,
+  resetStyleProfile,
+  subscribeStyleProfile,
   updateStyleFromPackage,
+  updateTtsPreferences,
 } from "./aiContext";
 
+const samplePackage = {
+  ideaId: "idea-1",
+  platform: "youtube" as const,
+  language: "fr" as const,
+  format: "short" as const,
+  script: [
+    "HOOK: Ces 5 erreurs font fuir 70% de ton audience.",
+    "POINT 1: Transitions trop longues",
+    "POINT 2: Audio non normalisé",
+    "CTA: Abonne-toi pour la checklist complète.",
+  ].join("\n"),
+  titles: ["5 erreurs de montage"],
+  description: "Analyse concrète avec avant/après.",
+  hashtags: ["#montage", "#youtube"],
+  source: "generated" as const,
+};
+
 describe("aiContext service", () => {
-  beforeEach(async () => {
-    await __resetAiContextForTests();
+  beforeEach(() => {
+    localStorage.clear();
+    resetStyleProfile();
   });
 
-  it("starts with default profile and style memory enabled", async () => {
-    const context = await getContext();
-    expect(context.useStyleMemory).toBe(true);
-    expect(context.styleProfile.preferredTones).toEqual([]);
-    expect(context.styleProfile.version).toBe(1);
+  it("returns a default style profile", () => {
+    const profile = getStyleProfile();
+    expect(profile.version).toBe(1);
+    expect(profile.sampleCount).toBe(0);
+    expect(profile.tts.voiceId).toBe("alloy");
+    expect(profile.tts.speed).toBe(1);
   });
 
-  it("learns tones, platforms and length from a content package", async () => {
-    await updateStyleFromPackage({
-      id: "pkg-1",
+  it("learns style from a content package", () => {
+    const updated = updateStyleFromPackage(samplePackage);
+    expect(updated.sampleCount).toBe(1);
+    expect(updated.hookPatterns.length).toBeGreaterThan(0);
+    expect(updated.ctaPatterns.length).toBeGreaterThan(0);
+    expect(updated.vocabulary).toContain("erreurs");
+    expect(updated.memory).toHaveLength(1);
+    expect(updated.memory[0].excerpt).toContain("70%");
+  });
+
+  it("builds an AI context with style prompt and memory excerpts", () => {
+    updateStyleFromPackage(samplePackage);
+    const context = getContext({
       platform: "youtube",
-      tones: ["éducatif", "calme"],
-      script: "Comment structurer une vidéo YouTube avec un hook clair et des étapes simples.",
-      length: 1200,
-      successful: true,
+      language: "fr",
+      includeMemory: true,
     });
 
-    const profile = await getStyleProfile();
-    expect(profile.preferredTones).toContain("éducatif");
-    expect(profile.preferredPlatforms).toContain("youtube");
-    expect(profile.averageLengthByPlatform.youtube).toBe(1200);
-    expect(profile.recentSuccessfulPackages).toContain("pkg-1");
+    expect(context.stylePrompt).toContain("Style du créateur");
+    expect(context.language).toBe("fr");
+    expect(context.platform).toBe("youtube");
+    expect(context.tts.voiceId).toBe("alloy");
+    expect(context.memoryExcerpts.length).toBeGreaterThan(0);
   });
 
-  it("records voice preferences with usage count", async () => {
-    await recordVoicePreference("voice-a", "Alex");
-    await recordVoicePreference("voice-a", "Alex");
-
-    const profile = await getStyleProfile();
-    expect(profile.preferredVoices["voice-a"].usageCount).toBe(2);
-    expect(profile.preferredVoices["voice-a"].voiceName).toBe("Alex");
-  });
-
-  it("respects the useStyleMemory toggle for learning and prompts", async () => {
-    await setUseStyleMemory(false);
-    await updateStyleFromPackage({
-      id: "pkg-ignored",
-      platform: "reels",
-      tones: ["fun"],
-      successful: true,
-    });
-
-    let profile = await getStyleProfile();
-    expect(profile.preferredTones).toEqual([]);
-
-    let prompt = await buildPromptContext();
-    expect(prompt.enabled).toBe(false);
-    expect(prompt.text).toBe("");
-
-    await setUseStyleMemory(true);
-    await updateStyleFromPackage({
-      id: "pkg-2",
-      platform: "reels",
-      tones: ["fun"],
-      successful: true,
-    });
-
-    profile = await getStyleProfile();
-    expect(profile.preferredTones).toContain("fun");
-
-    prompt = await buildPromptContext();
-    expect(prompt.enabled).toBe(true);
-    expect(prompt.text).toContain("fun");
-  });
-
-  it("resets learned profile while keeping toggle state", async () => {
-    await updateStyleFromPackage({
-      id: "pkg-3",
+  it("filters memory excerpts by platform", () => {
+    updateStyleFromPackage(samplePackage);
+    updateStyleFromPackage({
+      ...samplePackage,
       platform: "tiktok",
-      tones: ["énergique"],
-      successful: true,
+      script: "HOOK: Stop le scroll maintenant.\nCTA: Suis-moi.",
     });
-    await setUseStyleMemory(false);
-    await resetStyleMemory();
 
-    const context = await getContext();
-    expect(context.useStyleMemory).toBe(false);
-    expect(context.styleProfile.preferredTones).toEqual([]);
-    expect(context.styleProfile.recentSuccessfulPackages).toEqual([]);
+    const youtubeContext = getContext({ platform: "youtube", memoryLimit: 5 });
+    expect(youtubeContext.memoryExcerpts.every((e) => e.includes("70%"))).toBe(true);
+  });
+
+  it("updates TTS preferences independently", () => {
+    const updated = updateTtsPreferences({ voiceId: "nova", speed: 1.1 });
+    expect(updated.tts).toEqual({ voiceId: "nova", speed: 1.1 });
+    expect(getContext().tts).toEqual({ voiceId: "nova", speed: 1.1 });
+  });
+
+  it("notifies subscribers when the profile changes", () => {
+    let calls = 0;
+    const unsubscribe = subscribeStyleProfile(() => {
+      calls += 1;
+    });
+
+    updateStyleFromPackage(samplePackage);
+    expect(calls).toBe(1);
+
+    unsubscribe();
+    updateStyleFromPackage(samplePackage);
+    expect(calls).toBe(1);
+  });
+
+  it("exposes a singleton-style API", () => {
+    aiContext.updateStyleFromPackage(samplePackage);
+    expect(aiContext.getStyleProfile().sampleCount).toBe(1);
+    expect(aiContext.getContext().stylePrompt.length).toBeGreaterThan(0);
   });
 });

@@ -10,6 +10,7 @@ import {
   type UsageStore,
 } from "../services/aiUsage.js";
 import { generateScriptWithLlm } from "../services/llm.js";
+import { generateTtsAudio } from "../services/tts.js";
 import {
   isGenerateMode,
   isLanguage,
@@ -99,7 +100,7 @@ export function createAiRoutes() {
         {
           error: "BAD_REQUEST",
           message:
-            "ideaId, title, description, and platform (youtube|tiktok|reels) are required",
+            "ideaId, title, description, and platform (youtube|tiktok|reels|x) are required",
         },
         400,
       );
@@ -180,6 +181,57 @@ export function createAiRoutes() {
           error: "PROVIDER_ERROR",
           message:
             error instanceof Error ? error.message : "Script generation failed",
+        },
+        500,
+      );
+    }
+  });
+
+  ai.post("/tts", async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "BAD_REQUEST", message: "Invalid JSON body" }, 400);
+    }
+
+    if (!body || typeof body !== "object") {
+      return c.json({ error: "BAD_REQUEST", message: "Invalid JSON body" }, 400);
+    }
+
+    const raw = body as Record<string, unknown>;
+    const text = typeof raw.text === "string" ? raw.text.trim() : "";
+    const voiceId = typeof raw.voiceId === "string" ? raw.voiceId.trim() : "";
+    const speed =
+      typeof raw.speed === "number" && Number.isFinite(raw.speed) ? raw.speed : 1;
+
+    if (!text) {
+      return c.json({ error: "BAD_REQUEST", message: "text is required" }, 400);
+    }
+    if (!voiceId) {
+      return c.json({ error: "BAD_REQUEST", message: "voiceId is required" }, 400);
+    }
+    if (speed < 0.5 || speed > 2) {
+      return c.json(
+        { error: "BAD_REQUEST", message: "speed must be between 0.5 and 2" },
+        400,
+      );
+    }
+
+    try {
+      const audio = await generateTtsAudio({ text, voiceId, speed });
+      return new Response(audio, {
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
+    } catch (error) {
+      console.error("tts error:", error);
+      return c.json(
+        {
+          error: "PROVIDER_ERROR",
+          message: error instanceof Error ? error.message : "TTS generation failed",
         },
         500,
       );
