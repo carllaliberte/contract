@@ -4,13 +4,13 @@ These items are **intentionally stubbed** for P0 App Store hardening. Implement 
 
 ## 1. Server-side IAP validation
 
-**Status:** Stub — client-only plan flag via `setCurrentPlan('pro')`.
+**Status:** Implemented — `POST /iap/apple/validate` (Hono API) with StoreKit client sync in `src/lib/iap.ts`. Production requires Apple App Store Server API credentials (`APPLE_IAP_*` env).
 
 **Target flow:**
 
 ```
 iOS StoreKit → receipt / transaction JWS
-  → POST /iap/validate (Hono or Supabase Edge Function)
+  → POST /iap/apple/validate (Hono or Supabase Edge Function)
   → Apple App Store Server API verification
   → UPDATE profiles.plan = 'pro'
   → Client refreshes session / plan from server
@@ -28,7 +28,7 @@ iOS StoreKit → receipt / transaction JWS
 
 ## 2. AI rate limiting
 
-**Status:** Quotas enforced per-plan in API/Edge Function; no global IP/user rate limit yet.
+**Status:** Burst limit enforced in API + Edge Function (`429 RATE_LIMITED` + `Retry-After`) before LLM; monthly quotas unchanged.
 
 **Target:**
 
@@ -40,6 +40,8 @@ iOS StoreKit → receipt / transaction JWS
 
 | File | Role |
 |------|------|
+| `api/src/services/rateLimit.ts` | Hono burst window |
+| `supabase/functions/_shared/rateLimit.ts` | Edge burst window |
 | `api/src/routes/ai.ts` | Hono enforcement |
 | `supabase/functions/generate-script/index.ts` | Edge Function enforcement |
 | `api/src/services/aiUsage.ts` | Usage persistence |

@@ -1,4 +1,11 @@
 // SPDX-License-Identifier: MIT
+/**
+ * @title META (METAVERSE) — utility token
+ * @notice ERC-20 reflection token for ecosystem access (META Dashboard, CreatorFlow tiers).
+ *         Not an investment product, security, or promise of profit. Read-only in client apps.
+ * @dev Provenance: carllaliberte/contract — holder tiers in shared/meta-entitlements.json
+ * @custom:security-contact laliberte22@gmail.com
+ */
 
 pragma solidity ^0.6.12;
 

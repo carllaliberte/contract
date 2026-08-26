@@ -46,7 +46,12 @@ export type GenerateScriptResponse = {
 };
 
 export type GenerateScriptErrorBody = {
-  error: "LIMIT_REACHED" | "UNAUTHORIZED" | "BAD_REQUEST" | "PROVIDER_ERROR";
+  error:
+    | "LIMIT_REACHED"
+    | "RATE_LIMITED"
+    | "UNAUTHORIZED"
+    | "BAD_REQUEST"
+    | "PROVIDER_ERROR";
   message: string;
   usage?: AiUsageSnapshot;
 };

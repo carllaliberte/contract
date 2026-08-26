@@ -3,13 +3,17 @@ import { cors } from "hono/cors";
 import type { AuthVariables } from "../middleware/auth.js";
 import { authMiddleware, getSupabaseAdminClient } from "../middleware/auth.js";
 import { env } from "../env.js";
-import { logAiGeneration } from "../services/aiGenerations.js";
 import {
   assertCanGenerate,
   validateDurationForPlan,
   type UsageStore,
 } from "../services/aiUsage.js";
 import { generateScriptWithLlm } from "../services/llm.js";
+import {
+  hashPromptTitle,
+  recordGenerationProvenance,
+} from "../services/provenanceService.js";
+import { checkAiRateLimit } from "../services/rateLimit.js";
 import {
   isGenerateMode,
   isLanguage,
@@ -68,6 +72,13 @@ function limitError(
   };
 }
 
+function rateLimitError(retryAfterSeconds: number): GenerateScriptErrorBody {
+  return {
+    error: "RATE_LIMITED",
+    message: `Too many AI requests — retry in ${retryAfterSeconds}s`,
+  };
+}
+
 export function createAiRoutes() {
   const ai = new Hono<AppEnv>();
 
@@ -120,6 +131,12 @@ export function createAiRoutes() {
         return c.json({ error: "BAD_REQUEST", message: durationError }, 400);
       }
 
+      const burst = checkAiRateLimit(userId);
+      if (!burst.allowed) {
+        c.header("Retry-After", String(burst.retryAfterSeconds));
+        return c.json(rateLimitError(burst.retryAfterSeconds), 429);
+      }
+
       await assertCanGenerate(usageStore, userId, format);
 
       const mode =
@@ -150,6 +167,7 @@ export function createAiRoutes() {
             (incrementError as Error & {
               usage?: NonNullable<GenerateScriptErrorBody["usage"]>;
             }).usage ?? (await usageStore.getUsage(userId));
+          c.header("Retry-After", "86400");
           return c.json(limitError(snap, format), 429);
         }
         throw incrementError;
@@ -157,10 +175,16 @@ export function createAiRoutes() {
 
       const admin = getSupabaseAdminClient();
       if (admin) {
-        await logAiGeneration(admin, {
+        await recordGenerationProvenance(admin, {
           userId,
           ideaId: payload.ideaId,
           platform: payload.platform,
+          format,
+          mode,
+          language: payload.language ?? "fr",
+          plan: finalUsage.plan,
+          model,
+          titleHash: hashPromptTitle(payload.title),
         });
       }
 
@@ -171,6 +195,7 @@ export function createAiRoutes() {
           (error as Error & {
             usage?: NonNullable<GenerateScriptErrorBody["usage"]>;
           }).usage ?? (await usageStore.getUsage(userId));
+        c.header("Retry-After", "86400");
         return c.json(limitError(usage, format), 429);
       }
 

@@ -26,6 +26,18 @@ export const env = {
     !process.env.SUPABASE_URL ||
     !process.env.SUPABASE_SERVICE_ROLE_KEY,
   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
+  appleClientId:
+    process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",
+  appleAuthStub:
+    process.env.APPLE_AUTH_STUB === "true" || process.env.MEMORY_STORE === "true",
+  iapAppleStub: process.env.IAP_APPLE_STUB === "true",
+  iapAppleStubAcceptUnsigned:
+    process.env.IAP_APPLE_STUB_ACCEPT_UNSIGNED === "true",
+  appleIapIssuerId: process.env.APPLE_IAP_ISSUER_ID ?? "",
+  appleIapKeyId: process.env.APPLE_IAP_KEY_ID ?? "",
+  appleIapPrivateKey: process.env.APPLE_IAP_PRIVATE_KEY ?? "",
+  aiRateLimitWindowMs: Number(process.env.AI_RATE_LIMIT_WINDOW_MS ?? 60_000),
+  aiRateLimitMaxRequests: Number(process.env.AI_RATE_LIMIT_MAX_REQUESTS ?? 6),
 };
 
 export function currentMonth(): string {

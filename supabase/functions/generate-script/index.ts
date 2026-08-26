@@ -14,10 +14,18 @@ import {
   isScriptFormat,
   type AiUsageSnapshot,
   type FormatQuota,
+  type GenerateMode,
+  type Language,
   type GenerateScriptErrorBody,
   type GenerateScriptRequest,
   type GenerateScriptResponse,
+  type Platform,
 } from "../_shared/types.ts";
+import { checkAiRateLimit } from "../_shared/rateLimit.ts";
+import {
+  hashPromptTitle,
+  recordGenerationProvenance,
+} from "../_shared/provenance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,10 +37,11 @@ const corsHeaders = {
 function json(
   body: GenerateScriptResponse | GenerateScriptErrorBody,
   status = 200,
+  extraHeaders: Record<string, string> = {},
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
@@ -268,14 +277,30 @@ async function logGeneration(
   ideaId: string,
   platform: string,
   isDemo: boolean,
+  details: {
+    format: ScriptFormat;
+    mode: GenerateMode;
+    language: Language;
+    plan: PlanId;
+    model: string;
+    title: string;
+  },
 ): Promise<void> {
-  if (isDemo) return;
-  const { error } = await admin.from("ai_generations").insert({
-    user_id: userId,
-    idea_id: ideaId,
-    platform,
-  });
-  if (error) console.warn("ai_generations insert failed:", error.message);
+  await recordGenerationProvenance(
+    admin,
+    {
+      userId,
+      ideaId,
+      platform: platform as Platform,
+      format: details.format,
+      mode: details.mode,
+      language: details.language,
+      plan: details.plan,
+      model: details.model,
+      titleHash: await hashPromptTitle(details.title),
+    },
+    isDemo,
+  );
 }
 
 Deno.serve(async (req) => {
@@ -352,6 +377,20 @@ Deno.serve(async (req) => {
           usage,
         },
         429,
+        { "Retry-After": "86400" },
+      );
+    }
+
+    const burst = checkAiRateLimit(userId);
+    if (!burst.allowed) {
+      return json(
+        {
+          error: "RATE_LIMITED",
+          message: `Too many AI requests — retry in ${burst.retryAfterSeconds}s`,
+          usage,
+        },
+        429,
+        { "Retry-After": String(burst.retryAfterSeconds) },
       );
     }
 
@@ -391,12 +430,20 @@ Deno.serve(async (req) => {
             usage: snap,
           },
           429,
+          { "Retry-After": "86400" },
         );
       }
       throw incrementError;
     }
 
-    await logGeneration(admin, userId, payload.ideaId, payload.platform, isDemo);
+    await logGeneration(admin, userId, payload.ideaId, payload.platform, isDemo, {
+      format,
+      mode,
+      language: payload.language ?? "fr",
+      plan: finalUsage.plan,
+      model,
+      title: payload.title,
+    });
 
     return json({ script, usage: finalUsage, model });
   } catch (error) {

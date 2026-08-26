@@ -1,6 +1,6 @@
 /**
- * StoreKit / IAP bridge stub.
- * Production billing is intentionally NOT wired until the native Capacitor plugin is connected.
+ * StoreKit / IAP bridge with server-side receipt validation.
+ * Production billing requires native Capacitor plugin + POST /iap/apple/validate.
  */
 import { Capacitor } from "@capacitor/core";
 import {
@@ -9,6 +9,7 @@ import {
   type IapProductId,
 } from "./plans";
 import { setCurrentPlan } from "./aiUsage";
+import { getAuthToken } from "./auth/session";
 
 export type PurchaseResult =
   | { ok: true; productId: IapProductId }
@@ -17,6 +18,18 @@ export type PurchaseResult =
 export type RestoreResult =
   | { ok: true; activeProductId: IapProductId | null }
   | { ok: false; reason: "unavailable" | "error"; message?: string };
+
+function resolveIapValidateUrl(): string {
+  const dedicated = import.meta.env.VITE_IAP_VALIDATE_URL?.trim();
+  if (dedicated) return dedicated;
+
+  const apiBase = import.meta.env.VITE_API_URL?.trim();
+  if (apiBase) {
+    return `${apiBase.replace(/\/$/, "")}/iap/apple/validate`;
+  }
+
+  return "/iap/apple/validate";
+}
 
 export function isIapNativeBridgeAvailable(): boolean {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
@@ -27,15 +40,41 @@ export function isIapNativeBridgeAvailable(): boolean {
   );
 }
 
+async function syncPlanWithServer(
+  productId: IapProductId,
+  signedTransaction?: string,
+): Promise<boolean> {
+  const token = await getAuthToken();
+  if (!token || token.startsWith("stub.")) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(resolveIapValidateUrl(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId, signedTransaction }),
+    });
+
+    if (!response.ok) return false;
+    const data = (await response.json()) as { plan?: string; ok?: boolean };
+    return data.ok === true && data.plan === "pro";
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Purchase flow — calls native bridge when available, otherwise returns unavailable.
- * Does NOT simulate purchases in demo/web (per requirement: no production billing without StoreKit).
+ * Purchase flow — calls native bridge when available, then validates server-side.
  */
 export async function purchaseProduct(productId: IapProductId): Promise<PurchaseResult> {
   const bridge = (
     window as Window & {
       CreatorFlowStoreKit?: {
-        purchase?: (id: string) => Promise<{ productId: string }>;
+        purchase?: (id: string) => Promise<{ productId: string; signedTransaction?: string }>;
       };
     }
   ).CreatorFlowStoreKit;
@@ -51,7 +90,13 @@ export async function purchaseProduct(productId: IapProductId): Promise<Purchase
     const result = await bridge.purchase(productId);
     const catalog = IAP_CATALOG[productId];
     if (catalog?.plan === "pro") {
-      setCurrentPlan("pro");
+      const synced = await syncPlanWithServer(
+        productId,
+        result.signedTransaction,
+      );
+      if (synced) {
+        setCurrentPlan("pro");
+      }
     }
     return { ok: true, productId: result.productId as IapProductId };
   } catch (error) {
@@ -70,7 +115,10 @@ export async function restorePurchases(): Promise<RestoreResult> {
   const bridge = (
     window as Window & {
       CreatorFlowStoreKit?: {
-        restore?: () => Promise<{ activeProductId: string | null }>;
+        restore?: () => Promise<{
+          activeProductId: string | null;
+          signedTransaction?: string | null;
+        }>;
       };
     }
   ).CreatorFlowStoreKit;
@@ -86,7 +134,13 @@ export async function restorePurchases(): Promise<RestoreResult> {
     const result = await bridge.restore();
     const activeId = result.activeProductId as IapProductId | null;
     if (activeId && IAP_CATALOG[activeId]?.plan === "pro") {
-      setCurrentPlan("pro");
+      const synced = await syncPlanWithServer(
+        activeId,
+        result.signedTransaction ?? undefined,
+      );
+      if (synced) {
+        setCurrentPlan("pro");
+      }
     }
     return { ok: true, activeProductId: activeId };
   } catch (error) {
