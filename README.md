@@ -68,6 +68,7 @@ See [`api/README.md`](api/README.md). Never put LLM keys in client `VITE_*` env.
 | Doc | Topic |
 | --- | --- |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute, PR expectations |
+| [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md) | Merge canonique, deploy Pages, archive iOS |
 | [`SECURITY.md`](SECURITY.md) | Vulnerability reporting |
 | [`docs/SECRETS.md`](docs/SECRETS.md) | Public `VITE_*` vs secrets, GitHub Actions |
 | [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | CreatorFlow CI → deploy control plane |

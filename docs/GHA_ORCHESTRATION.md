@@ -7,7 +7,7 @@ Ce dépôt sépare **validation (CI)**, **déploiement** et **pilotage manuel** 
 ```mermaid
 flowchart LR
   subgraph triggers [Déclencheurs]
-    push[push main creatorflow/**]
+    push[push main creatorflow/** shared/**]
     pr[pull_request]
     manual[workflow_dispatch]
     orch[Orchestrate CreatorFlow]
@@ -31,13 +31,14 @@ flowchart LR
   orch -->|ci ou ci-and-deploy| ci
   orch -->|deploy| deploy
   ci -->|workflow_run success main| deploy
+  push --> deploy
   manual --> deploy
 ```
 
 | Workflow | Rôle | Déclencheurs |
 |----------|------|--------------|
-| **CI CreatorFlow** | Gate qualité (web → android/ios) | `push` / `pull_request` sur `creatorflow/**`, `workflow_dispatch` |
-| **Deploy CreatorFlow** | Publication GitHub Pages | `workflow_run` après succès CI sur `main`, `workflow_dispatch` |
+| **CI CreatorFlow** | Gate qualité (web → android/ios) | `push` / `pull_request` sur `creatorflow/**`, `shared/**`, `workflow_dispatch` |
+| **Deploy CreatorFlow** | Publication GitHub Pages | `push` sur `main` (paths `creatorflow/**`, `shared/**`), `workflow_run` après succès CI sur `main`, `workflow_dispatch` |
 | **Orchestrate CreatorFlow** | Control plane manuel | `workflow_dispatch` uniquement |
 | **API CI** | Backend API | Inchangé (`api/**`, `supabase/**`) |
 | **Build Android release** | META → Google Play | Inchangé (`google-app/**`, etc.) |
@@ -46,20 +47,19 @@ flowchart LR
 
 Le job `web` exécute typecheck, tests unitaires, build et e2e Playwright. Les jobs `android` et `ios` ne démarrent qu’après succès de `web` (`needs: web`).
 
-- **push** sur `main` (paths `creatorflow/**`) : CI complète ; en cas de succès sur `main`, le déploiement est enchaîné automatiquement.
+- **push** sur `main` (paths `creatorflow/**`, `shared/**`) : CI complète ; en cas de succès sur `main`, le déploiement est enchaîné automatiquement. Un `push` sur ces paths déclenche aussi **Deploy CreatorFlow** directement.
 - **pull_request** : CI sans déploiement (les PR ne déclenchent pas `Deploy CreatorFlow`).
 - **workflow_dispatch** : relance manuelle de la CI (utile pour valider une branche ou après un incident).
 
-## Deploy CreatorFlow — après CI
+## Deploy CreatorFlow — après CI ou push `main`
 
-Le déploiement **n’est plus déclenché par un `push` direct** sur `creatorflow/**`.
+Le déploiement part lorsque :
 
-Il part lorsque :
+1. **push** sur `main` avec changements sous `creatorflow/**`, `shared/**`, ou le workflow deploy,
+2. **CI CreatorFlow** se termine avec succès sur `main` (`workflow_run`, hors PR), ou
+3. un **`workflow_dispatch`** manuel sur **Deploy CreatorFlow**.
 
-1. **CI CreatorFlow** se termine avec succès sur `main` (`workflow_run`, hors PR), ou
-2. un **`workflow_dispatch`** manuel sur **Deploy CreatorFlow**.
-
-Le checkout utilise le SHA du run CI (`workflow_run.head_sha`) pour publier exactement le commit validé.
+Le checkout utilise le SHA du run CI (`workflow_run.head_sha`) pour publier exactement le commit validé lors d’un déclenchement `workflow_run`. Sur `push` direct, c’est le commit poussé.
 
 ## Orchestrate CreatorFlow — control plane
 

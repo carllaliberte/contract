@@ -1,4 +1,5 @@
 import { peekAuthToken, getAuthToken } from "../auth/session";
+import { resolveGenerateScriptUrl } from "./base";
 import type {
   GenerateScriptErrorBody,
   GenerateScriptRequest,
@@ -7,18 +8,7 @@ import type {
 
 const DEMO_ID_KEY = "cf-demo-id";
 
-/** Endpoint: Edge Function URL or local Hono API via Vite proxy. */
-export function resolveGenerateScriptUrl(): string {
-  const configured = import.meta.env.VITE_API_URL?.trim() ?? "";
-  if (!configured) return "/ai/generate-script";
-  if (
-    configured.endsWith("/generate-script") ||
-    configured.endsWith("/ai/generate-script")
-  ) {
-    return configured;
-  }
-  return `${configured.replace(/\/$/, "")}/ai/generate-script`;
-}
+export { resolveGenerateScriptUrl } from "./base";
 
 function getDemoId(): string {
   let id = localStorage.getItem(DEMO_ID_KEY);
@@ -58,6 +48,7 @@ export async function postGenerateScript(
       existingScript: payload.existingScript,
       format: payload.format ?? "short",
       durationMinutes: payload.durationMinutes,
+      styleContext: payload.styleContext,
     }),
   });
 

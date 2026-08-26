@@ -1,5 +1,6 @@
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { PaywallSheet } from "../components/PaywallSheet";
 import { Button, Card } from "../components/ui";
@@ -9,21 +10,28 @@ import { useAuth } from "../hooks/useAuth";
 import { usePlan } from "../hooks/usePlan";
 import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
 import { getAppleProfile } from "../lib/auth/session";
+import { checkApiHealth, resolveApiBaseUrl } from "../lib/api/health";
 import { restorePurchases } from "../lib/iap";
+import { isNativePlatform } from "../lib/platform";
 import { PLAN_LIMITS } from "../lib/plans";
 import { META_HOLDER_BONUS_AI } from "../lib/limits";
 import { metaEntitlements } from "../../../shared/meta-entitlements";
 
 export function SettingsPage() {
   const { tr } = useI18n();
+  const navigate = useNavigate();
   const plan = usePlan();
   const usage = useAiUsage();
-  const { isAuthenticated, isDemo } = useAuth();
+  const { isAuthenticated, isDemo, deleteAccount } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
+  const [apiChecking, setApiChecking] = useState(false);
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const apiBaseUrl = resolveApiBaseUrl();
 
   const limits = PLAN_LIMITS[plan];
   const shortPct = limits.short
@@ -56,6 +64,23 @@ export function SettingsPage() {
     };
   }, [isAuthenticated, isDemo, tr]);
 
+  useEffect(() => {
+    if (!apiBaseUrl) {
+      setApiOnline(null);
+      return;
+    }
+    let cancelled = false;
+    setApiChecking(true);
+    void checkApiHealth().then(({ online }) => {
+      if (cancelled) return;
+      setApiOnline(online);
+      setApiChecking(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl]);
+
   async function handleRestore() {
     setRestoreBusy(true);
     setRestoreNotice(null);
@@ -74,7 +99,18 @@ export function SettingsPage() {
     );
   }
 
+  async function handleDeleteAccount() {
+    if (!window.confirm(tr("settings.deleteAccountConfirm"))) return;
+    setDeleteBusy(true);
+    await deleteAccount();
+    setDeleteBusy(false);
+    navigate("/");
+  }
+
   const profileInitial = profileName.trim().charAt(0).toUpperCase() || "?";
+  const native = isNativePlatform();
+  const showMetaBlock = !native;
+  const showIapActions = !native;
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -112,6 +148,29 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      {isAuthenticated && (
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold">{tr("settings.accountTitle")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{tr("settings.deleteAccountHint")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 h-10 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            disabled={deleteBusy}
+            onClick={() => void handleDeleteAccount()}
+          >
+            {deleteBusy ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                {tr("settings.deleteAccountBusy")}
+              </>
+            ) : (
+              tr("settings.deleteAccount")
+            )}
+          </Button>
+        </Card>
+      )}
+
       <Card className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -120,7 +179,7 @@ export function SettingsPage() {
               {plan === "pro" ? tr("plan.proName") : tr("plan.freeName")}
             </p>
           </div>
-          {plan === "free" && (
+          {plan === "free" && showIapActions && (
             <Button type="button" className="h-9 px-3 text-xs" onClick={() => setPaywallOpen(true)}>
               {tr("paywall.upgrade")}
             </Button>
@@ -155,27 +214,56 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10"
-            disabled={restoreBusy}
-            onClick={() => void handleRestore()}
-          >
-            {restoreBusy ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {tr("paywall.restoring")}
-              </>
-            ) : (
-              tr("paywall.restore")
-            )}
-          </Button>
-          {restoreNotice ? (
-            <p className="text-xs text-muted-foreground">{restoreNotice}</p>
-          ) : null}
+        {showIapActions && (
+          <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10"
+              disabled={restoreBusy}
+              onClick={() => void handleRestore()}
+            >
+              {restoreBusy ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {tr("paywall.restoring")}
+                </>
+              ) : (
+                tr("paywall.restore")
+              )}
+            </Button>
+            {restoreNotice ? (
+              <p className="text-xs text-muted-foreground">{restoreNotice}</p>
+            ) : null}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold">{tr("settings.apiTitle")}</h2>
+        <div className="mt-3 flex items-center gap-2">
+          {apiChecking ? (
+            <>
+              <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
+              <p className="text-sm text-muted-foreground">{tr("settings.apiChecking")}</p>
+            </>
+          ) : apiBaseUrl ? (
+            <>
+              <span
+                className={`size-2.5 rounded-full ${apiOnline ? "bg-emerald-500" : "bg-destructive"}`}
+                aria-hidden
+              />
+              <p className="text-sm">
+                {apiOnline ? tr("settings.apiOnline") : tr("settings.apiOffline")}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">{tr("settings.apiDemo")}</p>
+          )}
         </div>
+        {apiBaseUrl ? (
+          <p className="mt-2 break-all text-xs text-muted-foreground">{apiBaseUrl}</p>
+        ) : null}
       </Card>
 
       <Card className="p-5">
@@ -202,6 +290,7 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      {showMetaBlock && (
       <Card className="p-5">
         <h2 className="text-sm font-semibold">META (utilitaire)</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -211,6 +300,7 @@ export function SettingsPage() {
         </p>
         <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
       </Card>
+      )}
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </div>
