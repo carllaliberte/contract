@@ -1,0 +1,30 @@
+# Render Blueprint — CreatorFlow API
+# Dashboard: New → Blueprint → connect this repo → deploy
+# Live URL: https://creatorflow-api.onrender.com
+services:
+  - type: web
+    name: creatorflow-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: api
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CORS_ORIGINS
+        value: https://carllaliberte.github.io,http://localhost:5173
+      - key: MEMORY_STORE
+        value: "true"
+      - key: MOCK_LLM
+        value: "true"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
