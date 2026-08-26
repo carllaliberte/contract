@@ -1,4 +1,5 @@
 import type { AppleSignInResult } from "../../hooks/useAppleSignIn";
+import { resolveAppleAuthUrl } from "./base";
 
 export interface AuthSession {
   accessToken: string;
@@ -6,22 +7,10 @@ export interface AuthSession {
   provider: "apple";
 }
 
-function resolveAppleAuthUrl(): string {
-  const dedicated = import.meta.env.VITE_AUTH_APPLE_URL?.trim();
-  if (dedicated) return dedicated;
-
-  const apiBase = import.meta.env.VITE_API_URL?.trim();
-  if (apiBase) {
-    return `${apiBase.replace(/\/$/, "")}/auth/apple`;
-  }
-
-  return "/auth/apple";
-}
-
 function shouldUseAuthStub(): boolean {
   if (import.meta.env.VITE_AUTH_STUB === "true") return true;
-  if (import.meta.env.DEV) return true;
-  return !import.meta.env.VITE_API_URL?.trim();
+  if (import.meta.env.DEV && !import.meta.env.VITE_API_URL?.trim()) return true;
+  return false;
 }
 
 /**
@@ -61,9 +50,15 @@ export async function exchangeAppleSession(
           provider: "apple",
         };
       }
+    } else if (!shouldUseAuthStub()) {
+      throw new Error("Apple authentication backend unavailable");
     }
-  } catch {
-    // Fall through to stub when backend is not ready.
+  } catch (error) {
+    if (!shouldUseAuthStub()) {
+      throw error instanceof Error
+        ? error
+        : new Error("Apple authentication backend unavailable");
+    }
   }
 
   if (shouldUseAuthStub()) {
