@@ -14,6 +14,7 @@ import {
   type IdeaStatus,
 } from "../data/demo";
 import { useAuth } from "../hooks/useAuth";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import {
   fetchIdeasFromApi,
@@ -22,6 +23,7 @@ import {
 } from "../lib/api/ideas";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import { buildDuplicateIdea } from "../lib/ideaActions";
+import { drainCloudQueue, enqueueCloudOp } from "../lib/cloudQueue";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 const STORAGE_KEY = "cf-ideas";
@@ -106,10 +108,67 @@ function readLanguage(): "fr" | "en" {
 
 export function IdeasProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const online = useNetworkStatus();
   const isCloudBacked = isAuthenticated;
   const [ideas, setIdeas] = useState<Idea[]>(() => loadLocalIdeas());
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hydratedCloudRef = useRef(false);
+  const ideasRef = useRef(ideas);
+
+  useEffect(() => {
+    ideasRef.current = ideas;
+  }, [ideas]);
+
+  const runGenerateScript = useCallback(
+    async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
+      const idea = ideasRef.current.find((i) => i.id === id);
+      if (!idea) return;
+
+      if (!canUseAiGeneration(options.format)) {
+        throw new Error("LIMIT_REACHED");
+      }
+
+      const mode = idea.script ? "improve" : "generate";
+      const data = await postGenerateScript({
+        ideaId: idea.id,
+        title: idea.title,
+        description: idea.description,
+        platform: idea.platform,
+        language: readLanguage(),
+        mode,
+        existingScript: idea.script,
+        format: options.format,
+        durationMinutes: options.durationMinutes,
+      });
+
+      if (data.usage) syncAiUsage(data.usage);
+
+      setIdeas((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                script: data.script,
+                status: item.status === "idea" ? "script" : item.status,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!online) return;
+    void drainCloudQueue({
+      onGenerateScript: runGenerateScript,
+      onIdeasSync: async (queuedIdeas) => {
+        await syncIdeasToApi(queuedIdeas.map(ideaToApi));
+        setIdeas(queuedIdeas);
+      },
+    });
+  }, [online, runGenerateScript]);
 
   useEffect(() => {
     if (!isCloudBacked || isLoading) return;
@@ -141,11 +200,17 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
 
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => {
+      if (!online) {
+        enqueueCloudOp({ type: "ideas-sync", ideas });
+        saveLocalIdeas(ideas);
+        return;
+      }
       void syncIdeasToApi(ideas.map(ideaToApi)).catch(() => {
+        enqueueCloudOp({ type: "ideas-sync", ideas });
         saveLocalIdeas(ideas);
       });
     }, 400);
-  }, [ideas, isCloudBacked]);
+  }, [ideas, isCloudBacked, online]);
 
   const addIdea = useCallback((partial: Omit<Idea, "id" | "updatedAt">) => {
     const idea: Idea = {
@@ -189,34 +254,13 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
 
   const generateScript = useCallback(
     async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
-      const idea = ideas.find((i) => i.id === id);
-      if (!idea) return;
-
-      if (!canUseAiGeneration(options.format)) {
-        throw new Error("LIMIT_REACHED");
+      if (!online) {
+        enqueueCloudOp({ type: "generate-script", ideaId: id, options });
+        return;
       }
-
-      const mode = idea.script ? "improve" : "generate";
-      const data = await postGenerateScript({
-        ideaId: idea.id,
-        title: idea.title,
-        description: idea.description,
-        platform: idea.platform,
-        language: readLanguage(),
-        mode,
-        existingScript: idea.script,
-        format: options.format,
-        durationMinutes: options.durationMinutes,
-      });
-
-      if (data.usage) syncAiUsage(data.usage);
-
-      updateIdea(id, {
-        script: data.script,
-        status: idea.status === "idea" ? "script" : idea.status,
-      });
+      await runGenerateScript(id, options);
     },
-    [ideas, updateIdea],
+    [online, runGenerateScript],
   );
 
   const value = useMemo(
