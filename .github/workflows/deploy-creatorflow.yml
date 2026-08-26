@@ -83,3 +83,4 @@ jobs:
         run: |
           echo "App: https://carllaliberte.github.io/contract/creatorflow/"
           echo "Privacy: https://carllaliberte.github.io/contract/creatorflow/privacy.html"
+
