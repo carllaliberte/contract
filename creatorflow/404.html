@@ -2,8 +2,8 @@
 <html lang="fr" class="dark antialiased">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Google Search Console — remplacer CONTENT_ID par le code de vérification
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- Google Search Console — voir creatorflow/docs/SEARCH_CONSOLE.md
   <meta name="google-site-verification" content="CONTENT_ID" />
   -->
     <title>CreatorFlow — Publiez plus de contenu, avec moins de friction</title>
@@ -34,7 +34,12 @@
       href="https://carllaliberte.github.io/contract/creatorflow/"
     />
     <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CreatorFlow" />
     <link rel="icon" type="image/svg+xml" href="/contract/creatorflow/favicon.svg" />
+    <link rel="manifest" href="/contract/creatorflow/manifest.webmanifest" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="CreatorFlow" />
@@ -73,14 +78,58 @@
     />
     <meta name="twitter:image:alt" content="CreatorFlow — application pour créateurs de contenu" />
 
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://carllaliberte.github.io/contract/creatorflow/#website",
+            "url": "https://carllaliberte.github.io/contract/creatorflow/",
+            "name": "CreatorFlow",
+            "description": "Structurez vos idées, générez vos scripts et publiez plus régulièrement sur YouTube, TikTok et Reels. Essai gratuit, sans carte bancaire.",
+            "inLanguage": ["fr-CA", "en-US"],
+            "publisher": {
+              "@id": "https://carllaliberte.github.io/contract/creatorflow/#organization"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://carllaliberte.github.io/contract/creatorflow/#organization",
+            "name": "CreatorFlow",
+            "url": "https://carllaliberte.github.io/contract/creatorflow/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://carllaliberte.github.io/contract/creatorflow/favicon.svg"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://carllaliberte.github.io/contract/creatorflow/#app",
+            "name": "CreatorFlow",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "url": "https://carllaliberte.github.io/contract/creatorflow/",
+            "description": "Structurez vos idées, générez vos scripts et publiez plus régulièrement sur YouTube, TikTok et Reels.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "inLanguage": ["fr-CA", "en-US"]
+          }
+        ]
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/contract/creatorflow/assets/index-B79s15LQ.js"></script>
-    <link rel="stylesheet" crossorigin href="/contract/creatorflow/assets/index-BPGGsQdd.css">
+    <script type="module" crossorigin src="/contract/creatorflow/assets/index-CiPoSkXW.js"></script>
+    <link rel="stylesheet" crossorigin href="/contract/creatorflow/assets/index-D20MAWl7.css">
   </head>
   <body>
     <div id="root"></div>
