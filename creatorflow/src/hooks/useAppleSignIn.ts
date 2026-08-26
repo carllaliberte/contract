@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { exchangeAppleSession } from "../lib/api/auth";
 import { establishAppleSession } from "../lib/auth/session";
-import { isNativeIos } from "../lib/platform";
+import { isNativePlatform } from "../lib/platform";
 
 export interface AppleSignInResult {
   user: string | null;
@@ -22,13 +22,13 @@ const APPLE_REDIRECT_URI = "https://carllaliberte.github.io/contract/creatorflow
  * identityToken is exchanged server-side (stub when backend unavailable).
  */
 export function useAppleSignIn() {
-  const available = isNativeIos();
+  const available = isNativePlatform();
   const [status, setStatus] = useState<AppleSignInStatus>(available ? "idle" : "unavailable");
   const [error, setError] = useState<string | null>(null);
 
   const signIn = useCallback(async (): Promise<boolean> => {
     if (!available) {
-      setError("Sign in with Apple is only available on iOS");
+      setError("Sign in with Apple is only available on native apps");
       setStatus("unavailable");
       return false;
     }
