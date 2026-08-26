@@ -198,6 +198,11 @@ export const translations: Record<Locale, Translations> = {
     "settings.appleUser": "Compte Apple",
     "settings.appleEmailHidden": "E-mail masqué par Apple",
     "settings.guestName": "Invité",
+    "settings.apiTitle": "API scripts IA",
+    "settings.apiOnline": "API en ligne",
+    "settings.apiOffline": "API hors ligne",
+    "settings.apiDemo": "Mode démo (VITE_API_URL non configurée)",
+    "settings.apiChecking": "Vérification…",
     "settings.accountTitle": "Compte",
     "settings.deleteAccount": "Supprimer mon compte",
     "settings.deleteAccountHint":
@@ -445,6 +450,11 @@ export const translations: Record<Locale, Translations> = {
     "settings.appleUser": "Apple account",
     "settings.appleEmailHidden": "Email hidden by Apple",
     "settings.guestName": "Guest",
+    "settings.apiTitle": "AI script API",
+    "settings.apiOnline": "API online",
+    "settings.apiOffline": "API offline",
+    "settings.apiDemo": "Demo mode (VITE_API_URL not configured)",
+    "settings.apiChecking": "Checking…",
     "settings.accountTitle": "Account",
     "settings.deleteAccount": "Delete my account",
     "settings.deleteAccountHint":
