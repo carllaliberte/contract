@@ -15,6 +15,8 @@ export type Idea = {
   priority: Priority;
   platform: "youtube" | "tiktok" | "reels";
   updatedAt: string;
+  /** Planned publish date (YYYY-MM-DD). Falls back to updatedAt in calendar views. */
+  scheduledAt?: string;
   script?: string;
   thumbnail: string;
   videoUrl?: string;
