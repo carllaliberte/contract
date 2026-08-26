@@ -16,10 +16,12 @@ services:
         value: "22"
       - key: CORS_ORIGINS
         value: https://carllaliberte.github.io,http://localhost:5173
-      - key: MEMORY_STORE
-        value: "true"
-      - key: MOCK_LLM
-        value: "true"
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: MONTHLY_AI_LIMIT
+        value: "8"
+      - key: MONTHLY_AI_LIMIT_PRO
+        value: "200"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY

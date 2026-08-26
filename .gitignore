@@ -21,3 +21,4 @@ google-app/play-store/secrets-a-remplir.env
 **/android/**/build/
 **/ios/**/build/
 supabase/.temp/
+.bin/
