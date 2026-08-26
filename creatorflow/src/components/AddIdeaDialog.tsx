@@ -22,6 +22,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState<Idea["platform"]>("youtube");
   const [priority, setPriority] = useState<Priority>("medium");
+  const [scheduledAt, setScheduledAt] = useState("");
 
   if (!open) return null;
 
@@ -34,12 +35,14 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
       status: "idea",
       priority,
       platform,
+      scheduledAt: scheduledAt || undefined,
       thumbnail: defaultThumbnails[Math.floor(Math.random() * defaultThumbnails.length)],
     });
     setTitle("");
     setDescription("");
     setPlatform("youtube");
     setPriority("medium");
+    setScheduledAt("");
     onClose();
   }
 
@@ -101,6 +104,15 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
                 <option value="low">{tr("priority.low")}</option>
               </select>
             </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="idea-scheduled">{tr("idea.scheduledAt")}</Label>
+            <Input
+              id="idea-scheduled"
+              type="date"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+            />
           </div>
           <div className="mt-2 flex gap-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>

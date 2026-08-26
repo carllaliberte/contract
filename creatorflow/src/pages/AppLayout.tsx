@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  CalendarDays,
   Clapperboard,
   FileText,
   LayoutDashboard,
@@ -20,6 +21,7 @@ import { applyAppRobots, applyLandingRobots } from "../lib/seo";
 const navItems = [
   { to: "/app", icon: LayoutDashboard, label: "nav.dashboard", end: true },
   { to: "/app/pipeline", icon: Clapperboard, label: "nav.pipeline" },
+  { to: "/app/calendrier", icon: CalendarDays, label: "nav.calendar" },
   { to: "/app/contenus", icon: FileText, label: "nav.contents" },
   { to: "/app/parametres", icon: Settings, label: "nav.settings" },
 ];
@@ -98,7 +100,7 @@ export function AppLayout() {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md safe-x lg:hidden">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5">
           {navItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
