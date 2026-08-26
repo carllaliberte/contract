@@ -1,6 +1,7 @@
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LanguageSelector } from "../components/LanguageSelector";
+import { StyleMemoryPanel } from "../components/StyleMemoryPanel";
 import { PaywallSheet } from "../components/PaywallSheet";
 import { Button, Card } from "../components/ui";
 import { useI18n } from "../i18n/context";
@@ -82,6 +83,8 @@ export function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">{tr("settings.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{tr("settings.subtitle")}</p>
       </header>
+
+      <StyleMemoryPanel />
 
       <Card className="p-5">
         <h2 className="text-sm font-semibold">{tr("lang.label")}</h2>
