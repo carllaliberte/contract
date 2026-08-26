@@ -29,8 +29,14 @@ app.route("/auth", createAuthRoutes());
 app.route("/ai", createAiRoutes());
 
 serve(
-  { fetch: app.fetch, port: env.port, hostname: "0.0.0.0" },
+  {
+    fetch: app.fetch,
+    port: env.port,
+    hostname: process.env.HOST ?? "0.0.0.0",
+  },
   (info) => {
-    console.log(`CreatorFlow API listening on http://0.0.0.0:${info.port}`);
+    console.log(
+      `CreatorFlow API listening on http://${info.address}:${info.port}`,
+    );
   },
 );
