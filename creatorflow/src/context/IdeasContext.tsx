@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -12,7 +13,13 @@ import {
   type Idea,
   type IdeaStatus,
 } from "../data/demo";
+import { useAuth } from "../hooks/useAuth";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
+import {
+  fetchIdeasFromApi,
+  syncIdeasToApi,
+  type ApiIdea,
+} from "../lib/api/ideas";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import { buildDuplicateIdea } from "../lib/ideaActions";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
@@ -27,11 +34,12 @@ type IdeasContextValue = {
   deleteIdea: (id: string) => void;
   duplicateIdea: (id: string) => void;
   generateScript: (id: string, options?: ScriptGenerateOptions) => Promise<void>;
+  isCloudBacked: boolean;
 };
 
 const IdeasContext = createContext<IdeasContextValue | null>(null);
 
-function loadIdeas(): Idea[] {
+function loadLocalIdeas(): Idea[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return structuredClone(demoIdeas);
@@ -45,12 +53,50 @@ function loadIdeas(): Idea[] {
   }
 }
 
-function saveIdeas(ideas: Idea[]) {
+function saveLocalIdeas(ideas: Idea[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
   } catch {
     // ignore quota errors
   }
+}
+
+function ideaToApi(idea: Idea): ApiIdea {
+  return {
+    id: idea.id,
+    title: idea.title,
+    description: idea.description,
+    status: idea.status,
+    priority: idea.priority,
+    platform: idea.platform,
+    updatedAt: idea.updatedAt,
+    script: idea.script,
+    thumbnail: idea.thumbnail,
+    videoUrl: idea.videoUrl,
+    scheduledAt: idea.scheduledAt,
+  };
+}
+
+function apiToIdea(row: ApiIdea): Idea {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    status: row.status as Idea["status"],
+    priority: row.priority as Idea["priority"],
+    platform: row.platform as Idea["platform"],
+    updatedAt: row.updatedAt,
+    script: row.script,
+    thumbnail: row.thumbnail,
+    videoUrl: row.videoUrl,
+    scheduledAt: row.scheduledAt,
+  };
+}
+
+function hasCustomLocalIdeas(ideas: Idea[]): boolean {
+  if (ideas.length !== demoIdeas.length) return true;
+  const demoIds = new Set(demoIdeas.map((i) => i.id));
+  return ideas.some((idea) => !demoIds.has(idea.id));
 }
 
 function readLanguage(): "fr" | "en" {
@@ -59,11 +105,47 @@ function readLanguage(): "fr" | "en" {
 }
 
 export function IdeasProvider({ children }: { children: ReactNode }) {
-  const [ideas, setIdeas] = useState<Idea[]>(() => loadIdeas());
+  const { isAuthenticated, isLoading } = useAuth();
+  const isCloudBacked = isAuthenticated;
+  const [ideas, setIdeas] = useState<Idea[]>(() => loadLocalIdeas());
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydratedCloudRef = useRef(false);
 
   useEffect(() => {
-    saveIdeas(ideas);
-  }, [ideas]);
+    if (!isCloudBacked || isLoading) return;
+    if (hydratedCloudRef.current) return;
+    hydratedCloudRef.current = true;
+
+    void (async () => {
+      try {
+        const remote = await fetchIdeasFromApi();
+        if (remote.length > 0) {
+          setIdeas(remote.map(apiToIdea));
+          return;
+        }
+        const local = loadLocalIdeas();
+        if (hasCustomLocalIdeas(local)) {
+          await syncIdeasToApi(local.map(ideaToApi));
+        }
+      } catch {
+        // keep local ideas when API is unavailable
+      }
+    })();
+  }, [isCloudBacked, isLoading]);
+
+  useEffect(() => {
+    if (!isCloudBacked) {
+      saveLocalIdeas(ideas);
+      return;
+    }
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      void syncIdeasToApi(ideas.map(ideaToApi)).catch(() => {
+        saveLocalIdeas(ideas);
+      });
+    }, 400);
+  }, [ideas, isCloudBacked]);
 
   const addIdea = useCallback((partial: Omit<Idea, "id" | "updatedAt">) => {
     const idea: Idea = {
@@ -146,8 +228,18 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       deleteIdea,
       duplicateIdea,
       generateScript,
+      isCloudBacked,
     }),
-    [ideas, addIdea, updateIdea, moveIdea, deleteIdea, duplicateIdea, generateScript],
+    [
+      ideas,
+      addIdea,
+      updateIdea,
+      moveIdea,
+      deleteIdea,
+      duplicateIdea,
+      generateScript,
+      isCloudBacked,
+    ],
   );
 
   return <IdeasContext.Provider value={value}>{children}</IdeasContext.Provider>;

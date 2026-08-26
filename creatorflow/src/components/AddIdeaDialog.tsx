@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Idea, Priority } from "../data/demo";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
@@ -24,7 +24,20 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
   const [priority, setPriority] = useState<Priority>("medium");
   const [scheduledAt, setScheduledAt] = useState("");
 
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
+
+  function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onClose();
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,6 +65,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-idea-title"
+      onClick={handleBackdropClick}
     >
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-card-hover">
         <h2 id="add-idea-title" className="text-lg font-semibold tracking-tight">

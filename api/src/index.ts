@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { env } from "./env.js";
 import { createAiRoutes } from "./routes/ai.js";
 import { createAuthRoutes } from "./routes/auth.js";
+import { createIdeasRoutes } from "./routes/ideas.js";
 
 const app = new Hono();
 
@@ -25,6 +26,7 @@ app.get("/health", (c) =>
 );
 
 app.route("/auth", createAuthRoutes());
+app.route("/ideas", createIdeasRoutes());
 app.route("/ai", createAiRoutes());
 
 serve({ fetch: app.fetch, port: env.port }, (info) => {
