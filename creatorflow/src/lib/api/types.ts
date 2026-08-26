@@ -14,6 +14,8 @@ export type GenerateScriptRequest = {
   existingScript?: string;
   format?: ScriptFormat;
   durationMinutes?: 8 | 12 | 20 | 30;
+  /** Serialized style prompt from AIContext — injected server-side when supported. */
+  styleContext?: string;
 };
 
 export type FormatQuota = {
