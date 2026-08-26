@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -14,9 +15,22 @@ import {
 } from "../data/demo";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { getAppleProfile, resolveSessionKind } from "../lib/auth/session";
+import {
+  clearLocalIdeas,
+  loadLocalIdeas,
+  saveLocalIdeas,
+} from "../lib/ideas/localStore";
+import {
+  deleteIdeaInSupabase,
+  fetchIdeasFromSupabase,
+  upsertIdeaInSupabase,
+  upsertIdeasInSupabase,
+} from "../lib/ideas/supabaseStore";
+import { isSupabaseConfigured } from "../lib/supabase/client";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
-const STORAGE_KEY = "cf-ideas";
+type PersistenceMode = "local" | "supabase";
 
 type IdeasContextValue = {
   ideas: Idea[];
@@ -29,58 +43,120 @@ type IdeasContextValue = {
 
 const IdeasContext = createContext<IdeasContextValue | null>(null);
 
-function loadIdeas(): Idea[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return structuredClone(demoIdeas);
-    const parsed = JSON.parse(raw) as Idea[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return structuredClone(demoIdeas);
-    }
-    return parsed;
-  } catch {
-    return structuredClone(demoIdeas);
-  }
-}
-
-function saveIdeas(ideas: Idea[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
-  } catch {
-    // ignore quota errors
-  }
-}
-
 function readLanguage(): "fr" | "en" {
   const saved = localStorage.getItem("cf-locale");
   return saved === "en" ? "en" : "fr";
 }
 
 export function IdeasProvider({ children }: { children: ReactNode }) {
-  const [ideas, setIdeas] = useState<Idea[]>(() => loadIdeas());
+  const [ideas, setIdeas] = useState<Idea[]>(() => loadLocalIdeas());
+  const [persistenceMode, setPersistenceMode] = useState<PersistenceMode>("local");
+  const supabaseUserIdRef = useRef<string | null>(null);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
-    saveIdeas(ideas);
-  }, [ideas]);
+    let cancelled = false;
 
-  const addIdea = useCallback((partial: Omit<Idea, "id" | "updatedAt">) => {
-    const idea: Idea = {
-      ...partial,
-      id: crypto.randomUUID(),
-      updatedAt: new Date().toISOString(),
+    async function hydrate() {
+      const session = await resolveSessionKind();
+      if (cancelled) return;
+
+      if (session === "apple" && isSupabaseConfigured()) {
+        const profile = await getAppleProfile();
+        if (cancelled) return;
+
+        const userId = profile.userId;
+        if (!userId) {
+          setPersistenceMode("local");
+          hydratedRef.current = true;
+          return;
+        }
+
+        supabaseUserIdRef.current = userId;
+        setPersistenceMode("supabase");
+
+        const remote = await fetchIdeasFromSupabase();
+        if (cancelled) return;
+
+        if (remote && remote.length > 0) {
+          setIdeas(remote);
+          hydratedRef.current = true;
+          return;
+        }
+
+        const localIdeas = loadLocalIdeas();
+        const hasCustomLocal =
+          localStorage.getItem("cf-ideas") !== null &&
+          localIdeas.some(
+            (idea) => !demoIdeas.some((demo) => demo.id === idea.id),
+          );
+
+        if (hasCustomLocal) {
+          await upsertIdeasInSupabase(localIdeas, userId);
+          if (!cancelled) {
+            clearLocalIdeas();
+            setIdeas(localIdeas);
+          }
+        } else if (remote) {
+          setIdeas(remote);
+        }
+
+        hydratedRef.current = true;
+        return;
+      }
+
+      setPersistenceMode("local");
+      hydratedRef.current = true;
+    }
+
+    void hydrate();
+
+    return () => {
+      cancelled = true;
     };
-    setIdeas((prev) => [idea, ...prev]);
   }, []);
 
-  const updateIdea = useCallback((id: string, patch: Partial<Idea>) => {
-    setIdeas((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, ...patch, updatedAt: new Date().toISOString() }
-          : item,
-      ),
-    );
-  }, []);
+  useEffect(() => {
+    if (!hydratedRef.current || persistenceMode !== "local") return;
+    saveLocalIdeas(ideas);
+  }, [ideas, persistenceMode]);
+
+  const persistIdea = useCallback(
+    async (idea: Idea) => {
+      if (persistenceMode !== "supabase" || !supabaseUserIdRef.current) return;
+      await upsertIdeaInSupabase(idea, supabaseUserIdRef.current);
+    },
+    [persistenceMode],
+  );
+
+  const addIdea = useCallback(
+    (partial: Omit<Idea, "id" | "updatedAt">) => {
+      const idea: Idea = {
+        ...partial,
+        id: crypto.randomUUID(),
+        updatedAt: new Date().toISOString(),
+      };
+      setIdeas((prev) => [idea, ...prev]);
+      void persistIdea(idea);
+    },
+    [persistIdea],
+  );
+
+  const updateIdea = useCallback(
+    (id: string, patch: Partial<Idea>) => {
+      setIdeas((prev) => {
+        const next = prev.map((item) =>
+          item.id === id
+            ? { ...item, ...patch, updatedAt: new Date().toISOString() }
+            : item,
+        );
+        const updated = next.find((item) => item.id === id);
+        if (updated) void persistIdea(updated);
+        return next;
+      });
+    },
+    [persistIdea],
+  );
 
   const moveIdea = useCallback(
     (id: string, status: IdeaStatus) => {
@@ -89,9 +165,15 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     [updateIdea],
   );
 
-  const deleteIdea = useCallback((id: string) => {
-    setIdeas((prev) => prev.filter((item) => item.id !== id));
-  }, []);
+  const deleteIdea = useCallback(
+    (id: string) => {
+      setIdeas((prev) => prev.filter((item) => item.id !== id));
+      if (persistenceMode === "supabase") {
+        void deleteIdeaInSupabase(id);
+      }
+    },
+    [persistenceMode],
+  );
 
   const generateScript = useCallback(
     async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
