@@ -133,6 +133,69 @@ describe("buildScriptPrompt", () => {
       ].join("\n"),
     );
   });
+
+  it("builds X FR structured prompt with thread and hook variants", () => {
+    const { system, user } = buildScriptPrompt({
+      title: "Thread viral",
+      description: "Une idée thought-leadership",
+      platform: "x",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(system).toContain("expert en contenu X (Twitter)");
+    expect(system).toContain("thought-leadership");
+    expect(user).toContain("Titre: Thread viral");
+    expect(user).toContain("THREAD PRINCIPAL (6–12 posts)");
+    expect(user).toContain("POST 1 — HOOK");
+    expect(user).toContain("VARIANTES DE HOOKS");
+    expect(user).toContain("VERSION POST UNIQUE CONDENSÉE");
+    expect(user).toContain("280 caractères");
+    expect(user).toContain("CTA explicite");
+  });
+
+  it("builds X EN structured prompt with thread and hook variants", () => {
+    const { system, user } = buildScriptPrompt({
+      title: "Viral thread",
+      description: "A thought-leadership idea",
+      platform: "x",
+      language: "en",
+      mode: "generate",
+    });
+    expect(system).toContain("X (Twitter) content and thought-leadership expert");
+    expect(user).toContain("Title: Viral thread");
+    expect(user).toContain("MAIN THREAD (6–12 posts)");
+    expect(user).toContain("HOOK VARIANTS");
+    expect(user).toContain("CONDENSED SINGLE-POST VERSION");
+    expect(user).toContain("280 characters");
+  });
+
+  it("uses X prompt even when format is long", () => {
+    const { user } = buildScriptPrompt({
+      title: "Thread",
+      description: "Desc",
+      platform: "x",
+      language: "fr",
+      mode: "generate",
+      format: "long",
+      durationMinutes: 20,
+    });
+    expect(user).toContain("THREAD PRINCIPAL");
+    expect(user).not.toContain("CHAPITRE");
+  });
+
+  it("uses unified improve prompt for X FR", () => {
+    const { user } = buildScriptPrompt({
+      title: "Thread",
+      description: "Desc",
+      platform: "x",
+      language: "fr",
+      mode: "improve",
+      existingScript: "Thread existant",
+    });
+    expect(user).toContain("Améliore ce script pour x.");
+    expect(user).toContain("Thread existant");
+    expect(user).not.toContain("THREAD PRINCIPAL");
+  });
 });
 
 describe("buildMockScript", () => {
@@ -179,5 +242,34 @@ describe("buildMockScript", () => {
     expect(script).toContain("TEXTE À L'ÉCRAN:");
     expect(script).toContain("AUDIO:");
     expect(script).toContain("CTA:");
+  });
+
+  it("returns thread structure for X FR", () => {
+    const script = buildMockScript({
+      title: "Thread test",
+      description: "Idée principale",
+      platform: "x",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(script).toContain("THREAD PRINCIPAL");
+    expect(script).toContain("POST 1/8 — HOOK");
+    expect(script).toContain("VARIANTES DE HOOKS");
+    expect(script).toContain("VERSION POST UNIQUE CONDENSÉE");
+    expect(script).toContain("Thread test");
+  });
+
+  it("returns thread structure for X EN", () => {
+    const script = buildMockScript({
+      title: "Test thread",
+      description: "Main idea",
+      platform: "x",
+      language: "en",
+      mode: "generate",
+    });
+    expect(script).toContain("MAIN THREAD");
+    expect(script).toContain("POST 1/8 — HOOK");
+    expect(script).toContain("HOOK VARIANTS");
+    expect(script).toContain("CONDENSED SINGLE-POST VERSION");
   });
 });

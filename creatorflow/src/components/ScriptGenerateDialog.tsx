@@ -42,6 +42,7 @@ export function ScriptGenerateDialog({
   const [duration, setDuration] = useState<LongDuration>(() => defaultLongDuration(plan));
 
   const durations = allowedLongDurations(plan);
+  const isXPlatform = idea?.platform === "x";
   const shortAtQuota = usage.short.remaining <= 0;
   const longAtQuota = usage.long.remaining <= 0;
   const formatAtQuota = format === "short" ? shortAtQuota : longAtQuota;
@@ -51,6 +52,12 @@ export function ScriptGenerateDialog({
     setFormat("short");
     setDuration(defaultLongDuration(plan));
   }, [open, idea?.id, plan]);
+
+  useEffect(() => {
+    if (isXPlatform && format === "long") {
+      setFormat("short");
+    }
+  }, [isXPlatform, format]);
 
   useEffect(() => {
     if (!durations.includes(duration)) {
@@ -105,6 +112,7 @@ export function ScriptGenerateDialog({
         </div>
 
         <div className="space-y-4">
+          {!isXPlatform && (
           <div>
             <p className="mb-2 text-sm font-medium">{tr("script.formatLabel")}</p>
             <div className="grid grid-cols-2 gap-2">
@@ -129,8 +137,13 @@ export function ScriptGenerateDialog({
               })}
             </div>
           </div>
+          )}
 
-          {format === "long" && (
+          {isXPlatform && (
+            <p className="text-sm text-muted-foreground">{tr("script.xFormatHint")}</p>
+          )}
+
+          {format === "long" && !isXPlatform && (
             <div>
               <p className="mb-2 text-sm font-medium">{tr("script.durationLabel")}</p>
               <div className="grid grid-cols-4 gap-2">

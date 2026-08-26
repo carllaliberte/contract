@@ -13,7 +13,7 @@ export type Idea = {
   description: string;
   status: IdeaStatus;
   priority: Priority;
-  platform: "youtube" | "tiktok" | "reels";
+  platform: "youtube" | "tiktok" | "reels" | "x";
   updatedAt: string;
   script?: string;
   thumbnail: string;
