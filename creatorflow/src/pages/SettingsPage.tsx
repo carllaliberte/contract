@@ -8,6 +8,11 @@ import { useAiUsage } from "../hooks/useAiUsage";
 import { useAuth } from "../hooks/useAuth";
 import { usePlan } from "../hooks/usePlan";
 import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
+import {
+  checkApiHealth,
+  resolveApiBaseUrl,
+  type ApiHealthState,
+} from "../lib/api/health";
 import { getAppleProfile } from "../lib/auth/session";
 import { restorePurchases } from "../lib/iap";
 import { PLAN_LIMITS } from "../lib/plans";
@@ -24,6 +29,10 @@ export function SettingsPage() {
   const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
+  const [apiHealth, setApiHealth] = useState<ApiHealthState>(() =>
+    resolveApiBaseUrl() ? "offline" : "demo",
+  );
+  const [apiUrl, setApiUrl] = useState<string | null>(() => resolveApiBaseUrl());
 
   const limits = PLAN_LIMITS[plan];
   const shortPct = limits.short
@@ -55,6 +64,28 @@ export function SettingsPage() {
       cancelled = true;
     };
   }, [isAuthenticated, isDemo, tr]);
+
+  useEffect(() => {
+    const baseUrl = resolveApiBaseUrl();
+    setApiUrl(baseUrl);
+    if (!baseUrl) {
+      setApiHealth("demo");
+      return;
+    }
+
+    let cancelled = false;
+    setApiHealth("offline");
+    void (async () => {
+      const online = await checkApiHealth(baseUrl);
+      if (!cancelled) {
+        setApiHealth(online ? "online" : "offline");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleRestore() {
     setRestoreBusy(true);
@@ -88,6 +119,34 @@ export function SettingsPage() {
         <div className="mt-3">
           <LanguageSelector />
         </div>
+      </Card>
+
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold">{tr("settings.apiTitle")}</h2>
+        <div className="mt-3 flex items-center gap-2">
+          <span
+            className={`size-2.5 rounded-full ${
+              apiHealth === "online"
+                ? "bg-emerald-500"
+                : apiHealth === "demo"
+                  ? "bg-amber-500"
+                  : "bg-muted-foreground/50"
+            }`}
+            aria-hidden
+          />
+          <p className="text-sm font-medium">
+            {apiHealth === "online"
+              ? tr("settings.apiOnline")
+              : apiHealth === "demo"
+                ? tr("settings.apiDemo")
+                : tr("settings.apiOffline")}
+          </p>
+        </div>
+        {apiUrl ? (
+          <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{apiUrl}</p>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">{tr("settings.apiDemoHint")}</p>
+        )}
       </Card>
 
       <Card className="p-5">

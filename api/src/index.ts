@@ -1,9 +1,19 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { env } from "./env.js";
 import { createAiRoutes } from "./routes/ai.js";
 
 const app = new Hono();
+
+app.use(
+  "*",
+  cors({
+    origin: env.corsOrigins,
+    allowHeaders: ["Content-Type", "Authorization", "x-demo-id"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
+  }),
+);
 
 app.get("/health", (c) =>
   c.json({
