@@ -1,11 +1,17 @@
 import { ArrowRight, Plus } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
+import {
+  ScriptGenerateDialog,
+  type ScriptGenerateOptions,
+} from "../components/ScriptGenerateDialog";
 import { Button, Card } from "../components/ui";
-import { useIdeas } from "../context/IdeasContext";
-import { countByStatus, getNextUp, type IdeaStatus } from "../data/demo";
+import { useIdeas, isGenerateScriptError } from "../context/IdeasContext";
+import { countByStatus, getNextUp, type Idea, type IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { deriveNextAction } from "../lib/nextAction";
+import { getNextStatus } from "../lib/pipelineActions";
 
 const statuses: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
 
@@ -23,11 +29,51 @@ function formatDate(iso: string, locale: string) {
 
 export function DashboardPage() {
   const { tr, locale } = useI18n();
-  const { ideas } = useIdeas();
+  const navigate = useNavigate();
+  const { ideas, moveIdea, generateScript } = useIdeas();
   const [addOpen, setAddOpen] = useState(false);
+  const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const counts = countByStatus(ideas);
   const nextUp = getNextUp(ideas);
+  const nextAction = nextUp ? deriveNextAction(nextUp) : null;
   const recent = [...ideas].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
+
+  async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
+    setGeneratingId(idea.id);
+    try {
+      await generateScript(idea.id, options);
+      setDialogIdea(null);
+    } catch (error) {
+      if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
+        setDialogIdea(null);
+      }
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  function handleNextAction() {
+    if (!nextUp || !nextAction) return;
+    if (nextAction.kind === "generate") {
+      setDialogIdea(nextUp);
+      return;
+    }
+    if (nextAction.kind === "shoot" && nextAction.route) {
+      navigate(nextAction.route);
+      return;
+    }
+    if (nextAction.kind === "publish") {
+      moveIdea(nextUp.id, "published");
+      return;
+    }
+    const nextStatus = getNextStatus(nextUp.status);
+    if (nextStatus) moveIdea(nextUp.id, nextStatus);
+  }
+
+  const nextActionLabel = nextAction
+    ? tr(`dashboard.nextAction.${nextAction.kind}`)
+    : tr("dashboard.open");
 
   return (
     <>
@@ -73,10 +119,7 @@ export function DashboardPage() {
                 {tr(`status.${nextUp.status}`)} · {tr(`priority.${nextUp.priority}`)}
               </span>
             </div>
-            <Link
-              to="/app/pipeline"
-              className="flex items-center gap-4 p-4 transition-colors hover:bg-secondary/40"
-            >
+            <div className="flex items-center gap-4 p-4">
               <img src={nextUp.thumbnail} alt="" className="size-[72px] shrink-0 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium leading-snug">{nextUp.title}</p>
@@ -84,11 +127,21 @@ export function DashboardPage() {
                   {nextUp.script ?? nextUp.description}
                 </p>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">
-                {tr("dashboard.open")}
+            </div>
+            <div className="flex gap-2 border-t border-border px-4 py-3">
+              <Button type="button" className="flex-1" onClick={handleNextAction}>
+                {nextActionLabel}
                 <ArrowRight className="size-3.5" />
-              </span>
-            </Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => navigate("/app/pipeline")}
+              >
+                {tr("dashboard.seePipeline")}
+              </Button>
+            </div>
           </Card>
         )}
 
@@ -128,6 +181,14 @@ export function DashboardPage() {
           </ul>
         </Card>
       </div>
+
+      <ScriptGenerateDialog
+        idea={dialogIdea}
+        open={dialogIdea !== null}
+        onClose={() => setDialogIdea(null)}
+        onSubmit={handleGenerateSubmit}
+        isGenerating={generatingId === dialogIdea?.id}
+      />
     </>
   );
 }
