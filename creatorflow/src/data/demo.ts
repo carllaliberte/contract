@@ -13,8 +13,10 @@ export type Idea = {
   description: string;
   status: IdeaStatus;
   priority: Priority;
-  platform: "youtube" | "tiktok" | "reels";
+  platform: "youtube" | "tiktok" | "reels" | "x";
   updatedAt: string;
+  /** Planned publish date (YYYY-MM-DD). Falls back to updatedAt in calendar views. */
+  scheduledAt?: string;
   script?: string;
   thumbnail: string;
   videoUrl?: string;
@@ -29,6 +31,7 @@ export const demoIdeas: Idea[] = [
     priority: "high",
     platform: "youtube",
     updatedAt: "2026-08-24T10:30:00Z",
+    scheduledAt: "2026-08-28",
     script:
       "HOOK: « Ces 5 erreurs font fuir 70% de ton audience. »\n1. Transitions trop longues\n2. Audio non normalisé\n3. Hook trop lent\n4. Pas de pattern interrupt\n5. CTA mal placé\nCTA: Abonne-toi pour la checklist complète.",
     thumbnail:
@@ -44,6 +47,7 @@ export const demoIdeas: Idea[] = [
     priority: "medium",
     platform: "tiktok",
     updatedAt: "2026-08-23T16:45:00Z",
+    scheduledAt: "2026-08-26",
     script:
       "HOOK (0-3s): « Voici comment je structure ma matinée. »\nScène 1: réveil + café\nScène 2: 3 priorités max\nScène 3: deep work block\nCTA: Suis pour le template.",
     thumbnail:
@@ -59,6 +63,7 @@ export const demoIdeas: Idea[] = [
     priority: "low",
     platform: "reels",
     updatedAt: "2026-08-22T09:15:00Z",
+    scheduledAt: "2026-08-30",
     thumbnail:
       "https://images.unsplash.com/photo-1598488035135-bdbb2231bb80?w=800&q=80",
   },
@@ -70,6 +75,7 @@ export const demoIdeas: Idea[] = [
     priority: "high",
     platform: "youtube",
     updatedAt: "2026-08-21T14:00:00Z",
+    scheduledAt: "2026-08-27",
     script:
       "Intro: le chaos des idées non structurées.\nDémo live du pipeline.\nSystème de priorisation.\nCTA: lien vers la démo.",
     thumbnail:

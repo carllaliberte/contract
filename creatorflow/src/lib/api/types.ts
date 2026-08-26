@@ -1,4 +1,4 @@
-export type Platform = "youtube" | "tiktok" | "reels";
+export type Platform = "youtube" | "tiktok" | "reels" | "x";
 export type Language = "fr" | "en";
 export type GenerateMode = "generate" | "improve";
 export type ScriptFormat = "short" | "long";
@@ -14,6 +14,8 @@ export type GenerateScriptRequest = {
   existingScript?: string;
   format?: ScriptFormat;
   durationMinutes?: 8 | 12 | 20 | 30;
+  /** Serialized style prompt from AIContext — injected server-side when supported. */
+  styleContext?: string;
 };
 
 export type FormatQuota = {
@@ -47,7 +49,7 @@ export type GenerateScriptErrorBody = {
 };
 
 export function isPlatform(value: string): value is Platform {
-  return value === "youtube" || value === "tiktok" || value === "reels";
+  return value === "youtube" || value === "tiktok" || value === "reels" || value === "x";
 }
 
 export function isLanguage(value: string): value is Language {

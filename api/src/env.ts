@@ -26,6 +26,9 @@ export const env = {
     !process.env.SUPABASE_URL ||
     !process.env.SUPABASE_SERVICE_ROLE_KEY,
   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
+  appleClientId:
+    process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",
+  appleAuthStub: process.env.APPLE_AUTH_STUB === "true",
 };
 
 export function currentMonth(): string {
