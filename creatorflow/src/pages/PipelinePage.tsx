@@ -22,6 +22,7 @@ import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { useAiUsage } from "../hooks/useAiUsage";
+import { getNextStatus } from "../lib/pipelineActions";
 
 const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
 
@@ -160,6 +161,11 @@ export function PipelinePage() {
     }
   }
 
+  function handleAdvance(idea: Idea) {
+    const next = getNextStatus(idea.status);
+    if (next) moveIdea(idea.id, next);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -209,6 +215,7 @@ export function PipelinePage() {
                       key={idea.id}
                       idea={idea}
                       onGenerateScript={openGenerateDialog}
+                      onAdvance={handleAdvance}
                       isGenerating={generatingId === idea.id}
                     />
                   ))
