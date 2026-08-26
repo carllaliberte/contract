@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Archive CreatorFlow iOS and upload to App Store Connect (macOS + Xcode required).
+# Archive CreatorFlow iOS, export IPA locally, then upload to App Store Connect.
 #
-# Required env (App Store Connect API key — recommended):
+# Required env:
 #   APPLE_TEAM_ID=XXXXXXXXXX
 #   APP_STORE_CONNECT_API_KEY_ID=XXXXXXXXXX
 #   APP_STORE_CONNECT_API_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-#   APP_STORE_CONNECT_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
 #
-# Or decode key from base64:
+# API key (.p8) — place at ~/.private_keys/AuthKey_<KEY_ID>.p8, or set:
 #   APP_STORE_CONNECT_API_KEY_BASE64=...
+#   APP_STORE_CONNECT_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
 #
 # Usage:
 #   bash scripts/ios-archive-and-upload.sh
@@ -18,7 +18,7 @@ set -euo pipefail
 
 if [[ "$(uname)" != "Darwin" ]]; then
   echo "ERROR: ios-archive-and-upload.sh requires macOS with Xcode."
-  echo "Run on your Mac, or trigger .github/workflows/ios-app-store-release.yml in GitHub Actions."
+  echo "Run on your Mac, or trigger .github/workflows/macos-ios-virtual.yml in GitHub Actions."
   exit 1
 fi
 
@@ -49,15 +49,20 @@ xcodebuild archive \
   CODE_SIGN_STYLE=Automatic \
   -allowProvisioningUpdates
 
-echo "▶ Export IPA for App Store Connect"
+EXPORT_OPTS="$(mktemp /tmp/ExportOptions.XXXXXX.plist)"
+trap 'rm -f "$EXPORT_OPTS"' EXIT
+cp ExportOptions.plist "$EXPORT_OPTS"
+/usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" "$EXPORT_OPTS" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Set :teamID $APPLE_TEAM_ID" "$EXPORT_OPTS"
+
+echo "▶ Export IPA locally (destination=export)"
 xcodebuild -exportArchive \
   -archivePath "$ARCHIVE_PATH" \
   -exportPath "$EXPORT_DIR" \
-  -exportOptionsPlist ExportOptions.plist \
+  -exportOptionsPlist "$EXPORT_OPTS" \
   -allowProvisioningUpdates
 
 if [[ ! -f "$IPA_PATH" ]]; then
-  # Xcode may name the ipa after the target
   IPA_PATH="$(find "$EXPORT_DIR" -maxdepth 1 -name '*.ipa' | head -1)"
 fi
 
@@ -73,19 +78,26 @@ if [[ "${ARCHIVE_ONLY:-}" == "1" || "${SKIP_UPLOAD:-}" == "1" ]]; then
   exit 0
 fi
 
-# Resolve API key path
-KEY_PATH="${APP_STORE_CONNECT_API_KEY_PATH:-}"
-if [[ -z "$KEY_PATH" && -n "${APP_STORE_CONNECT_API_KEY_BASE64:-}" ]]; then
-  KEY_PATH="$(mktemp /tmp/AuthKey.XXXXXX.p8)"
-  echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > "$KEY_PATH"
-  trap 'rm -f "$KEY_PATH"' EXIT
+: "${APP_STORE_CONNECT_API_KEY_ID:?Set APP_STORE_CONNECT_API_KEY_ID}"
+: "${APP_STORE_CONNECT_API_ISSUER_ID:?Set APP_STORE_CONNECT_API_ISSUER_ID}"
+
+PRIVATE_KEYS_DIR="${HOME}/.private_keys"
+mkdir -p "$PRIVATE_KEYS_DIR"
+EXPECTED_KEY="$PRIVATE_KEYS_DIR/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+
+if [[ ! -f "$EXPECTED_KEY" ]]; then
+  if [[ -n "${APP_STORE_CONNECT_API_KEY_BASE64:-}" ]]; then
+    echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > "$EXPECTED_KEY"
+  elif [[ -n "${APP_STORE_CONNECT_API_KEY_PATH:-}" && -f "$APP_STORE_CONNECT_API_KEY_PATH" ]]; then
+    cp "$APP_STORE_CONNECT_API_KEY_PATH" "$EXPECTED_KEY"
+  fi
 fi
 
-if [[ -z "$KEY_PATH" || ! -f "$KEY_PATH" ]]; then
+if [[ ! -f "$EXPECTED_KEY" ]]; then
   echo ""
   echo "⚠ Upload skipped — App Store Connect API key not configured."
-  echo "  Set APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID,"
-  echo "  and APP_STORE_CONNECT_API_KEY_PATH (or _BASE64)."
+  echo "  Place AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 in $PRIVATE_KEYS_DIR"
+  echo "  or set APP_STORE_CONNECT_API_KEY_BASE64 / APP_STORE_CONNECT_API_KEY_PATH."
   echo ""
   echo "  Manual upload: open Transporter app or Xcode → Organizer → Distribute"
   echo "  IPA ready at: $IPA_PATH"
@@ -93,16 +105,21 @@ if [[ -z "$KEY_PATH" || ! -f "$KEY_PATH" ]]; then
   exit 0
 fi
 
-: "${APP_STORE_CONNECT_API_KEY_ID:?Set APP_STORE_CONNECT_API_KEY_ID}"
-: "${APP_STORE_CONNECT_API_ISSUER_ID:?Set APP_STORE_CONNECT_API_ISSUER_ID}"
-
-echo "▶ Upload to App Store Connect"
-xcrun altool --upload-app \
-  --type ios \
-  --file "$IPA_PATH" \
-  --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-  --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID" \
-  --apiKeyPath "$KEY_PATH"
+echo "▶ Upload to App Store Connect (iTMSTransporter, fallback altool)"
+if xcrun iTMSTransporter -m upload \
+  -assetFile "$IPA_PATH" \
+  -apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+  -apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"; then
+  echo "✓ Upload complete via iTMSTransporter."
+else
+  echo "⚠ iTMSTransporter failed — trying altool..."
+  xcrun altool --upload-app \
+    --type ios \
+    --file "$IPA_PATH" \
+    --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+    --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
+  echo "✓ Upload complete via altool."
+fi
 
 echo ""
 echo "✓ Upload complete. Finish submission in App Store Connect:"
