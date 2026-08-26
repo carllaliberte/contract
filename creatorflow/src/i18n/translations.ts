@@ -42,6 +42,10 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet3": "Une vue claire sur toutes vos idées vidéo",
     "login.bullet4": "Essai immédiat, sans carte bancaire",
     "login.tryDemo": "Explorer sans compte",
+    "login.appleCallbackLoading": "Connexion avec Apple…",
+    "login.appleCallbackMissing": "Réponse Apple incomplète. Réessayez depuis l'app.",
+    "login.appleCallbackError": "La connexion Apple a échoué.",
+    "login.appleCallbackBack": "Retour à l'accueil",
     "showcase.title": "Voyez CreatorFlow en action",
     "showcase.subtitle":
       "Aperçus du parcours de création, du tableau de bord et des contenus prêts à publier.",
@@ -257,6 +261,10 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet3": "A clear view of every video idea",
     "login.bullet4": "Try it now, no credit card required",
     "login.tryDemo": "Explore without account",
+    "login.appleCallbackLoading": "Signing in with Apple…",
+    "login.appleCallbackMissing": "Incomplete Apple response. Try again from the app.",
+    "login.appleCallbackError": "Apple sign-in failed.",
+    "login.appleCallbackBack": "Back to home",
     "showcase.title": "See CreatorFlow in action",
     "showcase.subtitle":
       "Previews of your creation workflow, dashboard, and publish-ready content.",

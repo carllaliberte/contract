@@ -6,6 +6,7 @@ import { I18nProvider } from "./i18n/context";
 import { ROUTER_BASENAME } from "./lib/router";
 import { AppLayout } from "./pages/AppLayout";
 import { LandingPage } from "./pages/LandingPage";
+import { AppleAuthCallbackPage } from "./pages/AppleAuthCallbackPage";
 
 const DashboardPage = lazy(() =>
   import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
@@ -41,6 +42,7 @@ export default function App() {
       <BrowserRouter basename={ROUTER_BASENAME}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/auth/apple" element={<AppleAuthCallbackPage />} />
           <Route
             path="/app"
             element={

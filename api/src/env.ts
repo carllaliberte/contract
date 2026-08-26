@@ -20,12 +20,20 @@ export const env = {
   corsOrigins: parseList(process.env.CORS_ORIGINS, [
     "https://carllaliberte.github.io",
     "http://localhost:5173",
+    "https://localhost",
+    "capacitor://localhost",
   ]),
   memoryStore:
     process.env.MEMORY_STORE === "true" ||
     !process.env.SUPABASE_URL ||
     !process.env.SUPABASE_SERVICE_ROLE_KEY,
   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
+  appleClientIds: parseList(process.env.APPLE_CLIENT_IDS, [
+    "com.carllaliberte.creatorflow",
+    "com.carllaliberte.creatorflow.web",
+  ]),
+  appleAuthStub:
+    process.env.APPLE_AUTH_STUB === "true" || process.env.MEMORY_STORE === "true",
 };
 
 export function currentMonth(): string {

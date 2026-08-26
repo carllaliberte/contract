@@ -12,6 +12,8 @@ Guide pour archiver, soumettre et passer la review Apple. Version **1.0 gratuite
 | Capacitor `appId` | `com.carllaliberte.creatorflow` (`capacitor.config.ts`) |
 | Sign in with Apple | `ios/App/App/App.entitlements` |
 
+Guide Apple Developer + Supabase + API : [`docs/SIGN_IN_WITH_APPLE.md`](./docs/SIGN_IN_WITH_APPLE.md).
+
 ## Build web + sync (obligatoire avant Xcode)
 
 **Ne pas** utiliser `npm run build` seul (base GitHub Pages `/contract/creatorflow/`). Pour l’archive Store :
