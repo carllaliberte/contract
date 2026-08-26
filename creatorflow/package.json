@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:ios": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync ios",
+    "build:ios": "node scripts/validate-ios-build.mjs && VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync ios",
     "build:android": "VITE_BASE_PATH=/ VITE_ROUTER_BASENAME=/ npm run build && npx cap sync android",
     "cap:sync": "npm run build:ios",
     "cap:sync:android": "npm run build:android",

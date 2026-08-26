@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   clearSession,
+  deleteAccount,
   establishDemoSession,
   resolveSessionKind,
   type SessionKind,
@@ -29,6 +30,11 @@ export function useAuth() {
     setSession("none");
   }, []);
 
+  const removeAccount = useCallback(async () => {
+    await deleteAccount();
+    setSession("none");
+  }, []);
+
   return {
     session,
     isAppAllowed: session === "demo" || session === "apple",
@@ -37,6 +43,7 @@ export function useAuth() {
     isLoading: session === "loading",
     enterDemo,
     signOut,
+    deleteAccount: removeAccount,
     refresh,
   };
 }
