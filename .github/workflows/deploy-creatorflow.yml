@@ -12,10 +12,11 @@ permissions:
 
 concurrency:
   group: deploy-creatorflow
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy-github-pages:
+    timeout-minutes: 12
     if: >
       github.event_name == 'workflow_dispatch' ||
       (
