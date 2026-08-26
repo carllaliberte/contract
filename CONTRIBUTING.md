@@ -31,7 +31,7 @@ Tests / checks (from `creatorflow/`):
 ```bash
 npm run typecheck   # if available
 npm test            # unit
-npm run e2e         # Playwright (when configured)
+npm run test:e2e    # Playwright (when configured)
 ```
 
 ### META dashboard (`google-app/`)
@@ -69,6 +69,8 @@ cp .env.example .env
    - API CI when `api/` changes
 4. Link related issues with `Fixes #123` when applicable.
 5. Do not force-push to `main`. Avoid rewriting shared history on open PR branches unless coordinating with reviewers.
+
+For the canonical merge path (`--no-ff`, no force-push on `main`), see [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md).
 
 ## Issues
 

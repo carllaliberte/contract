@@ -16,6 +16,12 @@ const PipelinePage = lazy(() =>
 const ContentsPage = lazy(() =>
   import("./pages/ContentsPage").then((m) => ({ default: m.ContentsPage })),
 );
+const CalendarPage = lazy(() =>
+  import("./pages/CalendarPage").then((m) => ({ default: m.CalendarPage })),
+);
+const AppleAuthCallbackPage = lazy(() =>
+  import("./pages/AppleAuthCallbackPage").then((m) => ({ default: m.AppleAuthCallbackPage })),
+);
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
@@ -41,6 +47,14 @@ export default function App() {
       <BrowserRouter basename={ROUTER_BASENAME}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/auth/apple"
+            element={
+              <Suspense fallback={<AppRouteFallback />}>
+                <AppleAuthCallbackPage />
+              </Suspense>
+            }
+          />
           <Route
             path="/app"
             element={
@@ -72,6 +86,14 @@ export default function App() {
               element={
                 <Suspense fallback={<AppRouteFallback />}>
                   <ContentsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="calendrier"
+              element={
+                <Suspense fallback={<AppRouteFallback />}>
+                  <CalendarPage />
                 </Suspense>
               }
             />

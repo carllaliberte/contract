@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import type { AppleSignInResult } from "../../hooks/useAppleSignIn";
 import { resolveAppleAuthUrl } from "./base";
 
@@ -8,6 +9,8 @@ export interface AuthSession {
 }
 
 function shouldUseAuthStub(): boolean {
+  // Native iOS/Android builds must never use stub auth (App Store / Play review).
+  if (Capacitor.isNativePlatform()) return false;
   if (import.meta.env.VITE_AUTH_STUB === "true") return true;
   if (import.meta.env.DEV && !import.meta.env.VITE_API_URL?.trim()) return true;
   return false;
