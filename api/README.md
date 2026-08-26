@@ -59,6 +59,13 @@ Health check: `GET /health`
 
 ### CreatorFlow frontend
 
-Set `VITE_API_URL` to the API origin (no trailing slash), e.g. `http://localhost:3000`.
+Set `VITE_API_URL` to the API origin (no trailing slash), e.g. `http://localhost:3000` or `https://creatorflow-api.onrender.com`.
+
+### Render (production)
+
+1. Render Dashboard → **New** → **Blueprint** → connect this repo.
+2. The blueprint (`render.yaml`) deploys `creatorflow-api` from the `api/` directory.
+3. Set secrets in Render: `SUPABASE_*`, `OPENAI_API_KEY` (optional: set `MEMORY_STORE=false`, `MOCK_LLM=false`).
+4. GitHub Actions variable: `VITE_API_URL=https://creatorflow-api.onrender.com` → redeploy CreatorFlow.
 
 Local Vite proxy (optional): `/ai` → `http://localhost:3000`.
