@@ -47,7 +47,7 @@ jobs:
         env:
           VITE_BASE_PATH: /contract/creatorflow/
           VITE_ROUTER_BASENAME: /contract/creatorflow
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://creatorflow-api.fly.dev' }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: npm ci && npm run build
@@ -83,3 +83,4 @@ jobs:
         run: |
           echo "App: https://carllaliberte.github.io/contract/creatorflow/"
           echo "Privacy: https://carllaliberte.github.io/contract/creatorflow/privacy.html"
+
