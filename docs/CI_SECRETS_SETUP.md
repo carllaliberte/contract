@@ -41,7 +41,8 @@ Le script pousse uniquement les valeurs **non vides** :
 
 | Variable | Source typique |
 |----------|----------------|
-| `VITE_API_URL` | `creatorflow/.env.local` |
+| `VITE_API_URL` | `creatorflow/.env.local` — ex. `https://TON-PROJET.supabase.co/functions/v1/generate-script` |
+| `VITE_AUTH_APPLE_URL` | optionnel — ex. `https://TON-PROJET.supabase.co/functions/v1/auth-apple` |
 | `VITE_WALLETCONNECT_PROJECT_ID` | `google-app/.env` |
 | `VITE_CONTRACT_ADDRESS` | `google-app/.env` ou `google-app/deployment.json` |
 | `VITE_RPC_URL` | `google-app/.env` ou `google-app/deployment.json` |
@@ -78,7 +79,7 @@ Les workflows **Deploy CreatorFlow** et **Deploy META** fixent déjà les chemin
 | Workflow | Variables | Secrets | Notes |
 |----------|-----------|---------|-------|
 | Secret scan / CI CreatorFlow / API CI | — | — | Aucune config requise |
-| Deploy CreatorFlow | `VITE_API_URL` (optionnel) | — | `VITE_BASE_PATH` forcé dans le YAML |
+| Deploy CreatorFlow | `VITE_API_URL` (**recommandé**) | — | `VITE_BASE_PATH` forcé dans le YAML |
 | Deploy META dashboard | `VITE_*` META (optionnel) | `FIREBASE_TOKEN` (optionnel) | `deployment.json` écrase adresse + RPC |
 | Build Android release | — | `META_PLAY_CONFIG` (optionnel) | Upload skip si absent |
 

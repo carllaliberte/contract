@@ -11,6 +11,7 @@ import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
 import {
   checkApiHealth,
   resolveApiBaseUrl,
+  resolveConfiguredApiUrl,
   type ApiHealthState,
 } from "../lib/api/health";
 import { getAppleProfile } from "../lib/auth/session";
@@ -32,7 +33,7 @@ export function SettingsPage() {
   const [apiHealth, setApiHealth] = useState<ApiHealthState>(() =>
     resolveApiBaseUrl() ? "offline" : "demo",
   );
-  const [apiUrl, setApiUrl] = useState<string | null>(() => resolveApiBaseUrl());
+  const [apiUrl, setApiUrl] = useState<string | null>(() => resolveConfiguredApiUrl());
 
   const limits = PLAN_LIMITS[plan];
   const shortPct = limits.short
@@ -66,9 +67,10 @@ export function SettingsPage() {
   }, [isAuthenticated, isDemo, tr]);
 
   useEffect(() => {
-    const baseUrl = resolveApiBaseUrl();
-    setApiUrl(baseUrl);
-    if (!baseUrl) {
+    const configuredUrl = resolveConfiguredApiUrl();
+    const healthBase = resolveApiBaseUrl();
+    setApiUrl(configuredUrl);
+    if (!healthBase) {
       setApiHealth("demo");
       return;
     }
@@ -76,7 +78,7 @@ export function SettingsPage() {
     let cancelled = false;
     setApiHealth("offline");
     void (async () => {
-      const online = await checkApiHealth(baseUrl);
+      const online = await checkApiHealth(healthBase);
       if (!cancelled) {
         setApiHealth(online ? "online" : "offline");
       }

@@ -44,7 +44,10 @@ jobs:
       - name: Build CreatorFlow (SEO prerender)
         working-directory: creatorflow
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://creatorflow-api.onrender.com' }}
+          # GitHub → Settings → Variables (required for live API on Pages):
+          # VITE_API_URL=https://TON-PROJET.supabase.co/functions/v1/generate-script
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_AUTH_APPLE_URL: ${{ vars.VITE_AUTH_APPLE_URL }}
           VITE_BASE_PATH: /contract/creatorflow/
           VITE_ROUTER_BASENAME: /contract/creatorflow
         run: npm run build:seo

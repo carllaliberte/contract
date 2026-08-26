@@ -85,6 +85,7 @@ echo "Settings: https://github.com/$REPO/settings/secrets/actions"
 echo ""
 
 set_var VITE_API_URL "${VITE_API_URL:-}"
+set_var VITE_AUTH_APPLE_URL "${VITE_AUTH_APPLE_URL:-}"
 set_var VITE_WALLETCONNECT_PROJECT_ID "${VITE_WALLETCONNECT_PROJECT_ID:-}"
 set_var VITE_CONTRACT_ADDRESS "${VITE_CONTRACT_ADDRESS:-}"
 set_var VITE_RPC_URL "${VITE_RPC_URL:-}"

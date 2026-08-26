@@ -1,13 +1,19 @@
 export type ApiHealthState = "online" | "offline" | "demo";
 
-export function resolveApiBaseUrl(): string | null {
+/** Raw value from build-time env (e.g. .../functions/v1/generate-script). */
+export function resolveConfiguredApiUrl(): string | null {
   const configured = import.meta.env.VITE_API_URL?.trim() ?? "";
+  return configured ? configured.replace(/\/$/, "") : null;
+}
+
+/** Base used for health checks (Supabase → .../functions/v1). */
+export function resolveApiBaseUrl(): string | null {
+  const configured = resolveConfiguredApiUrl();
   if (!configured) return null;
-  const base = configured.replace(/\/$/, "");
-  if (base.includes(".supabase.co/functions/v1")) {
-    return base.replace(/\/functions\/v1(?:\/.*)?$/, "/functions/v1");
+  if (configured.includes(".supabase.co/functions/v1")) {
+    return configured.replace(/\/functions\/v1(?:\/.*)?$/, "/functions/v1");
   }
-  return base;
+  return configured;
 }
 
 export function resolveHealthUrl(baseUrl: string): string {

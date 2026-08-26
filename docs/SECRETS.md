@@ -54,7 +54,9 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 Workflow : `.github/workflows/deploy-creatorflow.yml`
 
 - `VITE_BASE_PATH` et `VITE_ROUTER_BASENAME` sont **forcés** à `/contract/creatorflow/` dans le workflow (Pages).
-- `VITE_API_URL` — variable optionnelle (Settings → Variables) pour l’endpoint scripts IA.
+- `VITE_API_URL` — variable **recommandée** (Settings → Variables) : URL complète de la Edge Function Supabase, ex.  
+  `https://TON-PROJET.supabase.co/functions/v1/generate-script`
+- `VITE_AUTH_APPLE_URL` — optionnel : `https://TON-PROJET.supabase.co/functions/v1/auth-apple`
 
 Si `VITE_API_URL` n’est pas définie, le build utilise le comportement démo.
 
