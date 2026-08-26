@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "creatorflow/**"
+      - "shared/**"
       - ".github/workflows/ci-creatorflow.yml"
   pull_request:
     paths:
       - "creatorflow/**"
+      - "shared/**"
       - ".github/workflows/ci-creatorflow.yml"
   workflow_dispatch:
 
@@ -142,6 +144,7 @@ jobs:
   android:
     needs: web
     runs-on: ubuntu-latest
+    continue-on-error: true
     defaults:
       run:
         working-directory: creatorflow

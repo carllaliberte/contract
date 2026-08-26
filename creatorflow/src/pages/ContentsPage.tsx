@@ -13,6 +13,7 @@ import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import { copyScriptToClipboard } from "../lib/ideaActions";
 import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
+import { TtsPlayButton } from "../components/TtsPlayButton";
 import { useAiUsage } from "../hooks/useAiUsage";
 
 export function ContentsPage() {
@@ -141,6 +142,7 @@ export function ContentsPage() {
                   <p className="line-clamp-4 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
                     {item.script}
                   </p>
+                  <TtsPlayButton text={item.script} />
                   <div className="flex gap-2">
                     <Button
                       type="button"
