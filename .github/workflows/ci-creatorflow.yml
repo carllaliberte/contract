@@ -61,6 +61,43 @@ jobs:
       - name: Playwright e2e
         run: npm run test:e2e
 
+  pr-preview:
+    if: github.event_name == 'pull_request'
+    needs: web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: creatorflow
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: creatorflow/package-lock.json
+
+      - name: Install deps & Playwright Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Build CreatorFlow (PR preview)
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://creatorflow-api.fly.dev' }}
+          VITE_BASE_PATH: /contract/creatorflow/pr-${{ github.event.pull_request.number }}/
+          VITE_ROUTER_BASENAME: /contract/creatorflow/pr-${{ github.event.pull_request.number }}
+        run: npm run build:seo
+
+      - name: Upload PR preview dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: creatorflow-pr-preview-dist
+          path: creatorflow/dist/
+          if-no-files-found: error
+
   android:
     needs: web
     runs-on: ubuntu-latest
