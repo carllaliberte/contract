@@ -73,6 +73,45 @@ describe("POST /ai/generate-script", () => {
   });
 });
 
+describe("POST /ai/tts", () => {
+  it("returns audio/mpeg for valid body", async () => {
+    const app = testApp();
+    const res = await app.request("/ai/tts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-demo-id": "e2e",
+      },
+      body: JSON.stringify({
+        text: "Bonjour le monde",
+        voiceId: "nova",
+        speed: 1,
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("audio/mpeg");
+    const audio = await res.arrayBuffer();
+    expect(audio.byteLength).toBeGreaterThan(0);
+  });
+
+  it("returns 400 when text is missing", async () => {
+    const app = testApp();
+    const res = await app.request("/ai/tts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-demo-id": "e2e",
+      },
+      body: JSON.stringify({ voiceId: "nova" }),
+    });
+
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: string };
+    expect(data.error).toBe("BAD_REQUEST");
+  });
+});
+
 describe("authMiddleware", () => {
   it("accepts x-demo-id", async () => {
     const app = new Hono<AppEnv>();

@@ -28,6 +28,7 @@ import {
   upsertIdeasInSupabase,
 } from "../lib/ideas/supabaseStore";
 import { isSupabaseConfigured } from "../lib/supabase/client";
+import { aiContext } from "../services/aiContext";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 type PersistenceMode = "local" | "supabase";
@@ -184,17 +185,25 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
         throw new Error("LIMIT_REACHED");
       }
 
+      const language = readLanguage();
       const mode = idea.script ? "improve" : "generate";
+      const context = aiContext.getContext({
+        platform: idea.platform,
+        language,
+        format: options.format,
+      });
+
       const data = await postGenerateScript({
         ideaId: idea.id,
         title: idea.title,
         description: idea.description,
         platform: idea.platform,
-        language: readLanguage(),
+        language,
         mode,
         existingScript: idea.script,
         format: options.format,
         durationMinutes: options.durationMinutes,
+        styleContext: context.stylePrompt,
       });
 
       if (data.usage) syncAiUsage(data.usage);
@@ -202,6 +211,15 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       updateIdea(id, {
         script: data.script,
         status: idea.status === "idea" ? "script" : idea.status,
+      });
+
+      aiContext.updateStyleFromPackage({
+        ideaId: idea.id,
+        platform: idea.platform,
+        language,
+        format: options.format,
+        script: data.script,
+        source: "generated",
       });
     },
     [ideas, updateIdea],
