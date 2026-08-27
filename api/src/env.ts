@@ -8,11 +8,30 @@ function parseList(raw: string | undefined, fallback: string[]): string[] {
     .filter(Boolean);
 }
 
+const supabaseUrl = process.env.SUPABASE_URL ?? "";
+// Prefer @supabase/server key names; keep legacy anon/service-role aliases.
+const supabasePublishableKey =
+  process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
+const supabaseSecretKey =
+  process.env.SUPABASE_SECRET_KEY ??
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  "";
+const supabaseJwksUrl =
+  process.env.SUPABASE_JWKS_URL ??
+  (supabaseUrl
+    ? `${supabaseUrl.replace(/\/$/, "")}/auth/v1/.well-known/jwks.json`
+    : "");
+
 export const env = {
   port: Number(process.env.PORT ?? 3000),
-  supabaseUrl: process.env.SUPABASE_URL ?? "",
-  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
-  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  supabaseUrl,
+  supabasePublishableKey,
+  supabaseSecretKey,
+  supabaseJwksUrl,
+  /** @deprecated Prefer supabasePublishableKey */
+  supabaseAnonKey: supabasePublishableKey,
+  /** @deprecated Prefer supabaseSecretKey */
+  supabaseServiceRoleKey: supabaseSecretKey,
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
   monthlyAiLimit: Number(process.env.MONTHLY_AI_LIMIT ?? LIMITS.free),
@@ -23,8 +42,8 @@ export const env = {
   ]),
   memoryStore:
     process.env.MEMORY_STORE === "true" ||
-    !process.env.SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY,
+    !supabaseUrl ||
+    !supabaseSecretKey,
   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
   appleClientId:
     process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",

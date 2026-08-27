@@ -30,8 +30,9 @@ Copy `.env.example` to `.env` and configure:
 | Variable | Description |
 |----------|-------------|
 | `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_ANON_KEY` | For JWT validation |
-| `SUPABASE_SERVICE_ROLE_KEY` | For `ai_usage` / `ai_generations` writes |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable key for `@supabase/server` / client auth (alias: `SUPABASE_ANON_KEY`) |
+| `SUPABASE_SECRET_KEY` | Secret key for admin supabase-js (alias: `SUPABASE_SERVICE_ROLE_KEY`) |
+| `SUPABASE_JWKS_URL` | JWKS endpoint for JWT verification (`…/auth/v1/.well-known/jwks.json`) |
 | `OPENAI_API_KEY` | OpenAI API key |
 | `OPENAI_MODEL` | Default `gpt-4o-mini` |
 | `MONTHLY_AI_LIMIT` | Free plan limit (default `8`, matches SQL) |
