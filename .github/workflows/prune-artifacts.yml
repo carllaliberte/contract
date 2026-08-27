@@ -1,0 +1,39 @@
+name: Prune build artifacts
+
+# Deletes GitHub Actions artifacts older than 7 days.
+# IPA / APK / AAB / Playwright dumps do not pile up.
+# Kept: nothing on disk in git (already gitignored).
+
+on:
+  schedule:
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+env:
+  MAX_AGE_DAYS: "7"
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete expired artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d "${MAX_AGE_DAYS} days ago" +%s)
+          gh api --paginate "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | [.id, .created_at, .name, .size_in_bytes] | @tsv' \
+          | while IFS=$'\t' read -r id created name size; do
+              created_s=$(date -u -d "$created" +%s)
+              if [ "$created_s" -lt "$cutoff" ]; then
+                echo "delete $name ($id) $created ${size}B"
+                gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/${id}" || true
+              else
+                echo "keep $name ($id) $created"
+              fi
+            done
