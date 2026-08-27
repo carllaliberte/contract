@@ -17,3 +17,9 @@ android/**/build/
 *.jks
 local.properties
 test-results/
+playwright-report/
+blob-report/
+coverage/
+*.ipa
+*.apk
+*.aab
