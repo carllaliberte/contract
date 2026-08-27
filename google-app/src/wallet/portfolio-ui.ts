@@ -12,6 +12,16 @@ function formatBalance(balance: string): string {
   return trimmedFraction ? `${whole}.${trimmedFraction}` : whole
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => {
+    if (ch === '&') return '&' + 'amp;'
+    if (ch === '<') return '&' + 'lt;'
+    if (ch === '>') return '&' + 'gt;'
+    if (ch === '"') return '&' + 'quot;'
+    return '&#39;'
+  })
+}
+
 function isWrongChain(account: WalletAccount): boolean {
   if (!account.isConnected || !account.address) return false
   return !isSupportedChainId(account.chainId)
@@ -33,7 +43,7 @@ function renderLoading(portfolioPanel: HTMLElement) {
 function renderEmpty(portfolioPanel: HTMLElement, chainId: number) {
   portfolioPanel.innerHTML = `
     <p class="portfolio__status">
-      Aucun actif avec un solde &gt; 0 sur ${getPortfolioChainLabel(chainId)}.
+      Aucun actif avec un solde &gt; 0 sur ${escapeHtml(getPortfolioChainLabel(chainId))}.
     </p>
     <p class="portfolio__hint">Lecture seule — vos clés restent dans votre portefeuille.</p>
   `
@@ -41,7 +51,7 @@ function renderEmpty(portfolioPanel: HTMLElement, chainId: number) {
 
 function renderError(portfolioPanel: HTMLElement, message: string) {
   portfolioPanel.innerHTML = `
-    <p class="portfolio__status portfolio__status--error">${message}</p>
+    <p class="portfolio__status portfolio__status--error">${escapeHtml(message)}</p>
   `
 }
 
@@ -60,9 +70,9 @@ function renderAssets(portfolioPanel: HTMLElement, account: WalletAccount, asset
     <div class="portfolio__header">
       <div>
         <p class="portfolio__label">Portefeuille connecté</p>
-        <p class="portfolio__address mono" title="${address}">${shortenAddress(address)}</p>
+        <p class="portfolio__address mono" title="${escapeHtml(address)}">${escapeHtml(shortenAddress(address))}</p>
       </div>
-      <p class="portfolio__chain">${getPortfolioChainLabel(chainId)}</p>
+      <p class="portfolio__chain">${escapeHtml(getPortfolioChainLabel(chainId))}</p>
     </div>
     <ul class="portfolio__list" aria-label="Mes actifs">
       ${assets
@@ -70,11 +80,11 @@ function renderAssets(portfolioPanel: HTMLElement, account: WalletAccount, asset
           (asset) => `
             <li class="portfolio__item${asset.isMeta ? ' portfolio__item--meta' : ''}">
               <div class="portfolio__item-main">
-                <strong class="portfolio__symbol">${asset.symbol}</strong>
-                <span class="portfolio__name">${asset.name}</span>
+                <strong class="portfolio__symbol">${escapeHtml(asset.symbol)}</strong>
+                <span class="portfolio__name">${escapeHtml(asset.name)}</span>
               </div>
               <div class="portfolio__item-side">
-                <strong class="portfolio__balance">${formatBalance(asset.balance)}</strong>
+                <strong class="portfolio__balance">${escapeHtml(formatBalance(asset.balance))}</strong>
                 <span class="portfolio__kind">${asset.kind === 'native' ? 'Natif' : 'ERC-20'}</span>
               </div>
             </li>
