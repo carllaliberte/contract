@@ -110,6 +110,10 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
       typeof b.existingScript === "string" ? b.existingScript : undefined,
     format,
     durationMinutes,
+    styleContext:
+      typeof b.styleContext === "string" && b.styleContext.trim()
+        ? b.styleContext.trim()
+        : undefined,
   };
 }
 
@@ -408,6 +412,7 @@ Deno.serve(async (req) => {
       existingScript: payload.existingScript,
       format,
       durationMinutes: payload.durationMinutes,
+      styleContext: payload.styleContext,
     });
 
     const { script, model } = await callOpenAi(system, user);

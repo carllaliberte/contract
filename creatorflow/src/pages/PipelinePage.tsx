@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
 import { PaywallSheet } from "../components/PaywallSheet";
+import { PackApplyDialog } from "../components/PackApplyDialog";
 import {
   ScriptGenerateDialog,
   type ScriptGenerateOptions,
@@ -19,10 +20,11 @@ import {
 import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea, IdeaStatus } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { syncAiUsage } from "../lib/aiUsage";
 import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { useAiUsage } from "../hooks/useAiUsage";
+import { runScriptPreviewWithPaywall, useScriptPackFlow } from "../hooks/useScriptPackFlow";
 import { getNextStatus } from "../lib/pipelineActions";
 
 const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
@@ -68,10 +70,19 @@ function DroppableColumn({
 export function PipelinePage() {
   const { tr } = useI18n();
   const navigate = useNavigate();
-  const { ideas, moveIdea, generateScript, duplicateIdea } = useIdeas();
+  const { ideas, moveIdea, duplicateIdea } = useIdeas();
+  const {
+    generatingId,
+    notice: aiNotice,
+    setNotice: setAiNotice,
+    packPreview,
+    isApplying,
+    providerLabel,
+    submitPreview,
+    confirmApply,
+    discardPreview,
+  } = useScriptPackFlow();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
 
@@ -138,28 +149,14 @@ export function PipelinePage() {
   }
 
   async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
-    if (!canUseAiGeneration(options.format)) {
-      handlePaywall(options.format);
-      return;
-    }
-    setGeneratingId(idea.id);
-    setAiNotice(null);
+    setDialogIdea(null);
     try {
-      await generateScript(idea.id, options);
-      setDialogIdea(null);
+      await runScriptPreviewWithPaywall(idea, options, submitPreview, handlePaywall);
     } catch (error) {
-      if (error instanceof Error && error.message === "LIMIT_REACHED") {
-        handlePaywall(options.format);
-      } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
+      if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
         handlePaywall(options.format);
-      } else if (isGenerateScriptError(error)) {
-        setAiNotice(error.message);
-      } else {
-        setAiNotice(tr("script.apiError"));
       }
-    } finally {
-      setGeneratingId(null);
     }
   }
 
@@ -247,6 +244,16 @@ export function PipelinePage() {
         onSubmit={handleGenerateSubmit}
         isGenerating={generatingId === dialogIdea?.id}
         onPaywall={handlePaywall}
+      />
+
+      <PackApplyDialog
+        idea={packPreview?.idea ?? null}
+        pack={packPreview?.pack ?? null}
+        open={packPreview !== null}
+        providerLabel={providerLabel}
+        onClose={discardPreview}
+        onApply={confirmApply}
+        isApplying={isApplying}
       />
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />

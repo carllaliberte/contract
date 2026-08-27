@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "../components/ui";
 import { PaywallSheet } from "../components/PaywallSheet";
 import { SharePackRow } from "../components/SharePackRow";
+import { PackApplyDialog } from "../components/PackApplyDialog";
 import {
   ScriptGenerateDialog,
   type ScriptGenerateOptions,
@@ -10,19 +11,29 @@ import {
 import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { syncAiUsage } from "../lib/aiUsage";
 import { copyScriptToClipboard } from "../lib/ideaActions";
 import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { TtsPlayButton } from "../components/TtsPlayButton";
 import { useAiUsage } from "../hooks/useAiUsage";
+import { runScriptPreviewWithPaywall, useScriptPackFlow } from "../hooks/useScriptPackFlow";
 import { labelForPlatform } from "../lib/platforms";
 
 export function ContentsPage() {
   const { tr } = useI18n();
-  const { ideas, generateScript, duplicateIdea } = useIdeas();
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { ideas, duplicateIdea } = useIdeas();
+  const {
+    generatingId,
+    notice,
+    setNotice,
+    packPreview,
+    isApplying,
+    providerLabel,
+    submitPreview,
+    confirmApply,
+    discardPreview,
+  } = useScriptPackFlow();
   const [copyNoticeId, setCopyNoticeId] = useState<string | null>(null);
   const [copyNoticeState, setCopyNoticeState] = useState<"copied" | "failed" | null>(null);
   const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
@@ -47,28 +58,14 @@ export function ContentsPage() {
   }
 
   async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
-    if (!canUseAiGeneration(options.format)) {
-      handlePaywall(options.format);
-      return;
-    }
-    setGeneratingId(idea.id);
-    setNotice(null);
+    setDialogIdea(null);
     try {
-      await generateScript(idea.id, options);
-      setDialogIdea(null);
+      await runScriptPreviewWithPaywall(idea, options, submitPreview, handlePaywall);
     } catch (error) {
-      if (error instanceof Error && error.message === "LIMIT_REACHED") {
-        handlePaywall(options.format);
-      } else if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
+      if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
         handlePaywall(options.format);
-      } else if (isGenerateScriptError(error)) {
-        setNotice(error.message);
-      } else {
-        setNotice(tr("script.apiError"));
       }
-    } finally {
-      setGeneratingId(null);
     }
   }
 
@@ -203,6 +200,16 @@ export function ContentsPage() {
         onSubmit={handleGenerateSubmit}
         isGenerating={generatingId === dialogIdea?.id}
         onPaywall={handlePaywall}
+      />
+
+      <PackApplyDialog
+        idea={packPreview?.idea ?? null}
+        pack={packPreview?.pack ?? null}
+        open={packPreview !== null}
+        providerLabel={providerLabel}
+        onClose={discardPreview}
+        onApply={confirmApply}
+        isApplying={isApplying}
       />
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />

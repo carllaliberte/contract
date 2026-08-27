@@ -2,15 +2,17 @@ import { ArrowRight, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
+import { PackApplyDialog } from "../components/PackApplyDialog";
 import {
   ScriptGenerateDialog,
   type ScriptGenerateOptions,
 } from "../components/ScriptGenerateDialog";
 import { Button, Card } from "../components/ui";
-import { useIdeas, isGenerateScriptError } from "../context/IdeasContext";
+import { useIdeas } from "../context/IdeasContext";
 import { countByStatus, getNextUp, type Idea, type IdeaStatus } from "../data/demo";
 import { useAuth } from "../hooks/useAuth";
 import { useI18n } from "../i18n/context";
+import { useScriptPackFlow } from "../hooks/useScriptPackFlow";
 import { getAppleProfile } from "../lib/auth/session";
 import { deriveNextAction } from "../lib/nextAction";
 import { getNextStatus } from "../lib/pipelineActions";
@@ -33,10 +35,18 @@ export function DashboardPage() {
   const { tr, locale } = useI18n();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { ideas, moveIdea, generateScript } = useIdeas();
+  const { ideas, moveIdea } = useIdeas();
+  const {
+    generatingId,
+    packPreview,
+    isApplying,
+    providerLabel,
+    submitPreview,
+    confirmApply,
+    discardPreview,
+  } = useScriptPackFlow();
   const [addOpen, setAddOpen] = useState(false);
   const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [helloName, setHelloName] = useState("");
 
   useEffect(() => {
@@ -61,17 +71,8 @@ export function DashboardPage() {
   const recent = [...ideas].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
 
   async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
-    setGeneratingId(idea.id);
-    try {
-      await generateScript(idea.id, options);
-      setDialogIdea(null);
-    } catch (error) {
-      if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
-        setDialogIdea(null);
-      }
-    } finally {
-      setGeneratingId(null);
-    }
+    setDialogIdea(null);
+    await submitPreview(idea, options);
   }
 
   function handleNextAction() {
@@ -209,6 +210,15 @@ export function DashboardPage() {
         onClose={() => setDialogIdea(null)}
         onSubmit={handleGenerateSubmit}
         isGenerating={generatingId === dialogIdea?.id}
+      />
+      <PackApplyDialog
+        idea={packPreview?.idea ?? null}
+        pack={packPreview?.pack ?? null}
+        open={packPreview !== null}
+        providerLabel={providerLabel}
+        onClose={discardPreview}
+        onApply={confirmApply}
+        isApplying={isApplying}
       />
     </>
   );
