@@ -7,7 +7,6 @@ import { useI18n } from "../i18n/context";
 
 /**
  * Handles the Sign in with Apple redirect for the web Services ID flow.
- * Registered return URL: https://carllaliberte.github.io/contract/creatorflow/auth/apple
  */
 export function AppleAuthCallbackPage() {
   const { tr } = useI18n();

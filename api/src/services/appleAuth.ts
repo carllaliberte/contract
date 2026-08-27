@@ -20,16 +20,11 @@ export type VerifiedAppleIdentity = {
 
 export async function verifyAppleIdentityToken(
   identityToken: string,
-  clientIds: string[],
+  clientId: string,
 ): Promise<VerifiedAppleIdentity> {
-  const audiences = clientIds.map((id) => id.trim()).filter(Boolean);
-  if (audiences.length === 0) {
-    throw new Error("At least one Apple client ID is required");
-  }
-
   const { payload } = await jwtVerify(identityToken, getAppleJwks(), {
     issuer: APPLE_ISSUER,
-    audience: audiences.length === 1 ? audiences[0] : audiences,
+    audience: clientId,
   });
 
   return parseApplePayload(payload);

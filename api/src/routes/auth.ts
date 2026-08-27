@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { env } from "../env.js";
 import { verifyAppleIdentityToken } from "../services/appleAuth.js";
 
@@ -38,7 +37,7 @@ function displayName(body: AppleAuthRequest): string | null {
 }
 
 function shouldUseAuthStub(): boolean {
-  return env.appleAuthStub || !env.supabaseUrl || !env.supabaseAnonKey;
+  return env.appleAuthStub;
 }
 
 function stubSession(body: AppleAuthRequest) {
@@ -52,15 +51,6 @@ function stubSession(body: AppleAuthRequest) {
 
 export function createAuthRoutes() {
   const auth = new Hono();
-
-  auth.use(
-    "*",
-    cors({
-      origin: env.corsOrigins,
-      allowHeaders: ["Content-Type"],
-      allowMethods: ["POST", "OPTIONS"],
-    }),
-  );
 
   auth.post("/apple", async (c) => {
     let raw: unknown;
@@ -85,7 +75,7 @@ export function createAuthRoutes() {
     try {
       const verified = await verifyAppleIdentityToken(
         body.identityToken!,
-        env.appleClientIds,
+        env.appleClientId,
       );
 
       const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
