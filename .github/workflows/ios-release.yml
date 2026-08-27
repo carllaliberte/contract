@@ -76,3 +76,4 @@ jobs:
           name: creatorflow-ios-adhoc-ipa
           path: creatorflow/ios/App/build/export/*.ipa
           if-no-files-found: error
+          retention-days: 7
