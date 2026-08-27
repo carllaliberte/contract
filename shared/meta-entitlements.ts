@@ -6,6 +6,7 @@ export interface MetaEntitlementsConfig {
   contractAddress: string
   chainId: number
   symbol: string
+  displayName?: string
   decimals: number
   thresholds: {
     holder: string
@@ -56,12 +57,13 @@ export function tierLabel(tier: MetaTier): string {
 }
 
 export function tierDescription(tier: MetaTier): string {
+  const name = metaEntitlements.displayName ?? metaEntitlements.symbol
   switch (tier) {
     case 'pro-onchain':
-      return `≥ ${metaEntitlements.thresholds.proOnchain} ${metaEntitlements.symbol} — highest on-chain access tier`
+      return `≥ ${metaEntitlements.thresholds.proOnchain} ${name} — highest on-chain access tier`
     case 'holder':
-      return `≥ ${metaEntitlements.thresholds.holder} ${metaEntitlements.symbol} — holder benefits in the ecosystem`
+      return `≥ ${metaEntitlements.thresholds.holder} ${name} — holder benefits in the ecosystem`
     default:
-      return `Below ${metaEntitlements.thresholds.holder} ${metaEntitlements.symbol} — standard access`
+      return `Below ${metaEntitlements.thresholds.holder} ${name} — standard access`
   }
 }

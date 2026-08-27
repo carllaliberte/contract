@@ -1,7 +1,7 @@
 {
   "name": "workspace",
   "version": "1.0.0",
-  "description": "CreatorFlow — idée → pack → tourner. META google-app is archived.",
+  "description": "Clapshot — idée → pack → tourner. META google-app is archived.",
   "main": "index.js",
   "type": "module",
   "scripts": {
