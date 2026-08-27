@@ -29,9 +29,10 @@ export function ShootModePage() {
 
   const scriptText = idea.script?.trim() ?? idea.description;
   const canMarkReady = idea.status === "production" || idea.status === "script";
+  const ideaIdToReady = idea.id;
 
   function handleMarkReady() {
-    moveIdea(idea.id, "ready");
+    moveIdea(ideaIdToReady, "ready");
     navigate("/app");
   }
 
