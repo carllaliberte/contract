@@ -1,0 +1,57 @@
+name: Prune branches
+
+on:
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  delete-pr-head:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete closed PR head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          if [ "$HEAD_REPO" != "${{ github.repository }}" ]; then
+            echo "Skip fork branch"
+            exit 0
+          fi
+          case "$HEAD_REF" in
+            main|gh-pages) echo "Skip protected $HEAD_REF"; exit 0 ;;
+          esac
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/${HEAD_REF}" || true
+
+  prune-stale:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete stale local branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          KEEP='^(main|gh-pages)$'
+          OPEN=$(gh pr list --repo "${{ github.repository }}" --state open --json headRefName --jq '.[].headRefName' || true)
+          gh api --paginate "repos/${{ github.repository }}/branches?per_page=100" --jq '.[].name' | while read -r name; do
+            if echo "$name" | grep -Eq "$KEEP"; then
+              echo "keep $name"
+              continue
+            fi
+            if echo "$OPEN" | grep -Fxq "$name"; then
+              echo "open PR $name"
+              continue
+            fi
+            echo "delete $name"
+            gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/${name}" || true
+          done
