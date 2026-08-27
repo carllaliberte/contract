@@ -1,0 +1,882 @@
+From f346e69d3b9f40f4b41a11b4f92f350ee955d0f1 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Wed, 26 Aug 2026 17:11:48 +0000
+Subject: [PATCH] feat(creatorflow): export script pack and proxy auth
+ integration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Add iOS CI scripts, export options, and Ad Hoc/TestFlight release workflows
+- Add Render blueprint and Settings API status indicator
+- Add health check client and CORS for GitHub Pages API proxy
+
+Co-authored-by: Carl Laliberté <carllaliberte@users.noreply.github.com>
+---
+ .github/workflows/ios-release.yml             |  78 +++++++++++
+ .github/workflows/macos-ios-virtual.yml       | 125 +++++++++++++++++
+ api/README.md                                 |   9 +-
+ api/src/index.ts                              |   9 ++
+ creatorflow/docs/IOS_RELEASE.md               |  71 ++++++++++
+ creatorflow/ios/App/ExportOptions-AdHoc.plist |  19 +++
+ .../ios/App/ExportOptions-AppStore.plist      |  19 +++
+ creatorflow/ios/App/ExportOptions.plist       |  16 +++
+ .../ios/App/ci_scripts/ci_post_clone.sh       |  20 +++
+ creatorflow/src/i18n/translations.ts          |  10 ++
+ creatorflow/src/lib/api/health.ts             |  22 +++
+ creatorflow/src/pages/SettingsPage.tsx        |  48 +++++++
+ render.yaml                                   |  30 +++++
+ scripts/ios-archive-and-upload.sh             | 127 ++++++++++++++++++
+ scripts/load-creatorflow-apple-config.cjs     |  41 ++++++
+ scripts/print-creatorflow-apple-config.sh     |  42 ++++++
+ 16 files changed, 685 insertions(+), 1 deletion(-)
+ create mode 100644 .github/workflows/ios-release.yml
+ create mode 100644 .github/workflows/macos-ios-virtual.yml
+ create mode 100644 creatorflow/docs/IOS_RELEASE.md
+ create mode 100644 creatorflow/ios/App/ExportOptions-AdHoc.plist
+ create mode 100644 creatorflow/ios/App/ExportOptions-AppStore.plist
+ create mode 100644 creatorflow/ios/App/ExportOptions.plist
+ create mode 100755 creatorflow/ios/App/ci_scripts/ci_post_clone.sh
+ create mode 100644 creatorflow/src/lib/api/health.ts
+ create mode 100644 render.yaml
+ create mode 100755 scripts/ios-archive-and-upload.sh
+ create mode 100644 scripts/load-creatorflow-apple-config.cjs
+ create mode 100755 scripts/print-creatorflow-apple-config.sh
+
+diff --git a/.github/workflows/ios-release.yml b/.github/workflows/ios-release.yml
+new file mode 100644
+index 0000000..0f82dce
+--- /dev/null
++++ b/.github/workflows/ios-release.yml
+@@ -0,0 +1,78 @@
++name: iOS Release (Ad Hoc)
++
++on:
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++jobs:
++  release:
++    runs-on: macos-14
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: "22"
++          cache: npm
++          cache-dependency-path: creatorflow/package-lock.json
++
++      - name: Build web assets and sync Capacitor iOS
++        working-directory: creatorflow
++        run: |
++          npm ci
++          npm run build:ios
++          npx cap sync ios
++
++      - name: Set up signing keychain
++        env:
++          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
++          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
++          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
++          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
++        run: |
++          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
++          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
++          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
++          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
++
++          CERT_PATH=$RUNNER_TEMP/cert.p12
++          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
++          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
++          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
++          security list-keychain -d user -s "$KEYCHAIN_PATH"
++
++          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
++          echo -n "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/creatorflow-adhoc.mobileprovision
++
++      - name: Archive iOS app
++        working-directory: creatorflow/ios/App
++        env:
++          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
++        run: |
++          xcodebuild archive \
++            -project App.xcodeproj \
++            -scheme App \
++            -configuration Release \
++            -archivePath "$PWD/build/App.xcarchive" \
++            CODE_SIGN_STYLE=Manual \
++            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
++            PROVISIONING_PROFILE_SPECIFIER="CreatorFlow AdHoc" \
++            PRODUCT_BUNDLE_IDENTIFIER=com.carllaliberte.creatorflow
++
++      - name: Export Ad Hoc IPA
++        working-directory: creatorflow/ios/App
++        run: |
++          xcodebuild -exportArchive \
++            -archivePath "$PWD/build/App.xcarchive" \
++            -exportPath "$PWD/build/export" \
++            -exportOptionsPlist ExportOptions-AdHoc.plist
++
++      - name: Upload IPA artifact
++        uses: actions/upload-artifact@v4
++        with:
++          name: creatorflow-ios-adhoc-ipa
++          path: creatorflow/ios/App/build/export/*.ipa
++          if-no-files-found: error
+diff --git a/.github/workflows/macos-ios-virtual.yml b/.github/workflows/macos-ios-virtual.yml
+new file mode 100644
+index 0000000..6894fb2
+--- /dev/null
++++ b/.github/workflows/macos-ios-virtual.yml
+@@ -0,0 +1,125 @@
++name: macOS iOS build (virtual Mac)
++
++# GitHub-hosted macOS runner = "virtual Mac" for iOS builds.
++# Triggers on tag push — no Mac hardware required locally.
++
++on:
++  workflow_dispatch:
++  push:
++    tags:
++      - "ios-release/*"
++      - "deliverable/app-store-*"
++
++permissions:
++  contents: read
++
++jobs:
++  virtual-mac:
++    name: macOS virtual builder
++    runs-on: macos-latest
++    defaults:
++      run:
++        working-directory: creatorflow
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Virtual Mac info
++        run: |
++          echo "🖥 GitHub-hosted macOS (virtual Mac)"
++          sw_vers
++          xcodebuild -version
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: "22"
++          cache: npm
++          cache-dependency-path: creatorflow/package-lock.json
++
++      - name: Build web + cap sync iOS
++        env:
++          VITE_API_URL: ${{ vars.VITE_API_URL || '' }}
++        run: |
++          npm ci
++          unset VITE_AUTH_STUB || true
++          npm run build:ios
++
++      - name: Xcode compile (simulator — no signing)
++        working-directory: creatorflow/ios/App
++        run: |
++          xcodebuild build \
++            -project App.xcodeproj \
++            -scheme App \
++            -sdk iphonesimulator \
++            -destination 'generic/platform=iOS Simulator' \
++            -configuration Release \
++            CODE_SIGNING_ALLOWED=NO
++
++      - name: Load CREATORFLOW_APPLE_CONFIG (one secret)
++        id: apple_config
++        env:
++          CREATORFLOW_APPLE_CONFIG: ${{ secrets.CREATORFLOW_APPLE_CONFIG }}
++        run: node ../scripts/load-creatorflow-apple-config.cjs
++
++      - name: Resolve Apple credentials (bundle or legacy secrets)
++        shell: bash
++        env:
++          LEGACY_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
++          LEGACY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
++          LEGACY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
++          LEGACY_KEY_B64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
++          LEGACY_CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
++          LEGACY_CERT_PASS: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
++          LEGACY_PROFILE_B64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
++        run: |
++          set_env() {
++            if [ -n "${2:-}" ]; then
++              echo "$1=$2" >> "$GITHUB_ENV"
++            fi
++          }
++          set_env APPLE_TEAM_ID "${APPLE_TEAM_ID:-$LEGACY_TEAM_ID}"
++          set_env APP_STORE_CONNECT_API_KEY_ID "${APP_STORE_CONNECT_API_KEY_ID:-$LEGACY_KEY_ID}"
++          set_env APP_STORE_CONNECT_API_ISSUER_ID "${APP_STORE_CONNECT_API_ISSUER_ID:-$LEGACY_ISSUER_ID}"
++          set_env APP_STORE_CONNECT_API_KEY_BASE64 "${APP_STORE_CONNECT_API_KEY_BASE64:-$LEGACY_KEY_B64}"
++          set_env APPLE_CERTIFICATE_BASE64 "${APPLE_CERTIFICATE_BASE64:-$LEGACY_CERT_B64}"
++          set_env APPLE_CERTIFICATE_PASSWORD "${APPLE_CERTIFICATE_PASSWORD:-$LEGACY_CERT_PASS}"
++          set_env APPLE_PROVISION_PROFILE_BASE64 "${APPLE_PROVISION_PROFILE_BASE64:-$LEGACY_PROFILE_B64}"
++
++      - name: Archive + upload (virtual Mac → App Store Connect)
++        run: |
++          if [ -z "$APPLE_TEAM_ID" ]; then
++            echo "::warning::Apple credentials missing — skipping App Store archive/upload."
++            echo "Set GitHub secret CREATORFLOW_APPLE_CONFIG (recommended) or individual APPLE_* secrets."
++            echo "Generate JSON: bash scripts/print-creatorflow-apple-config.sh"
++            exit 0
++          fi
++          if [ -n "$APPLE_CERTIFICATE_BASE64" ]; then
++            KEYCHAIN=$RUNNER_TEMP/app-signing.keychain-db
++            security create-keychain -p "" "$KEYCHAIN"
++            security set-keychain-settings -lut 21600 "$KEYCHAIN"
++            security unlock-keychain -p "" "$KEYCHAIN"
++            echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
++            security import "$RUNNER_TEMP/cert.p12" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
++            security list-keychain -d user -s "$KEYCHAIN"
++            security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
++          fi
++          if [ -n "$APPLE_PROVISION_PROFILE_BASE64" ]; then
++            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
++            echo "$APPLE_PROVISION_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
++            UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' /dev/stdin <<< "$(security cms -D -i "$RUNNER_TEMP/profile.mobileprovision")")
++            cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID.mobileprovision"
++          fi
++          if [ -n "$APP_STORE_CONNECT_API_KEY_BASE64" ] && [ -n "$APP_STORE_CONNECT_API_KEY_ID" ]; then
++            mkdir -p ~/.private_keys
++            echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
++            export APP_STORE_CONNECT_API_KEY_PATH="$HOME/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
++          fi
++          bash ../scripts/ios-archive-and-upload.sh
++
++      - name: Upload IPA artifact
++        if: always()
++        uses: actions/upload-artifact@v4
++        with:
++          name: creatorflow-ios-ipa
++          path: creatorflow/ios/build/export/*.ipa
++          if-no-files-found: ignore
+diff --git a/api/README.md b/api/README.md
+index 93d3d76..d45d683 100644
+--- a/api/README.md
++++ b/api/README.md
+@@ -59,6 +59,13 @@ Health check: `GET /health`
+ 
+ ### CreatorFlow frontend
+ 
+-Set `VITE_API_URL` to the API origin (no trailing slash), e.g. `http://localhost:3000`.
++Set `VITE_API_URL` to the API origin (no trailing slash), e.g. `http://localhost:3000` or `https://creatorflow-api.onrender.com`.
++
++### Render (production)
++
++1. Render Dashboard → **New** → **Blueprint** → connect this repo.
++2. The blueprint (`render.yaml`) deploys `creatorflow-api` from the `api/` directory.
++3. Set secrets in Render: `SUPABASE_*`, `OPENAI_API_KEY` (optional: set `MEMORY_STORE=false`, `MOCK_LLM=false`).
++4. GitHub Actions variable: `VITE_API_URL=https://creatorflow-api.onrender.com` → redeploy CreatorFlow.
+ 
+ Local Vite proxy (optional): `/ai` → `http://localhost:3000`.
+diff --git a/api/src/index.ts b/api/src/index.ts
+index 1d77777..60986f6 100644
+--- a/api/src/index.ts
++++ b/api/src/index.ts
+@@ -1,11 +1,20 @@
+ import { serve } from "@hono/node-server";
+ import { Hono } from "hono";
++import { cors } from "hono/cors";
+ import { env } from "./env.js";
+ import { createAiRoutes } from "./routes/ai.js";
+ import { createAuthRoutes } from "./routes/auth.js";
+ 
+ const app = new Hono();
+ 
++app.use(
++  "/health",
++  cors({
++    origin: env.corsOrigins,
++    allowMethods: ["GET", "OPTIONS"],
++  }),
++);
++
+ app.get("/health", (c) =>
+   c.json({
+     ok: true,
+diff --git a/creatorflow/docs/IOS_RELEASE.md b/creatorflow/docs/IOS_RELEASE.md
+new file mode 100644
+index 0000000..2a8ee80
+--- /dev/null
++++ b/creatorflow/docs/IOS_RELEASE.md
+@@ -0,0 +1,71 @@
++# CreatorFlow — iOS App Store release (TestFlight)
++
++Automated archive and upload to App Store Connect via GitHub Actions on a macOS virtual runner. No local Mac or second Fastlane/Xcode Cloud setup required.
++
++**Bundle ID:** `com.carllaliberte.creatorflow`  
++**Workflow:** `.github/workflows/macos-ios-virtual.yml`
++
++## 1. GitHub secret (one-time)
++
++Add repository secret **`CREATORFLOW_APPLE_CONFIG`** (Settings → Secrets and variables → Actions). Paste a single JSON object:
++
++```json
++{
++  "teamId": "XXXXXXXXXX",
++  "apiKeyId": "XXXXXXXXXX",
++  "apiIssuerId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
++  "apiKeyBase64": "<base64 of AuthKey_XXXXXXXXXX.p8>",
++  "certificateBase64": "<optional, base64 .p12>",
++  "certificatePassword": "<optional>",
++  "provisionProfileBase64": "<optional>"
++}
++```
++
++- **Required:** `teamId`, `apiKeyId`, `apiIssuerId`, `apiKeyBase64`
++- **Optional:** certificate and provisioning profile fields (automatic signing often works with the API key alone)
++
++Generate the JSON locally (values stay on your machine):
++
++```bash
++export APPLE_TEAM_ID=...
++export APP_STORE_CONNECT_API_KEY_ID=...
++export APP_STORE_CONNECT_API_ISSUER_ID=...
++export APP_STORE_CONNECT_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
++bash scripts/print-creatorflow-apple-config.sh
++```
++
++Copy the printed JSON into the secret. **Do not commit `.p8` files, certificates, or passwords to the repo.**
++
++## 2. Trigger a release
++
++Tag and push from a commit you want to ship:
++
++```bash
++git tag ios-release/1.0.0
++git push origin ios-release/1.0.0
++```
++
++Also supported:
++
++- Tags matching `deliverable/app-store-*` (deliverable snapshots)
++- Manual run: Actions → **macOS iOS build (virtual Mac)** → **Run workflow**
++
++The workflow builds the Capacitor web app, runs a simulator compile check, then (when credentials are present) archives, exports an IPA, and uploads to App Store Connect / TestFlight.
++
++If `CREATORFLOW_APPLE_CONFIG` is missing, the job completes with a warning and skips archive/upload (simulator build still runs).
++
++## 3. Still manual in App Store Connect
++
++After the IPA appears in TestFlight:
++
++- **Submit for Review** (metadata, compliance, export regulations)
++- **In-App Purchases** — configure and attach products in App Store Connect
++- **Screenshots & listing** — app preview, description, keywords, privacy nutrition labels
++- **Pricing & availability**
++
++CI does not submit the app for review or change store listing content.
++
++## Related
++
++- Day-to-day PR CI (simulator only, no signing): `.github/workflows/ci-creatorflow.yml`
++- Local archive script: `scripts/ios-archive-and-upload.sh`
+diff --git a/creatorflow/ios/App/ExportOptions-AdHoc.plist b/creatorflow/ios/App/ExportOptions-AdHoc.plist
+new file mode 100644
+index 0000000..e1d2f07
+--- /dev/null
++++ b/creatorflow/ios/App/ExportOptions-AdHoc.plist
+@@ -0,0 +1,19 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>method</key>
++	<string>ad-hoc</string>
++	<key>teamID</key>
++	<string>YOUR_TEAM_ID</string>
++	<key>compileBitcode</key>
++	<false/>
++	<key>signingStyle</key>
++	<string>manual</string>
++	<key>provisioningProfiles</key>
++	<dict>
++		<key>com.carllaliberte.creatorflow</key>
++		<string>CreatorFlow AdHoc</string>
++	</dict>
++</dict>
++</plist>
+diff --git a/creatorflow/ios/App/ExportOptions-AppStore.plist b/creatorflow/ios/App/ExportOptions-AppStore.plist
+new file mode 100644
+index 0000000..8d09b4d
+--- /dev/null
++++ b/creatorflow/ios/App/ExportOptions-AppStore.plist
+@@ -0,0 +1,19 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>method</key>
++	<string>app-store</string>
++	<key>teamID</key>
++	<string>YOUR_TEAM_ID</string>
++	<key>compileBitcode</key>
++	<false/>
++	<key>signingStyle</key>
++	<string>manual</string>
++	<key>provisioningProfiles</key>
++	<dict>
++		<key>com.carllaliberte.creatorflow</key>
++		<string>CreatorFlow AppStore</string>
++	</dict>
++</dict>
++</plist>
+diff --git a/creatorflow/ios/App/ExportOptions.plist b/creatorflow/ios/App/ExportOptions.plist
+new file mode 100644
+index 0000000..ac0652a
+--- /dev/null
++++ b/creatorflow/ios/App/ExportOptions.plist
+@@ -0,0 +1,16 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>method</key>
++	<string>app-store-connect</string>
++	<key>destination</key>
++	<string>export</string>
++	<key>signingStyle</key>
++	<string>automatic</string>
++	<key>uploadSymbols</key>
++	<true/>
++	<key>manageAppVersionAndBuildNumber</key>
++	<true/>
++</dict>
++</plist>
+diff --git a/creatorflow/ios/App/ci_scripts/ci_post_clone.sh b/creatorflow/ios/App/ci_scripts/ci_post_clone.sh
+new file mode 100755
+index 0000000..dec8950
+--- /dev/null
++++ b/creatorflow/ios/App/ci_scripts/ci_post_clone.sh
+@@ -0,0 +1,20 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "▶︎ [Xcode Cloud] Starting post-clone script..."
++
++export HOMEBREW_NO_INSTALL_CLEANUP=TRUE
++brew install node@22 || true
++brew link --overwrite --force node@22 || true
++
++cd "$(dirname "$0")/../../.."
++echo "Current directory: $(pwd)"
++
++npm ci
++npm run build:ios
++npx cap sync ios
++
++cd ios/App
++pod install --repo-update
++
++echo "✅ Post-clone script finished"
+diff --git a/creatorflow/src/i18n/translations.ts b/creatorflow/src/i18n/translations.ts
+index 8d0eb9e..f5833b8 100644
+--- a/creatorflow/src/i18n/translations.ts
++++ b/creatorflow/src/i18n/translations.ts
+@@ -192,6 +192,11 @@ export const translations: Record<Locale, Translations> = {
+     "settings.appleUser": "Compte Apple",
+     "settings.appleEmailHidden": "E-mail masqué par Apple",
+     "settings.guestName": "Invité",
++    "settings.apiTitle": "API scripts IA",
++    "settings.apiOnline": "API en ligne",
++    "settings.apiOffline": "API hors ligne",
++    "settings.apiDemo": "Mode démo (VITE_API_URL non configurée)",
++    "settings.apiChecking": "Vérification…",
+     "plan.freeName": "Gratuit",
+     "plan.proName": "CreatorFlow Pro",
+     "plan.longMaxHint": "Durée long max : {minutes} min sur ce forfait.",
+@@ -411,6 +416,11 @@ export const translations: Record<Locale, Translations> = {
+     "settings.appleUser": "Apple account",
+     "settings.appleEmailHidden": "Email hidden by Apple",
+     "settings.guestName": "Guest",
++    "settings.apiTitle": "AI script API",
++    "settings.apiOnline": "API online",
++    "settings.apiOffline": "API offline",
++    "settings.apiDemo": "Demo mode (VITE_API_URL not configured)",
++    "settings.apiChecking": "Checking…",
+     "plan.freeName": "Free",
+     "plan.proName": "CreatorFlow Pro",
+     "plan.longMaxHint": "Max long length: {minutes} min on this plan.",
+diff --git a/creatorflow/src/lib/api/health.ts b/creatorflow/src/lib/api/health.ts
+new file mode 100644
+index 0000000..e7b11bf
+--- /dev/null
++++ b/creatorflow/src/lib/api/health.ts
+@@ -0,0 +1,22 @@
++export function resolveApiBaseUrl(): string | null {
++  const configured = import.meta.env.VITE_API_URL?.trim() ?? "";
++  if (!configured) return null;
++  return configured.replace(/\/$/, "");
++}
++
++export async function checkApiHealth(): Promise<{
++  online: boolean;
++  url: string | null;
++}> {
++  const base = resolveApiBaseUrl();
++  if (!base) return { online: false, url: null };
++
++  try {
++    const res = await fetch(`${base}/health`, { method: "GET" });
++    if (!res.ok) return { online: false, url: base };
++    const data = (await res.json()) as { ok?: boolean };
++    return { online: data.ok === true, url: base };
++  } catch {
++    return { online: false, url: base };
++  }
++}
+diff --git a/creatorflow/src/pages/SettingsPage.tsx b/creatorflow/src/pages/SettingsPage.tsx
+index e6862d2..7949567 100644
+--- a/creatorflow/src/pages/SettingsPage.tsx
++++ b/creatorflow/src/pages/SettingsPage.tsx
+@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
+ import { usePlan } from "../hooks/usePlan";
+ import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
+ import { getAppleProfile } from "../lib/auth/session";
++import { checkApiHealth, resolveApiBaseUrl } from "../lib/api/health";
+ import { restorePurchases } from "../lib/iap";
+ import { PLAN_LIMITS } from "../lib/plans";
+ import { META_HOLDER_BONUS_AI } from "../lib/limits";
+@@ -24,6 +25,9 @@ export function SettingsPage() {
+   const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
+   const [profileName, setProfileName] = useState("");
+   const [profileEmail, setProfileEmail] = useState("");
++  const [apiChecking, setApiChecking] = useState(false);
++  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
++  const apiBaseUrl = resolveApiBaseUrl();
+ 
+   const limits = PLAN_LIMITS[plan];
+   const shortPct = limits.short
+@@ -56,6 +60,23 @@ export function SettingsPage() {
+     };
+   }, [isAuthenticated, isDemo, tr]);
+ 
++  useEffect(() => {
++    if (!apiBaseUrl) {
++      setApiOnline(null);
++      return;
++    }
++    let cancelled = false;
++    setApiChecking(true);
++    void checkApiHealth().then(({ online }) => {
++      if (cancelled) return;
++      setApiOnline(online);
++      setApiChecking(false);
++    });
++    return () => {
++      cancelled = true;
++    };
++  }, [apiBaseUrl]);
++
+   async function handleRestore() {
+     setRestoreBusy(true);
+     setRestoreNotice(null);
+@@ -178,6 +199,33 @@ export function SettingsPage() {
+         </div>
+       </Card>
+ 
++      <Card className="p-5">
++        <h2 className="text-sm font-semibold">{tr("settings.apiTitle")}</h2>
++        <div className="mt-3 flex items-center gap-2">
++          {apiChecking ? (
++            <>
++              <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
++              <p className="text-sm text-muted-foreground">{tr("settings.apiChecking")}</p>
++            </>
++          ) : apiBaseUrl ? (
++            <>
++              <span
++                className={`size-2.5 rounded-full ${apiOnline ? "bg-emerald-500" : "bg-destructive"}`}
++                aria-hidden
++              />
++              <p className="text-sm">
++                {apiOnline ? tr("settings.apiOnline") : tr("settings.apiOffline")}
++              </p>
++            </>
++          ) : (
++            <p className="text-sm text-muted-foreground">{tr("settings.apiDemo")}</p>
++          )}
++        </div>
++        {apiBaseUrl ? (
++          <p className="mt-2 break-all text-xs text-muted-foreground">{apiBaseUrl}</p>
++        ) : null}
++      </Card>
++
+       <Card className="p-5">
+         <h2 className="text-sm font-semibold">{tr("settings.legalTitle")}</h2>
+         <div className="mt-3 flex flex-col gap-2">
+diff --git a/render.yaml b/render.yaml
+new file mode 100644
+index 0000000..94f3a3b
+--- /dev/null
++++ b/render.yaml
+@@ -0,0 +1,30 @@
++# Render Blueprint — CreatorFlow API
++# Dashboard: New → Blueprint → connect this repo → deploy
++# Live URL: https://creatorflow-api.onrender.com
++services:
++  - type: web
++    name: creatorflow-api
++    runtime: node
++    region: oregon
++    plan: free
++    rootDir: api
++    buildCommand: npm ci && npm run build
++    startCommand: npm start
++    healthCheckPath: /health
++    envVars:
++      - key: NODE_VERSION
++        value: "22"
++      - key: CORS_ORIGINS
++        value: https://carllaliberte.github.io,http://localhost:5173
++      - key: MEMORY_STORE
++        value: "true"
++      - key: MOCK_LLM
++        value: "true"
++      - key: SUPABASE_URL
++        sync: false
++      - key: SUPABASE_ANON_KEY
++        sync: false
++      - key: SUPABASE_SERVICE_ROLE_KEY
++        sync: false
++      - key: OPENAI_API_KEY
++        sync: false
+diff --git a/scripts/ios-archive-and-upload.sh b/scripts/ios-archive-and-upload.sh
+new file mode 100755
+index 0000000..96a9f7d
+--- /dev/null
++++ b/scripts/ios-archive-and-upload.sh
+@@ -0,0 +1,127 @@
++#!/usr/bin/env bash
++# Archive CreatorFlow iOS, export IPA locally, then upload to App Store Connect.
++#
++# Required env:
++#   APPLE_TEAM_ID=XXXXXXXXXX
++#   APP_STORE_CONNECT_API_KEY_ID=XXXXXXXXXX
++#   APP_STORE_CONNECT_API_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
++#
++# API key (.p8) — place at ~/.private_keys/AuthKey_<KEY_ID>.p8, or set:
++#   APP_STORE_CONNECT_API_KEY_BASE64=...
++#   APP_STORE_CONNECT_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
++#
++# Usage:
++#   bash scripts/ios-archive-and-upload.sh
++#   ARCHIVE_ONLY=1 bash scripts/ios-archive-and-upload.sh   # skip upload
++#   SKIP_UPLOAD=1 bash scripts/ios-archive-and-upload.sh
++set -euo pipefail
++
++if [[ "$(uname)" != "Darwin" ]]; then
++  echo "ERROR: ios-archive-and-upload.sh requires macOS with Xcode."
++  echo "Run on your Mac, or trigger .github/workflows/macos-ios-virtual.yml in GitHub Actions."
++  exit 1
++fi
++
++ROOT="$(cd "$(dirname "$0")/.." && pwd)"
++IOS_DIR="$ROOT/creatorflow/ios/App"
++SCHEME="${IOS_SCHEME:-App}"
++CONFIG="${IOS_CONFIGURATION:-Release}"
++ARCHIVE_PATH="${ARCHIVE_PATH:-$ROOT/creatorflow/ios/build/CreatorFlow.xcarchive}"
++EXPORT_DIR="${EXPORT_DIR:-$ROOT/creatorflow/ios/build/export}"
++IPA_PATH="$EXPORT_DIR/App.ipa"
++
++mkdir -p "$(dirname "$ARCHIVE_PATH")" "$EXPORT_DIR"
++
++if [[ -z "${APPLE_TEAM_ID:-}" ]]; then
++  echo "ERROR: Set APPLE_TEAM_ID (10-char Team ID from Apple Developer)."
++  exit 1
++fi
++
++echo "▶ Archive — scheme=$SCHEME configuration=$CONFIG team=$APPLE_TEAM_ID"
++cd "$IOS_DIR"
++
++xcodebuild archive \
++  -project App.xcodeproj \
++  -scheme "$SCHEME" \
++  -configuration "$CONFIG" \
++  -archivePath "$ARCHIVE_PATH" \
++  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
++  CODE_SIGN_STYLE=Automatic \
++  -allowProvisioningUpdates
++
++EXPORT_OPTS="$(mktemp /tmp/ExportOptions.XXXXXX.plist)"
++trap 'rm -f "$EXPORT_OPTS"' EXIT
++cp ExportOptions.plist "$EXPORT_OPTS"
++/usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" "$EXPORT_OPTS" 2>/dev/null \
++  || /usr/libexec/PlistBuddy -c "Set :teamID $APPLE_TEAM_ID" "$EXPORT_OPTS"
++
++echo "▶ Export IPA locally (destination=export)"
++xcodebuild -exportArchive \
++  -archivePath "$ARCHIVE_PATH" \
++  -exportPath "$EXPORT_DIR" \
++  -exportOptionsPlist "$EXPORT_OPTS" \
++  -allowProvisioningUpdates
++
++if [[ ! -f "$IPA_PATH" ]]; then
++  IPA_PATH="$(find "$EXPORT_DIR" -maxdepth 1 -name '*.ipa' | head -1)"
++fi
++
++if [[ ! -f "$IPA_PATH" ]]; then
++  echo "ERROR: IPA not found in $EXPORT_DIR"
++  exit 1
++fi
++
++echo "✓ IPA: $IPA_PATH"
++
++if [[ "${ARCHIVE_ONLY:-}" == "1" || "${SKIP_UPLOAD:-}" == "1" ]]; then
++  echo "Skipping upload (ARCHIVE_ONLY or SKIP_UPLOAD set)."
++  exit 0
++fi
++
++: "${APP_STORE_CONNECT_API_KEY_ID:?Set APP_STORE_CONNECT_API_KEY_ID}"
++: "${APP_STORE_CONNECT_API_ISSUER_ID:?Set APP_STORE_CONNECT_API_ISSUER_ID}"
++
++PRIVATE_KEYS_DIR="${HOME}/.private_keys"
++mkdir -p "$PRIVATE_KEYS_DIR"
++EXPECTED_KEY="$PRIVATE_KEYS_DIR/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
++
++if [[ ! -f "$EXPECTED_KEY" ]]; then
++  if [[ -n "${APP_STORE_CONNECT_API_KEY_BASE64:-}" ]]; then
++    echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > "$EXPECTED_KEY"
++  elif [[ -n "${APP_STORE_CONNECT_API_KEY_PATH:-}" && -f "$APP_STORE_CONNECT_API_KEY_PATH" ]]; then
++    cp "$APP_STORE_CONNECT_API_KEY_PATH" "$EXPECTED_KEY"
++  fi
++fi
++
++if [[ ! -f "$EXPECTED_KEY" ]]; then
++  echo ""
++  echo "⚠ Upload skipped — App Store Connect API key not configured."
++  echo "  Place AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 in $PRIVATE_KEYS_DIR"
++  echo "  or set APP_STORE_CONNECT_API_KEY_BASE64 / APP_STORE_CONNECT_API_KEY_PATH."
++  echo ""
++  echo "  Manual upload: open Transporter app or Xcode → Organizer → Distribute"
++  echo "  IPA ready at: $IPA_PATH"
++  open -R "$IPA_PATH" 2>/dev/null || true
++  exit 0
++fi
++
++echo "▶ Upload to App Store Connect (iTMSTransporter, fallback altool)"
++if xcrun iTMSTransporter -m upload \
++  -assetFile "$IPA_PATH" \
++  -apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
++  -apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"; then
++  echo "✓ Upload complete via iTMSTransporter."
++else
++  echo "⚠ iTMSTransporter failed — trying altool..."
++  xcrun altool --upload-app \
++    --type ios \
++    --file "$IPA_PATH" \
++    --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
++    --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
++  echo "✓ Upload complete via altool."
++fi
++
++echo ""
++echo "✓ Upload complete. Finish submission in App Store Connect:"
++echo "  https://appstoreconnect.apple.com/apps"
++open "https://appstoreconnect.apple.com/apps" 2>/dev/null || true
+diff --git a/scripts/load-creatorflow-apple-config.cjs b/scripts/load-creatorflow-apple-config.cjs
+new file mode 100644
+index 0000000..091a87d
+--- /dev/null
++++ b/scripts/load-creatorflow-apple-config.cjs
+@@ -0,0 +1,41 @@
++#!/usr/bin/env node
++'use strict'
++const fs = require('node:fs')
++const os = require('node:os')
++const path = require('node:path')
++
++const raw = process.env.CREATORFLOW_APPLE_CONFIG
++if (!raw || !raw.trim()) {
++  fs.appendFileSync(process.env.GITHUB_OUTPUT, 'loaded=false\n')
++  process.exit(0)
++}
++
++const c = JSON.parse(raw)
++const envFile = process.env.GITHUB_ENV
++if (!envFile) {
++  throw new Error('GITHUB_ENV is required')
++}
++
++const appendEnv = (name, value) => {
++  if (value === undefined || value === null || value === '') return
++  fs.appendFileSync(envFile, `${name}<<EOF\n${value}\nEOF\n`)
++}
++
++appendEnv('APPLE_TEAM_ID', c.teamId)
++appendEnv('APP_STORE_CONNECT_API_KEY_ID', c.apiKeyId)
++appendEnv('APP_STORE_CONNECT_API_ISSUER_ID', c.apiIssuerId)
++appendEnv('APP_STORE_CONNECT_API_KEY_BASE64', c.apiKeyBase64)
++appendEnv('APPLE_CERTIFICATE_BASE64', c.certificateBase64)
++appendEnv('APPLE_CERTIFICATE_PASSWORD', c.certificatePassword)
++appendEnv('APPLE_PROVISION_PROFILE_BASE64', c.provisionProfileBase64)
++
++if (c.apiKeyBase64 && c.apiKeyId) {
++  const keyDir = path.join(os.homedir(), '.private_keys')
++  fs.mkdirSync(keyDir, { recursive: true })
++  const keyPath = path.join(keyDir, `AuthKey_${c.apiKeyId}.p8`)
++  fs.writeFileSync(keyPath, Buffer.from(c.apiKeyBase64, 'base64'))
++  appendEnv('APP_STORE_CONNECT_API_KEY_PATH', keyPath)
++}
++
++fs.appendFileSync(process.env.GITHUB_OUTPUT, 'loaded=true\n')
++console.log('CREATORFLOW_APPLE_CONFIG loaded (values not logged)')
+diff --git a/scripts/print-creatorflow-apple-config.sh b/scripts/print-creatorflow-apple-config.sh
+new file mode 100755
+index 0000000..b69acf1
+--- /dev/null
++++ b/scripts/print-creatorflow-apple-config.sh
+@@ -0,0 +1,42 @@
++#!/usr/bin/env bash
++# Build ONE JSON for GitHub secret CREATORFLOW_APPLE_CONFIG (virtual Mac iOS archive + upload).
++set -euo pipefail
++
++: "${APPLE_TEAM_ID:?Set APPLE_TEAM_ID (10-char Team ID)}"
++: "${APP_STORE_CONNECT_API_KEY_ID:?Set APP_STORE_CONNECT_API_KEY_ID}"
++: "${APP_STORE_CONNECT_API_ISSUER_ID:?Set APP_STORE_CONNECT_API_ISSUER_ID}"
++
++KEY_PATH="${APP_STORE_CONNECT_API_KEY_PATH:-}"
++if [[ -z "$KEY_PATH" ]]; then
++  read -rp "Path to AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8: " KEY_PATH
++fi
++[[ -f "$KEY_PATH" ]] || { echo "ERROR: Key not found: $KEY_PATH"; exit 1; }
++
++KEY_B64="$(base64 -w0 "$KEY_PATH" 2>/dev/null || base64 < "$KEY_PATH" | tr -d '\n')"
++
++CERT_B64="${APPLE_CERTIFICATE_BASE64:-}"
++CERT_PASS="${APPLE_CERTIFICATE_PASSWORD:-}"
++PROFILE_B64="${APPLE_PROVISION_PROFILE_BASE64:-}"
++
++if [[ -n "${APPLE_CERTIFICATE_PATH:-}" && -f "$APPLE_CERTIFICATE_PATH" ]]; then
++  CERT_B64="$(base64 -w0 "$APPLE_CERTIFICATE_PATH" 2>/dev/null || base64 < "$APPLE_CERTIFICATE_PATH" | tr -d '\n')"
++fi
++if [[ -n "${APPLE_PROVISION_PROFILE_PATH:-}" && -f "$APPLE_PROVISION_PROFILE_PATH" ]]; then
++  PROFILE_B64="$(base64 -w0 "$APPLE_PROVISION_PROFILE_PATH" 2>/dev/null || base64 < "$APPLE_PROVISION_PROFILE_PATH" | tr -d '\n')"
++fi
++
++node -e "
++console.log(JSON.stringify({
++  teamId: process.env.APPLE_TEAM_ID,
++  apiKeyId: process.env.APP_STORE_CONNECT_API_KEY_ID,
++  apiIssuerId: process.env.APP_STORE_CONNECT_API_ISSUER_ID,
++  apiKeyBase64: process.env.KEY_B64,
++  certificateBase64: process.env.CERT_B64 || '',
++  certificatePassword: process.env.CERT_PASS || '',
++  provisionProfileBase64: process.env.PROFILE_B64 || ''
++}, null, 2));
++" KEY_B64="$KEY_B64" CERT_B64="$CERT_B64" CERT_PASS="$CERT_PASS" PROFILE_B64="$PROFILE_B64"
++
++echo ""
++echo "Copy ALL JSON above → GitHub secret Name: CREATORFLOW_APPLE_CONFIG"
++echo "Then: bash scripts/launch-virtual-mac-ios.sh ios-release/1.0.0"
+-- 
+2.43.0
+

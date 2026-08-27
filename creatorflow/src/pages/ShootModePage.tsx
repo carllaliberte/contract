@@ -27,11 +27,12 @@ export function ShootModePage() {
     );
   }
 
-  const scriptText = idea.script?.trim() ?? idea.description;
-  const canMarkReady = idea.status === "production" || idea.status === "script";
+  const shootIdea = idea;
+  const scriptText = shootIdea.script?.trim() ?? shootIdea.description;
+  const canMarkReady = shootIdea.status === "production" || shootIdea.status === "script";
 
   function handleMarkReady() {
-    moveIdea(idea.id, "ready");
+    moveIdea(shootIdea.id, "ready");
     navigate("/app");
   }
 

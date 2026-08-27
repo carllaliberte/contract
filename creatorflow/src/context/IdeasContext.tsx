@@ -23,8 +23,8 @@ import {
 } from "../lib/api/ideas";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
-import { getAppleProfile, resolveSessionKind } from "../lib/auth/session";
 import { buildDuplicateIdea } from "../lib/ideaActions";
+import { getAppleProfile, resolveSessionKind } from "../lib/auth/session";
 import {
   clearLocalIdeas,
   loadLocalIdeas,

@@ -1,0 +1,1495 @@
+From bd4244c342b3156274f62689d5e98803595e7866 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Wed, 26 Aug 2026 16:48:51 +0000
+Subject: [PATCH 1/3] feat(creatorflow): pipeline actions, calendar, and Apple
+ Sign In surface
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-authored-by: Carl Laliberté <carllaliberte@users.noreply.github.com>
+---
+ creatorflow/src/App.tsx                       |  22 +++
+ creatorflow/src/components/AddIdeaDialog.tsx  |  12 ++
+ creatorflow/src/components/IdeaCard.tsx       |  55 ++++--
+ creatorflow/src/data/demo.ts                  |   6 +
+ creatorflow/src/e2e/calendar.spec.ts          |  18 ++
+ creatorflow/src/hooks/useAppleSignIn.ts       | 157 +++++++++++----
+ creatorflow/src/i18n/translations.ts          |  38 ++++
+ creatorflow/src/lib/pipelineActions.test.ts   |  15 ++
+ creatorflow/src/lib/pipelineActions.ts        |  19 ++
+ creatorflow/src/pages/AppLayout.tsx           |   4 +-
+ .../src/pages/AppleAuthCallbackPage.tsx       | 108 +++++++++++
+ creatorflow/src/pages/CalendarPage.tsx        | 181 ++++++++++++++++++
+ creatorflow/src/pages/PipelinePage.tsx        |   7 +
+ 13 files changed, 590 insertions(+), 52 deletions(-)
+ create mode 100644 creatorflow/src/e2e/calendar.spec.ts
+ create mode 100644 creatorflow/src/lib/pipelineActions.test.ts
+ create mode 100644 creatorflow/src/lib/pipelineActions.ts
+ create mode 100644 creatorflow/src/pages/AppleAuthCallbackPage.tsx
+ create mode 100644 creatorflow/src/pages/CalendarPage.tsx
+
+diff --git a/creatorflow/src/App.tsx b/creatorflow/src/App.tsx
+index e0796aa..b1a33d8 100644
+--- a/creatorflow/src/App.tsx
++++ b/creatorflow/src/App.tsx
+@@ -16,6 +16,12 @@ const PipelinePage = lazy(() =>
+ const ContentsPage = lazy(() =>
+   import("./pages/ContentsPage").then((m) => ({ default: m.ContentsPage })),
+ );
++const CalendarPage = lazy(() =>
++  import("./pages/CalendarPage").then((m) => ({ default: m.CalendarPage })),
++);
++const AppleAuthCallbackPage = lazy(() =>
++  import("./pages/AppleAuthCallbackPage").then((m) => ({ default: m.AppleAuthCallbackPage })),
++);
+ const SettingsPage = lazy(() =>
+   import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+ );
+@@ -41,6 +47,14 @@ export default function App() {
+       <BrowserRouter basename={ROUTER_BASENAME}>
+         <Routes>
+           <Route path="/" element={<LandingPage />} />
++          <Route
++            path="/auth/apple"
++            element={
++              <Suspense fallback={<AppRouteFallback />}>
++                <AppleAuthCallbackPage />
++              </Suspense>
++            }
++          />
+           <Route
+             path="/app"
+             element={
+@@ -75,6 +89,14 @@ export default function App() {
+                 </Suspense>
+               }
+             />
++            <Route
++              path="calendrier"
++              element={
++                <Suspense fallback={<AppRouteFallback />}>
++                  <CalendarPage />
++                </Suspense>
++              }
++            />
+             <Route
+               path="parametres"
+               element={
+diff --git a/creatorflow/src/components/AddIdeaDialog.tsx b/creatorflow/src/components/AddIdeaDialog.tsx
+index 1ebf630..f759050 100644
+--- a/creatorflow/src/components/AddIdeaDialog.tsx
++++ b/creatorflow/src/components/AddIdeaDialog.tsx
+@@ -22,6 +22,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
+   const [description, setDescription] = useState("");
+   const [platform, setPlatform] = useState<Idea["platform"]>("youtube");
+   const [priority, setPriority] = useState<Priority>("medium");
++  const [scheduledAt, setScheduledAt] = useState("");
+ 
+   if (!open) return null;
+ 
+@@ -34,12 +35,14 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
+       status: "idea",
+       priority,
+       platform,
++      scheduledAt: scheduledAt || undefined,
+       thumbnail: defaultThumbnails[Math.floor(Math.random() * defaultThumbnails.length)],
+     });
+     setTitle("");
+     setDescription("");
+     setPlatform("youtube");
+     setPriority("medium");
++    setScheduledAt("");
+     onClose();
+   }
+ 
+@@ -102,6 +105,15 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
+               </select>
+             </div>
+           </div>
++          <div className="flex flex-col gap-1.5">
++            <Label htmlFor="idea-scheduled">{tr("idea.scheduledAt")}</Label>
++            <Input
++              id="idea-scheduled"
++              type="date"
++              value={scheduledAt}
++              onChange={(e) => setScheduledAt(e.target.value)}
++            />
++          </div>
+           <div className="mt-2 flex gap-2">
+             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+               {tr("idea.cancel")}
+diff --git a/creatorflow/src/components/IdeaCard.tsx b/creatorflow/src/components/IdeaCard.tsx
+index d019ce5..2233d1a 100644
+--- a/creatorflow/src/components/IdeaCard.tsx
++++ b/creatorflow/src/components/IdeaCard.tsx
+@@ -1,8 +1,9 @@
+ import { useDraggable } from "@dnd-kit/core";
+ import { CSS } from "@dnd-kit/utilities";
+-import { Sparkles, Loader2 } from "lucide-react";
++import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+ import type { Idea } from "../data/demo";
+ import { useI18n } from "../i18n/context";
++import { canAdvanceStatus } from "../lib/pipelineActions";
+ import { Button } from "./ui";
+ 
+ const platformLabel: Record<string, string> = {
+@@ -14,6 +15,7 @@ const platformLabel: Record<string, string> = {
+ type IdeaCardProps = {
+   idea: Idea;
+   onGenerateScript?: (idea: Idea) => void;
++  onAdvance?: (idea: Idea) => void;
+   isGenerating?: boolean;
+   dragOverlay?: boolean;
+ };
+@@ -21,12 +23,14 @@ type IdeaCardProps = {
+ export function IdeaCard({
+   idea,
+   onGenerateScript,
++  onAdvance,
+   isGenerating,
+   dragOverlay,
+ }: IdeaCardProps) {
+   const { tr } = useI18n();
+   const canGenerate =
+     onGenerateScript && (idea.status === "idea" || idea.status === "script");
++  const canAdvance = onAdvance && canAdvanceStatus(idea.status);
+ 
+   return (
+     <article
+@@ -51,24 +55,39 @@ export function IdeaCard({
+         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+           {idea.description}
+         </p>
+-        {canGenerate && (
+-          <Button
+-            type="button"
+-            variant="secondary"
+-            className="mt-2.5 h-9 w-full text-xs"
+-            disabled={isGenerating}
+-            onClick={() => onGenerateScript(idea)}
+-          >
+-            <Sparkles className="size-3.5" />
+-            {isGenerating ? (
+-              <>
+-                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+-                {tr("script.generating")}
+-              </>
+-            ) : (
+-              tr("script.generate")
++        {(canGenerate || canAdvance) && (
++          <div className="mt-2.5 flex gap-2">
++            {canGenerate && (
++              <Button
++                type="button"
++                variant="secondary"
++                className="h-9 flex-1 text-xs"
++                disabled={isGenerating}
++                onClick={() => onGenerateScript(idea)}
++              >
++                <Sparkles className="size-3.5" />
++                {isGenerating ? (
++                  <>
++                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
++                    {tr("script.generating")}
++                  </>
++                ) : (
++                  tr("script.generate")
++                )}
++              </Button>
+             )}
+-          </Button>
++            {canAdvance && (
++              <Button
++                type="button"
++                variant="outline"
++                className="h-9 shrink-0 px-2.5 text-xs"
++                aria-label={tr("pipeline.advance")}
++                onClick={() => onAdvance(idea)}
++              >
++                <ArrowRight className="size-3.5" />
++              </Button>
++            )}
++          </div>
+         )}
+       </div>
+     </article>
+diff --git a/creatorflow/src/data/demo.ts b/creatorflow/src/data/demo.ts
+index d0d4aaa..be0dd8e 100644
+--- a/creatorflow/src/data/demo.ts
++++ b/creatorflow/src/data/demo.ts
+@@ -15,6 +15,8 @@ export type Idea = {
+   priority: Priority;
+   platform: "youtube" | "tiktok" | "reels";
+   updatedAt: string;
++  /** Planned publish date (YYYY-MM-DD). Falls back to updatedAt in calendar views. */
++  scheduledAt?: string;
+   script?: string;
+   thumbnail: string;
+   videoUrl?: string;
+@@ -29,6 +31,7 @@ export const demoIdeas: Idea[] = [
+     priority: "high",
+     platform: "youtube",
+     updatedAt: "2026-08-24T10:30:00Z",
++    scheduledAt: "2026-08-28",
+     script:
+       "HOOK: « Ces 5 erreurs font fuir 70% de ton audience. »\n1. Transitions trop longues\n2. Audio non normalisé\n3. Hook trop lent\n4. Pas de pattern interrupt\n5. CTA mal placé\nCTA: Abonne-toi pour la checklist complète.",
+     thumbnail:
+@@ -44,6 +47,7 @@ export const demoIdeas: Idea[] = [
+     priority: "medium",
+     platform: "tiktok",
+     updatedAt: "2026-08-23T16:45:00Z",
++    scheduledAt: "2026-08-26",
+     script:
+       "HOOK (0-3s): « Voici comment je structure ma matinée. »\nScène 1: réveil + café\nScène 2: 3 priorités max\nScène 3: deep work block\nCTA: Suis pour le template.",
+     thumbnail:
+@@ -59,6 +63,7 @@ export const demoIdeas: Idea[] = [
+     priority: "low",
+     platform: "reels",
+     updatedAt: "2026-08-22T09:15:00Z",
++    scheduledAt: "2026-08-30",
+     thumbnail:
+       "https://images.unsplash.com/photo-1598488035135-bdbb2231bb80?w=800&q=80",
+   },
+@@ -70,6 +75,7 @@ export const demoIdeas: Idea[] = [
+     priority: "high",
+     platform: "youtube",
+     updatedAt: "2026-08-21T14:00:00Z",
++    scheduledAt: "2026-08-27",
+     script:
+       "Intro: le chaos des idées non structurées.\nDémo live du pipeline.\nSystème de priorisation.\nCTA: lien vers la démo.",
+     thumbnail:
+diff --git a/creatorflow/src/e2e/calendar.spec.ts b/creatorflow/src/e2e/calendar.spec.ts
+new file mode 100644
+index 0000000..454edc3
+--- /dev/null
++++ b/creatorflow/src/e2e/calendar.spec.ts
+@@ -0,0 +1,18 @@
++import { expect, test } from "./fixtures";
++
++test.describe("Calendar", () => {
++  test.beforeEach(async ({ page, demoApp }) => {
++    await page.getByRole("link", { name: /Calendrier|Calendar/i }).click();
++    await page.waitForURL(/\/app\/calendrier/);
++  });
++
++  test("renders calendar heading and weekday labels", async ({ page }) => {
++    await expect(page.getByRole("heading", { name: /Calendrier|Calendar/i })).toBeVisible();
++    const weekdayHeaders = page.locator(".grid.grid-cols-7.border-b .text-center");
++    await expect(weekdayHeaders).toHaveCount(7);
++  });
++
++  test("shows scheduled demo ideas in the grid", async ({ page }) => {
++    await expect(page.getByText(/Routine créateur 60 secondes|Routine creator/i)).toBeVisible();
++  });
++});
+diff --git a/creatorflow/src/hooks/useAppleSignIn.ts b/creatorflow/src/hooks/useAppleSignIn.ts
+index 0e26784..81c90fd 100644
+--- a/creatorflow/src/hooks/useAppleSignIn.ts
++++ b/creatorflow/src/hooks/useAppleSignIn.ts
+@@ -1,7 +1,8 @@
+-import { useCallback, useState } from "react";
++import { useCallback, useEffect, useState } from "react";
+ import { exchangeAppleSession } from "../lib/api/auth";
+ import { establishAppleSession } from "../lib/auth/session";
+ import { isNativeIos } from "../lib/platform";
++import { ROUTER_BASENAME } from "../lib/router";
+ 
+ export interface AppleSignInResult {
+   user: string | null;
+@@ -17,18 +18,90 @@ export type AppleSignInStatus = "idle" | "loading" | "unavailable" | "error";
+ const APPLE_CLIENT_ID = "com.carllaliberte.creatorflow";
+ const APPLE_REDIRECT_URI = "https://carllaliberte.github.io/contract/creatorflow/auth/apple";
+ 
++type AppleAuthResponse = {
++  authorization?: {
++    id_token?: string;
++    code?: string;
++    state?: string;
++  };
++  user?: {
++    email?: string;
++    name?: { firstName?: string; lastName?: string };
++  };
++};
++
++declare global {
++  interface Window {
++    AppleID?: {
++      auth: {
++        init: (config: Record<string, unknown>) => void;
++        signIn: () => Promise<AppleAuthResponse>;
++      };
++    };
++  }
++}
++
++function resolveWebRedirectUri(): string {
++  if (typeof window === "undefined") return APPLE_REDIRECT_URI;
++  const origin = window.location.origin;
++  const base = ROUTER_BASENAME === "/" ? "" : ROUTER_BASENAME;
++  return `${origin}${base}/auth/apple`;
++}
++
++async function loadAppleJs(): Promise<void> {
++  if (window.AppleID) return;
++
++  await new Promise<void>((resolve, reject) => {
++    const existing = document.querySelector('script[data-appleid-auth="true"]');
++    if (existing) {
++      existing.addEventListener("load", () => resolve(), { once: true });
++      existing.addEventListener("error", () => reject(new Error("Apple JS failed to load")), {
++        once: true,
++      });
++      return;
++    }
++
++    const script = document.createElement("script");
++    script.src =
++      "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
++    script.async = true;
++    script.dataset.appleidAuth = "true";
++    script.onload = () => resolve();
++    script.onerror = () => reject(new Error("Apple JS failed to load"));
++    document.head.appendChild(script);
++  });
++}
++
+ /**
+- * Sign in with Apple on native iOS.
+- * identityToken is exchanged server-side (stub when backend unavailable).
++ * Sign in with Apple on native iOS (Capacitor) or web (Apple JS redirect flow).
+  */
+ export function useAppleSignIn() {
+-  const available = isNativeIos();
++  const native = isNativeIos();
++  const webAvailable = typeof window !== "undefined";
++  const available = native || webAvailable;
+   const [status, setStatus] = useState<AppleSignInStatus>(available ? "idle" : "unavailable");
+   const [error, setError] = useState<string | null>(null);
+ 
++  useEffect(() => {
++    if (native || !webAvailable) return;
++
++    void loadAppleJs()
++      .then(() => {
++        window.AppleID?.auth.init({
++          clientId: APPLE_CLIENT_ID,
++          scope: "name email",
++          redirectURI: resolveWebRedirectUri(),
++          usePopup: false,
++        });
++      })
++      .catch(() => {
++        // Web SDK is optional; native iOS remains the primary path.
++      });
++  }, [native, webAvailable]);
++
+   const signIn = useCallback(async (): Promise<boolean> => {
+     if (!available) {
+-      setError("Sign in with Apple is only available on iOS");
++      setError("Sign in with Apple is unavailable on this device");
+       setStatus("unavailable");
+       return false;
+     }
+@@ -37,44 +110,61 @@ export function useAppleSignIn() {
+     setError(null);
+ 
+     try {
+-      const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
+-      const result = await SignInWithApple.authorize({
+-        clientId: APPLE_CLIENT_ID,
+-        redirectURI: APPLE_REDIRECT_URI,
+-        scopes: "email name",
+-      });
++      if (native) {
++        const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
++        const result = await SignInWithApple.authorize({
++          clientId: APPLE_CLIENT_ID,
++          redirectURI: APPLE_REDIRECT_URI,
++          scopes: "email name",
++        });
+ 
+-      const response = result.response;
+-      const payload: AppleSignInResult = {
+-        user: response.user ?? null,
+-        email: response.email ?? null,
+-        givenName: response.givenName ?? null,
+-        familyName: response.familyName ?? null,
+-        identityToken: response.identityToken,
+-        authorizationCode: response.authorizationCode,
+-      };
++        const response = result.response;
++        const payload: AppleSignInResult = {
++          user: response.user ?? null,
++          email: response.email ?? null,
++          givenName: response.givenName ?? null,
++          familyName: response.familyName ?? null,
++          identityToken: response.identityToken,
++          authorizationCode: response.authorizationCode,
++        };
++
++        const session = await exchangeAppleSession(payload);
++        const displayName = [payload.givenName, payload.familyName]
++          .filter(Boolean)
++          .join(" ")
++          .trim();
++        await establishAppleSession({
++          accessToken: session.accessToken,
++          userId: session.userId ?? payload.user,
++          displayName: displayName || null,
++          email: payload.email,
++        });
++
++        setStatus("idle");
++        return true;
++      }
+ 
+-      const session = await exchangeAppleSession(payload);
+-      const displayName = [payload.givenName, payload.familyName]
+-        .filter(Boolean)
+-        .join(" ")
+-        .trim();
+-      await establishAppleSession({
+-        accessToken: session.accessToken,
+-        userId: session.userId ?? payload.user,
+-        displayName: displayName || null,
+-        email: payload.email,
++      await loadAppleJs();
++      if (!window.AppleID) {
++        throw new Error("Apple Sign In is not available in this browser");
++      }
++
++      window.AppleID.auth.init({
++        clientId: APPLE_CLIENT_ID,
++        scope: "name email",
++        redirectURI: resolveWebRedirectUri(),
++        usePopup: false,
+       });
+ 
+-      setStatus("idle");
+-      return true;
++      await window.AppleID.auth.signIn();
++      return false;
+     } catch (err) {
+       const message = err instanceof Error ? err.message : "Apple sign-in failed";
+       setError(message);
+       setStatus("error");
+       return false;
+     }
+-  }, [available]);
++  }, [available, native]);
+ 
+   return {
+     signIn,
+@@ -82,5 +172,6 @@ export function useAppleSignIn() {
+     status,
+     error,
+     isLoading: status === "loading",
++    isNative: native,
+   };
+ }
+diff --git a/creatorflow/src/i18n/translations.ts b/creatorflow/src/i18n/translations.ts
+index 6c34241..8d0eb9e 100644
+--- a/creatorflow/src/i18n/translations.ts
++++ b/creatorflow/src/i18n/translations.ts
+@@ -27,6 +27,10 @@ export const translations: Record<Locale, Translations> = {
+     "login.providersHintWeb": "Sur le web, les boutons sociaux ouvrent le mode démo. Apple est disponible sur l'app iOS.",
+     "login.socialDemoNote": "Google, X et GitHub ouvrent le mode démo sur le web (pas de connexion réelle).",
+     "login.continueApple": "Continuer avec Apple",
++    "login.appleCallbackLoading": "Connexion Apple en cours…",
++    "login.appleCallbackMissing": "Réponse Apple incomplète. Réessayez depuis la page de connexion.",
++    "login.appleCallbackError": "La connexion Apple a échoué.",
++    "login.appleCallbackBack": "Retour à l'accueil",
+     "login.continueGoogle": "Continuer avec Google",
+     "login.continueX": "Continuer avec X",
+     "login.continueGitHub": "Continuer avec GitHub",
+@@ -112,6 +116,7 @@ export const translations: Record<Locale, Translations> = {
+     "session.badge.apple": "Session Apple",
+     "nav.dashboard": "Tableau de bord",
+     "nav.pipeline": "Pipeline",
++    "nav.calendar": "Calendrier",
+     "nav.contents": "Contenus",
+     "nav.settings": "Paramètres",
+     "dashboard.hello": "Bonjour, {name}",
+@@ -132,6 +137,19 @@ export const translations: Record<Locale, Translations> = {
+     "pipeline.titlePage": "Pipeline",
+     "pipeline.subtitlePage": "Avancez vos contenus d'étape en étape.",
+     "pipeline.empty": "Aucun contenu",
++    "pipeline.advance": "Étape suivante",
++    "calendar.title": "Calendrier",
++    "calendar.subtitle": "Planifiez vos publications et retrouvez vos contenus par date.",
++    "calendar.prevMonth": "Mois précédent",
++    "calendar.nextMonth": "Mois suivant",
++    "calendar.more": "+{count} de plus",
++    "calendar.weekdayMon": "Lun",
++    "calendar.weekdayTue": "Mar",
++    "calendar.weekdayWed": "Mer",
++    "calendar.weekdayThu": "Jeu",
++    "calendar.weekdayFri": "Ven",
++    "calendar.weekdaySat": "Sam",
++    "calendar.weekdaySun": "Dim",
+     "script.generate": "Générer script",
+     "script.generating": "Génération…",
+     "script.dialogTitle": "Générer un script",
+@@ -156,6 +174,7 @@ export const translations: Record<Locale, Translations> = {
+     "idea.descPlaceholder": "Angle, format, audience…",
+     "idea.platform": "Plateforme",
+     "idea.priority": "Priorité",
++    "idea.scheduledAt": "Date prévue",
+     "idea.cancel": "Annuler",
+     "idea.save": "Ajouter",
+     "idea.defaultDescription": "Nouvelle idée à développer.",
+@@ -227,6 +246,10 @@ export const translations: Record<Locale, Translations> = {
+     "login.providersHintWeb": "On the web, social buttons open demo mode. Apple Sign In is available in the iOS app.",
+     "login.socialDemoNote": "Google, X, and GitHub open demo mode on the web (not real sign-in).",
+     "login.continueApple": "Continue with Apple",
++    "login.appleCallbackLoading": "Completing Apple sign-in…",
++    "login.appleCallbackMissing": "Incomplete Apple response. Try again from the sign-in page.",
++    "login.appleCallbackError": "Apple sign-in failed.",
++    "login.appleCallbackBack": "Back to home",
+     "login.continueGoogle": "Continue with Google",
+     "login.continueX": "Continue with X",
+     "login.continueGitHub": "Continue with GitHub",
+@@ -312,6 +335,7 @@ export const translations: Record<Locale, Translations> = {
+     "session.badge.apple": "Apple session",
+     "nav.dashboard": "Dashboard",
+     "nav.pipeline": "Pipeline",
++    "nav.calendar": "Calendar",
+     "nav.contents": "Contents",
+     "nav.settings": "Settings",
+     "dashboard.hello": "Hello, {name}",
+@@ -332,6 +356,19 @@ export const translations: Record<Locale, Translations> = {
+     "pipeline.titlePage": "Pipeline",
+     "pipeline.subtitlePage": "Move each piece forward, one stage at a time.",
+     "pipeline.empty": "No content",
++    "pipeline.advance": "Next stage",
++    "calendar.title": "Calendar",
++    "calendar.subtitle": "Plan publish dates and browse content by day.",
++    "calendar.prevMonth": "Previous month",
++    "calendar.nextMonth": "Next month",
++    "calendar.more": "+{count} more",
++    "calendar.weekdayMon": "Mon",
++    "calendar.weekdayTue": "Tue",
++    "calendar.weekdayWed": "Wed",
++    "calendar.weekdayThu": "Thu",
++    "calendar.weekdayFri": "Fri",
++    "calendar.weekdaySat": "Sat",
++    "calendar.weekdaySun": "Sun",
+     "script.generate": "Generate script",
+     "script.generating": "Generating…",
+     "script.dialogTitle": "Generate a script",
+@@ -356,6 +393,7 @@ export const translations: Record<Locale, Translations> = {
+     "idea.descPlaceholder": "Angle, format, audience…",
+     "idea.platform": "Platform",
+     "idea.priority": "Priority",
++    "idea.scheduledAt": "Scheduled date",
+     "idea.cancel": "Cancel",
+     "idea.save": "Add",
+     "idea.defaultDescription": "New idea to develop.",
+diff --git a/creatorflow/src/lib/pipelineActions.test.ts b/creatorflow/src/lib/pipelineActions.test.ts
+new file mode 100644
+index 0000000..9e8bd01
+--- /dev/null
++++ b/creatorflow/src/lib/pipelineActions.test.ts
+@@ -0,0 +1,15 @@
++import { describe, expect, it } from "vitest";
++import { canAdvanceStatus, getNextStatus } from "./pipelineActions";
++
++describe("pipelineActions", () => {
++  it("returns the next status in the flow", () => {
++    expect(getNextStatus("idea")).toBe("script");
++    expect(getNextStatus("ready")).toBe("published");
++    expect(getNextStatus("published")).toBeNull();
++  });
++
++  it("knows when an idea can advance", () => {
++    expect(canAdvanceStatus("production")).toBe(true);
++    expect(canAdvanceStatus("published")).toBe(false);
++  });
++});
+diff --git a/creatorflow/src/lib/pipelineActions.ts b/creatorflow/src/lib/pipelineActions.ts
+new file mode 100644
+index 0000000..9fe73ab
+--- /dev/null
++++ b/creatorflow/src/lib/pipelineActions.ts
+@@ -0,0 +1,19 @@
++import type { IdeaStatus } from "../data/demo";
++
++export const STATUS_FLOW: IdeaStatus[] = [
++  "idea",
++  "script",
++  "production",
++  "ready",
++  "published",
++];
++
++export function getNextStatus(status: IdeaStatus): IdeaStatus | null {
++  const index = STATUS_FLOW.indexOf(status);
++  if (index < 0 || index >= STATUS_FLOW.length - 1) return null;
++  return STATUS_FLOW[index + 1];
++}
++
++export function canAdvanceStatus(status: IdeaStatus): boolean {
++  return getNextStatus(status) !== null;
++}
+diff --git a/creatorflow/src/pages/AppLayout.tsx b/creatorflow/src/pages/AppLayout.tsx
+index 05bba6e..0157645 100644
+--- a/creatorflow/src/pages/AppLayout.tsx
++++ b/creatorflow/src/pages/AppLayout.tsx
+@@ -1,5 +1,6 @@
+ import {
+   ArrowRight,
++  CalendarDays,
+   Clapperboard,
+   FileText,
+   LayoutDashboard,
+@@ -20,6 +21,7 @@ import { applyAppRobots, applyLandingRobots } from "../lib/seo";
+ const navItems = [
+   { to: "/app", icon: LayoutDashboard, label: "nav.dashboard", end: true },
+   { to: "/app/pipeline", icon: Clapperboard, label: "nav.pipeline" },
++  { to: "/app/calendrier", icon: CalendarDays, label: "nav.calendar" },
+   { to: "/app/contenus", icon: FileText, label: "nav.contents" },
+   { to: "/app/parametres", icon: Settings, label: "nav.settings" },
+ ];
+@@ -98,7 +100,7 @@ export function AppLayout() {
+       </div>
+ 
+       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md safe-x lg:hidden">
+-        <div className="grid grid-cols-4">
++        <div className="grid grid-cols-5">
+           {navItems.map(({ to, icon: Icon, label, end }) => (
+             <NavLink
+               key={to}
+diff --git a/creatorflow/src/pages/AppleAuthCallbackPage.tsx b/creatorflow/src/pages/AppleAuthCallbackPage.tsx
+new file mode 100644
+index 0000000..1a2d018
+--- /dev/null
++++ b/creatorflow/src/pages/AppleAuthCallbackPage.tsx
+@@ -0,0 +1,108 @@
++import { Loader2 } from "lucide-react";
++import { useEffect, useState } from "react";
++import { useNavigate } from "react-router-dom";
++import { exchangeAppleSession } from "../lib/api/auth";
++import { establishAppleSession } from "../lib/auth/session";
++import { useI18n } from "../i18n/context";
++
++/**
++ * Handles the Sign in with Apple redirect for the web Services ID flow.
++ */
++export function AppleAuthCallbackPage() {
++  const { tr } = useI18n();
++  const navigate = useNavigate();
++  const [error, setError] = useState<string | null>(null);
++
++  useEffect(() => {
++    let cancelled = false;
++
++    void (async () => {
++      const params = new URLSearchParams(window.location.search);
++      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
++      const code = params.get("code") ?? hash.get("code");
++      const idToken = params.get("id_token") ?? hash.get("id_token");
++      const userRaw = params.get("user") ?? hash.get("user");
++
++      if (!code && !idToken) {
++        if (!cancelled) {
++          setError(tr("login.appleCallbackMissing"));
++        }
++        return;
++      }
++
++      let givenName: string | null = null;
++      let familyName: string | null = null;
++      let email: string | null = null;
++      let user: string | null = null;
++
++      if (userRaw) {
++        try {
++          const parsed = JSON.parse(userRaw) as {
++            email?: string;
++            name?: { firstName?: string; lastName?: string };
++          };
++          email = parsed.email ?? null;
++          givenName = parsed.name?.firstName ?? null;
++          familyName = parsed.name?.lastName ?? null;
++        } catch {
++          // Ignore malformed user payload.
++        }
++      }
++
++      try {
++        const session = await exchangeAppleSession({
++          user,
++          email,
++          givenName,
++          familyName,
++          identityToken: idToken ?? "",
++          authorizationCode: code ?? "",
++        });
++
++        const displayName = [givenName, familyName].filter(Boolean).join(" ").trim();
++        await establishAppleSession({
++          accessToken: session.accessToken,
++          userId: session.userId ?? user,
++          displayName: displayName || null,
++          email,
++        });
++
++        if (!cancelled) {
++          navigate("/app", { replace: true });
++        }
++      } catch (err) {
++        if (!cancelled) {
++          setError(err instanceof Error ? err.message : tr("login.appleCallbackError"));
++        }
++      }
++    })();
++
++    return () => {
++      cancelled = true;
++    };
++  }, [navigate, tr]);
++
++  return (
++    <div className="flex min-h-dvh items-center justify-center px-6 text-center">
++      <div className="max-w-sm">
++        {error ? (
++          <>
++            <p className="text-sm text-destructive">{error}</p>
++            <button
++              type="button"
++              className="mt-4 text-sm font-semibold text-primary hover:underline"
++              onClick={() => navigate("/", { replace: true })}
++            >
++              {tr("login.appleCallbackBack")}
++            </button>
++          </>
++        ) : (
++          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
++            <Loader2 className="size-4 animate-spin" aria-hidden />
++            {tr("login.appleCallbackLoading")}
++          </div>
++        )}
++      </div>
++    </div>
++  );
++}
+diff --git a/creatorflow/src/pages/CalendarPage.tsx b/creatorflow/src/pages/CalendarPage.tsx
+new file mode 100644
+index 0000000..5acefc6
+--- /dev/null
++++ b/creatorflow/src/pages/CalendarPage.tsx
+@@ -0,0 +1,181 @@
++import { ChevronLeft, ChevronRight } from "lucide-react";
++import { useMemo, useState } from "react";
++import { Link } from "react-router-dom";
++import { Button } from "../components/ui";
++import { useIdeas } from "../context/IdeasContext";
++import type { Idea } from "../data/demo";
++import { useI18n } from "../i18n/context";
++
++const WEEKDAY_KEYS = [
++  "calendar.weekdayMon",
++  "calendar.weekdayTue",
++  "calendar.weekdayWed",
++  "calendar.weekdayThu",
++  "calendar.weekdayFri",
++  "calendar.weekdaySat",
++  "calendar.weekdaySun",
++] as const;
++
++function dateKey(date: Date): string {
++  return date.toISOString().slice(0, 10);
++}
++
++function startOfMonth(date: Date): Date {
++  return new Date(date.getFullYear(), date.getMonth(), 1);
++}
++
++function addMonths(date: Date, delta: number): Date {
++  return new Date(date.getFullYear(), date.getMonth() + delta, 1);
++}
++
++function buildCalendarGrid(month: Date): Array<Date | null> {
++  const first = startOfMonth(month);
++  const startOffset = (first.getDay() + 6) % 7;
++  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
++  const cells: Array<Date | null> = [];
++
++  for (let i = 0; i < startOffset; i += 1) {
++    cells.push(null);
++  }
++  for (let day = 1; day <= daysInMonth; day += 1) {
++    cells.push(new Date(first.getFullYear(), first.getMonth(), day));
++  }
++  while (cells.length % 7 !== 0) {
++    cells.push(null);
++  }
++  return cells;
++}
++
++function resolveScheduledAt(idea: Idea): string {
++  return idea.scheduledAt ?? idea.updatedAt.slice(0, 10);
++}
++
++export function CalendarPage() {
++  const { tr, locale } = useI18n();
++  const { ideas } = useIdeas();
++  const [month, setMonth] = useState(() => startOfMonth(new Date()));
++
++  const ideasByDate = useMemo(() => {
++    const map = new Map<string, Idea[]>();
++    for (const idea of ideas) {
++      const key = resolveScheduledAt(idea);
++      const bucket = map.get(key) ?? [];
++      bucket.push(idea);
++      map.set(key, bucket);
++    }
++    return map;
++  }, [ideas]);
++
++  const monthLabel = new Intl.DateTimeFormat(locale, {
++    month: "long",
++    year: "numeric",
++  }).format(month);
++
++  const cells = buildCalendarGrid(month);
++  const todayKey = dateKey(new Date());
++
++  return (
++    <div className="flex flex-col gap-5">
++      <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
++        <div>
++          <h1 className="text-2xl font-semibold tracking-tight">{tr("calendar.title")}</h1>
++          <p className="mt-1 text-sm text-muted-foreground">{tr("calendar.subtitle")}</p>
++        </div>
++        <div className="flex items-center gap-2">
++          <Button
++            type="button"
++            variant="outline"
++            className="h-9 w-9 px-0"
++            aria-label={tr("calendar.prevMonth")}
++            onClick={() => setMonth((current) => addMonths(current, -1))}
++          >
++            <ChevronLeft className="size-4" />
++          </Button>
++          <span className="min-w-[10rem] text-center text-sm font-semibold capitalize">
++            {monthLabel}
++          </span>
++          <Button
++            type="button"
++            variant="outline"
++            className="h-9 w-9 px-0"
++            aria-label={tr("calendar.nextMonth")}
++            onClick={() => setMonth((current) => addMonths(current, 1))}
++          >
++            <ChevronRight className="size-4" />
++          </Button>
++        </div>
++      </header>
++
++      <div className="overflow-hidden rounded-2xl border border-border bg-card/40">
++        <div className="grid grid-cols-7 border-b border-border bg-secondary/30">
++          {WEEKDAY_KEYS.map((key) => (
++            <div
++              key={key}
++              className="px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
++            >
++              {tr(key)}
++            </div>
++          ))}
++        </div>
++
++        <div className="grid grid-cols-7">
++          {cells.map((day, index) => {
++            if (!day) {
++              return (
++                <div
++                  key={`empty-${index}`}
++                  className="min-h-[92px] border-b border-r border-border/60 bg-background/20 last:border-r-0"
++                />
++              );
++            }
++
++            const key = dateKey(day);
++            const dayIdeas = ideasByDate.get(key) ?? [];
++            const isToday = key === todayKey;
++
++            return (
++              <div
++                key={key}
++                className="min-h-[92px] border-b border-r border-border/60 p-1.5 last:border-r-0"
++              >
++                <div className="mb-1 flex items-center justify-between">
++                  <span
++                    className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
++                      isToday ? "bg-primary text-primary-foreground" : "text-muted-foreground"
++                    }`}
++                  >
++                    {day.getDate()}
++                  </span>
++                  {dayIdeas.length > 0 ? (
++                    <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
++                      {dayIdeas.length}
++                    </span>
++                  ) : null}
++                </div>
++
++                <ul className="flex flex-col gap-1">
++                  {dayIdeas.slice(0, 2).map((idea) => (
++                    <li key={idea.id}>
++                      <Link
++                        to="/app/pipeline"
++                        className="block truncate rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/15"
++                        title={idea.title}
++                      >
++                        {idea.title}
++                      </Link>
++                    </li>
++                  ))}
++                  {dayIdeas.length > 2 ? (
++                    <li className="px-1 text-[10px] text-muted-foreground">
++                      {tr("calendar.more", { count: String(dayIdeas.length - 2) })}
++                    </li>
++                  ) : null}
++                </ul>
++              </div>
++            );
++          })}
++        </div>
++      </div>
++    </div>
++  );
++}
+diff --git a/creatorflow/src/pages/PipelinePage.tsx b/creatorflow/src/pages/PipelinePage.tsx
+index 7baacec..12cf0c3 100644
+--- a/creatorflow/src/pages/PipelinePage.tsx
++++ b/creatorflow/src/pages/PipelinePage.tsx
+@@ -22,6 +22,7 @@ import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+ import type { ScriptFormat } from "../lib/plans";
+ import { AiUsageBadge } from "../components/AiUsageBadge";
+ import { useAiUsage } from "../hooks/useAiUsage";
++import { getNextStatus } from "../lib/pipelineActions";
+ 
+ const columns: IdeaStatus[] = ["idea", "script", "production", "ready", "published"];
+ 
+@@ -160,6 +161,11 @@ export function PipelinePage() {
+     }
+   }
+ 
++  function handleAdvance(idea: Idea) {
++    const next = getNextStatus(idea.status);
++    if (next) moveIdea(idea.id, next);
++  }
++
+   return (
+     <div className="flex flex-col gap-5">
+       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+@@ -209,6 +215,7 @@ export function PipelinePage() {
+                       key={idea.id}
+                       idea={idea}
+                       onGenerateScript={openGenerateDialog}
++                      onAdvance={handleAdvance}
+                       isGenerating={generatingId === idea.id}
+                     />
+                   ))
+-- 
+2.43.0
+
+
+From 9ecd9ca85b3f5f9ebc45dcd82d59591ff1cdf7f6 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Wed, 26 Aug 2026 16:58:11 +0000
+Subject: [PATCH 2/3] ci(creatorflow): deploy production on main and PR preview
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Add deploy-preview job to CI for pull requests
+- Publish CreatorFlow preview builds to gh-pages per PR
+- Comment preview URL on PR (production deploy on main unchanged)
+
+Co-authored-by: Carl Laliberté <carllaliberte@users.noreply.github.com>
+---
+ .github/workflows/ci-creatorflow.yml | 78 ++++++++++++++++++++++++++++
+ 1 file changed, 78 insertions(+)
+
+diff --git a/.github/workflows/ci-creatorflow.yml b/.github/workflows/ci-creatorflow.yml
+index 5aa25a1..6224f0d 100644
+--- a/.github/workflows/ci-creatorflow.yml
++++ b/.github/workflows/ci-creatorflow.yml
+@@ -16,6 +16,9 @@ concurrency:
+   group: ci-creatorflow-${{ github.ref }}
+   cancel-in-progress: true
+ 
++permissions:
++  contents: read
++
+ jobs:
+   web:
+     runs-on: ubuntu-latest
+@@ -61,6 +64,81 @@ jobs:
+       - name: Playwright e2e
+         run: npm run test:e2e
+ 
++  deploy-preview:
++    needs: web
++    if: github.event_name == 'pull_request'
++    runs-on: ubuntu-latest
++    permissions:
++      contents: write
++      pull-requests: write
++    defaults:
++      run:
++        working-directory: creatorflow
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: "22"
++          cache: npm
++          cache-dependency-path: creatorflow/package-lock.json
++
++      - name: Install deps & Playwright Chromium
++        run: |
++          npm ci
++          npx playwright install --with-deps chromium
++
++      - name: Build CreatorFlow preview (SEO prerender)
++        env:
++          VITE_API_URL: ${{ vars.VITE_API_URL }}
++          VITE_BASE_PATH: /contract/creatorflow/pr-${{ github.event.pull_request.number }}/
++          VITE_ROUTER_BASENAME: /contract/creatorflow/pr-${{ github.event.pull_request.number }}
++        run: npm run build:seo
++
++      - name: Publish preview to gh-pages
++        env:
++          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++        run: |
++          git config --global user.email "github-actions[bot]@users.noreply.github.com"
++          git config --global user.name "github-actions[bot]"
++          npx gh-pages@6.3.0 -d dist \
++            --dest "creatorflow/pr-${{ github.event.pull_request.number }}" \
++            --add \
++            -m "Preview CreatorFlow PR #${{ github.event.pull_request.number }} [skip ci]" \
++            -r "https://x-access-token:${GITHUB_TOKEN}@github.com/carllaliberte/contract.git"
++
++      - name: Comment preview URL on PR
++        uses: actions/github-script@v7
++        with:
++          script: |
++            const url = `https://carllaliberte.github.io/contract/creatorflow/pr-${context.payload.pull_request.number}/`;
++            const marker = '<!-- creatorflow-preview -->';
++            const body = `${marker}\n**CreatorFlow preview:** ${url}`;
++            const { data: comments } = await github.rest.issues.listComments({
++              owner: context.repo.owner,
++              repo: context.repo.repo,
++              issue_number: context.payload.pull_request.number,
++            });
++            const existing = comments.find((c) => c.body?.includes(marker));
++            if (existing) {
++              await github.rest.issues.updateComment({
++                owner: context.repo.owner,
++                repo: context.repo.repo,
++                comment_id: existing.id,
++                body,
++              });
++            } else {
++              await github.rest.issues.createComment({
++                owner: context.repo.owner,
++                repo: context.repo.repo,
++                issue_number: context.payload.pull_request.number,
++                body,
++              });
++            }
++
++      - name: Preview URL
++        run: echo "https://carllaliberte.github.io/contract/creatorflow/pr-${{ github.event.pull_request.number }}/"
++
+   android:
+     needs: web
+     runs-on: ubuntu-latest
+-- 
+2.43.0
+
+
+From ca3db455471a72440f96c6be51d408afc4566fd1 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Wed, 26 Aug 2026 16:58:31 +0000
+Subject: [PATCH 3/3] feat(api): Apple Sign-In exchange and CORS for GitHub
+ Pages
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Add POST /auth/apple with Apple JWKS verification and Supabase session exchange
+- Enable CORS for GitHub Pages origin on auth routes
+- Add jose dependency and stub mode for local dev
+
+Co-authored-by: Carl Laliberté <carllaliberte@users.noreply.github.com>
+---
+ api/.env.example              |   3 +
+ api/package-lock.json         |  10 +++
+ api/package.json              |   1 +
+ api/src/env.ts                |   4 +
+ api/src/index.ts              |   3 +
+ api/src/routes/auth.test.ts   |  42 ++++++++++
+ api/src/routes/auth.ts        | 150 ++++++++++++++++++++++++++++++++++
+ api/src/services/appleAuth.ts |  44 ++++++++++
+ 8 files changed, 257 insertions(+)
+ create mode 100644 api/src/routes/auth.test.ts
+ create mode 100644 api/src/routes/auth.ts
+ create mode 100644 api/src/services/appleAuth.ts
+
+diff --git a/api/.env.example b/api/.env.example
+index 57eae03..b69c610 100644
+--- a/api/.env.example
++++ b/api/.env.example
+@@ -7,6 +7,9 @@ OPENAI_MODEL=gpt-4o-mini
+ MONTHLY_AI_LIMIT=8
+ MONTHLY_AI_LIMIT_PRO=200
+ CORS_ORIGINS=https://carllaliberte.github.io,http://localhost:5173
++# Apple Sign In (production)
++APPLE_CLIENT_ID=com.carllaliberte.creatorflow
++# APPLE_AUTH_STUB=true
+ # Local dev without Supabase/OpenAI (tests and offline dev)
+ MEMORY_STORE=true
+ MOCK_LLM=true
+diff --git a/api/package-lock.json b/api/package-lock.json
+index 0e4a5f8..45ab4a1 100644
+--- a/api/package-lock.json
++++ b/api/package-lock.json
+@@ -11,6 +11,7 @@
+         "@hono/node-server": "^1.14.4",
+         "@supabase/supabase-js": "^2.49.8",
+         "hono": "^4.7.10",
++        "jose": "^6.2.10",
+         "openai": "^4.104.0"
+       },
+       "devDependencies": {
+@@ -1567,6 +1568,15 @@
+         "node": ">=20.0.0"
+       }
+     },
++    "node_modules/jose": {
++      "version": "6.2.10",
++      "resolved": "https://registry.npmjs.org/jose/-/jose-6.2.10.tgz",
++      "integrity": "sha512-iiW7J9qRFlGxvCOIBDBDxFePQSn7ZMAnrYGhrrOo6siO/MIqwfyilLR27pkfDgUk+raLuzADS8A3S/KLBisc0g==",
++      "license": "MIT",
++      "funding": {
++        "url": "https://github.com/sponsors/panva"
++      }
++    },
+     "node_modules/js-tokens": {
+       "version": "9.0.1",
+       "resolved": "https://registry.npmjs.org/js-tokens/-/js-tokens-9.0.1.tgz",
+diff --git a/api/package.json b/api/package.json
+index bfaadda..11d2aaa 100644
+--- a/api/package.json
++++ b/api/package.json
+@@ -14,6 +14,7 @@
+     "@hono/node-server": "^1.14.4",
+     "@supabase/supabase-js": "^2.49.8",
+     "hono": "^4.7.10",
++    "jose": "^6.2.10",
+     "openai": "^4.104.0"
+   },
+   "devDependencies": {
+diff --git a/api/src/env.ts b/api/src/env.ts
+index 06d6a89..b5c840a 100644
+--- a/api/src/env.ts
++++ b/api/src/env.ts
+@@ -26,6 +26,10 @@ export const env = {
+     !process.env.SUPABASE_URL ||
+     !process.env.SUPABASE_SERVICE_ROLE_KEY,
+   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
++  appleClientId:
++    process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",
++  appleAuthStub:
++    process.env.APPLE_AUTH_STUB === "true" || process.env.MEMORY_STORE === "true",
+ };
+ 
+ export function currentMonth(): string {
+diff --git a/api/src/index.ts b/api/src/index.ts
+index 818ce9e..1d77777 100644
+--- a/api/src/index.ts
++++ b/api/src/index.ts
+@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
+ import { Hono } from "hono";
+ import { env } from "./env.js";
+ import { createAiRoutes } from "./routes/ai.js";
++import { createAuthRoutes } from "./routes/auth.js";
+ 
+ const app = new Hono();
+ 
+@@ -10,9 +11,11 @@ app.get("/health", (c) =>
+     ok: true,
+     memoryStore: env.memoryStore,
+     mockLlm: env.mockLlm,
++    appleAuthStub: env.appleAuthStub,
+   }),
+ );
+ 
++app.route("/auth", createAuthRoutes());
+ app.route("/ai", createAiRoutes());
+ 
+ serve({ fetch: app.fetch, port: env.port }, (info) => {
+diff --git a/api/src/routes/auth.test.ts b/api/src/routes/auth.test.ts
+new file mode 100644
+index 0000000..93e6526
+--- /dev/null
++++ b/api/src/routes/auth.test.ts
+@@ -0,0 +1,42 @@
++import { beforeEach, describe, expect, it } from "vitest";
++import { Hono } from "hono";
++import { createAuthRoutes } from "./auth.js";
++
++describe("POST /auth/apple", () => {
++  it("returns dev stub when identityToken is provided", async () => {
++    const app = new Hono();
++    app.route("/auth", createAuthRoutes());
++
++    const res = await app.request("/auth/apple", {
++      method: "POST",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({
++        identityToken: "header.payload.signature",
++        user: "apple-user-123",
++      }),
++    });
++
++    expect(res.status).toBe(200);
++    const data = (await res.json()) as {
++      accessToken: string;
++      userId: string;
++      provider: string;
++    };
++    expect(data.provider).toBe("apple");
++    expect(data.accessToken).toContain("stub.apple.");
++    expect(data.userId).toBe("apple-user-123");
++  });
++
++  it("returns 400 without identityToken", async () => {
++    const app = new Hono();
++    app.route("/auth", createAuthRoutes());
++
++    const res = await app.request("/auth/apple", {
++      method: "POST",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({ user: "x" }),
++    });
++
++    expect(res.status).toBe(400);
++  });
++});
+diff --git a/api/src/routes/auth.ts b/api/src/routes/auth.ts
+new file mode 100644
+index 0000000..d1d2e28
+--- /dev/null
++++ b/api/src/routes/auth.ts
+@@ -0,0 +1,150 @@
++import { createClient } from "@supabase/supabase-js";
++import { Hono } from "hono";
++import { cors } from "hono/cors";
++import { env } from "../env.js";
++import { verifyAppleIdentityToken } from "../services/appleAuth.js";
++
++type AppleAuthRequest = {
++  identityToken?: string;
++  authorizationCode?: string;
++  user?: string | null;
++  email?: string | null;
++  givenName?: string | null;
++  familyName?: string | null;
++};
++
++function parseAppleBody(raw: unknown): AppleAuthRequest | null {
++  if (!raw || typeof raw !== "object") return null;
++  const body = raw as Record<string, unknown>;
++  if (typeof body.identityToken !== "string" || !body.identityToken.trim()) {
++    return null;
++  }
++  return {
++    identityToken: body.identityToken.trim(),
++    authorizationCode:
++      typeof body.authorizationCode === "string"
++        ? body.authorizationCode
++        : undefined,
++    user: typeof body.user === "string" ? body.user : null,
++    email: typeof body.email === "string" ? body.email : null,
++    givenName: typeof body.givenName === "string" ? body.givenName : null,
++    familyName: typeof body.familyName === "string" ? body.familyName : null,
++  };
++}
++
++function displayName(body: AppleAuthRequest): string | null {
++  const name = [body.givenName, body.familyName].filter(Boolean).join(" ").trim();
++  return name || null;
++}
++
++function shouldUseAuthStub(): boolean {
++  return env.appleAuthStub || !env.supabaseUrl || !env.supabaseAnonKey;
++}
++
++function stubSession(body: AppleAuthRequest) {
++  const userId = body.user ?? "anonymous";
++  return {
++    accessToken: `stub.apple.${userId}`,
++    userId,
++    provider: "apple" as const,
++  };
++}
++
++export function createAuthRoutes() {
++  const auth = new Hono();
++
++  auth.use(
++    "*",
++    cors({
++      origin: env.corsOrigins,
++      allowHeaders: ["Content-Type"],
++      allowMethods: ["POST", "OPTIONS"],
++    }),
++  );
++
++  auth.post("/apple", async (c) => {
++    let raw: unknown;
++    try {
++      raw = await c.req.json();
++    } catch {
++      return c.json({ error: "BAD_REQUEST", message: "Invalid JSON body" }, 400);
++    }
++
++    const body = parseAppleBody(raw);
++    if (!body) {
++      return c.json(
++        { error: "BAD_REQUEST", message: "identityToken is required" },
++        400,
++      );
++    }
++
++    if (shouldUseAuthStub()) {
++      return c.json(stubSession(body));
++    }
++
++    try {
++      const verified = await verifyAppleIdentityToken(
++        body.identityToken!,
++        env.appleClientId,
++      );
++
++      const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
++        auth: { persistSession: false, autoRefreshToken: false },
++      });
++
++      const { data, error } = await supabase.auth.signInWithIdToken({
++        provider: "apple",
++        token: body.identityToken!,
++      });
++
++      if (error || !data.session?.access_token) {
++        console.error("Apple signInWithIdToken failed:", error?.message);
++        return c.json(
++          {
++            error: "UNAUTHORIZED",
++            message: "Apple identity could not be exchanged for a session",
++          },
++          401,
++        );
++      }
++
++      const userId = data.user?.id ?? verified.sub;
++      const name = displayName(body);
++
++      if (env.supabaseServiceRoleKey) {
++        const admin = createClient(
++          env.supabaseUrl,
++          env.supabaseServiceRoleKey,
++          { auth: { persistSession: false, autoRefreshToken: false } },
++        );
++        await admin.from("profiles").upsert(
++          {
++            id: userId,
++            display_name: name,
++          },
++          { onConflict: "id" },
++        );
++      }
++
++      return c.json({
++        accessToken: data.session.access_token,
++        userId,
++        provider: "apple",
++      });
++    } catch (error) {
++      console.error("Apple auth error:", error);
++      return c.json(
++        {
++          error: "UNAUTHORIZED",
++          message:
++            error instanceof Error
++              ? error.message
++              : "Apple identity token verification failed",
++        },
++        401,
++      );
++    }
++  });
++
++  return auth;
++}
+diff --git a/api/src/services/appleAuth.ts b/api/src/services/appleAuth.ts
+new file mode 100644
+index 0000000..aeaeb8b
+--- /dev/null
++++ b/api/src/services/appleAuth.ts
+@@ -0,0 +1,44 @@
++import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
++
++const APPLE_JWKS_URL = new URL("https://appleid.apple.com/auth/keys");
++const APPLE_ISSUER = "https://appleid.apple.com";
++
++let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
++
++function getAppleJwks() {
++  if (!jwks) {
++    jwks = createRemoteJWKSet(APPLE_JWKS_URL);
++  }
++  return jwks;
++}
++
++export type VerifiedAppleIdentity = {
++  sub: string;
++  email?: string;
++  emailVerified?: boolean;
++};
++
++export async function verifyAppleIdentityToken(
++  identityToken: string,
++  clientId: string,
++): Promise<VerifiedAppleIdentity> {
++  const { payload } = await jwtVerify(identityToken, getAppleJwks(), {
++    issuer: APPLE_ISSUER,
++    audience: clientId,
++  });
++
++  return parseApplePayload(payload);
++}
++
++function parseApplePayload(payload: JWTPayload): VerifiedAppleIdentity {
++  if (typeof payload.sub !== "string" || !payload.sub) {
++    throw new Error("Apple identity token missing sub");
++  }
++
++  return {
++    sub: payload.sub,
++    email: typeof payload.email === "string" ? payload.email : undefined,
++    emailVerified:
++      payload.email_verified === true || payload.email_verified === "true",
++  };
++}
+-- 
+2.43.0
+
