@@ -27,7 +27,7 @@ import {
 import { useI18n } from "../i18n/context";
 import { useAuth } from "../hooks/useAuth";
 import { applyLandingRobots, setFaqJsonLd } from "../lib/seo";
-import { isNativeIos } from "../lib/platform";
+import { isNativePlatform } from "../lib/platform";
 
 const faqItems = [
   { q: "faq.q1", a: "faq.a1" },
@@ -87,7 +87,7 @@ export function LandingPage() {
   const { tr, locale } = useI18n();
   const navigate = useNavigate();
   const { enterDemo } = useAuth();
-  const nativeIos = isNativeIos();
+  const native = isNativePlatform();
   const [authTab, setAuthTab] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -213,12 +213,12 @@ export function LandingPage() {
               {tr(authTab === "in" ? "login.welcomeBack" : "login.createAccount")}
             </p>
             <p className="mt-1 mb-4 text-sm text-muted-foreground">
-              {tr(nativeIos ? "login.providersHintIos" : "login.providersHintWeb")}
+              {tr(native ? "login.providersHintIos" : "login.providersHintWeb")}
             </p>
 
             <div className="flex flex-col gap-2">
               <AppleSignInButton onSuccess={() => navigate("/app")} />
-              {!nativeIos && (
+              {!native && (
                 <>
                   <p className="text-[11px] text-muted-foreground">{tr("login.socialDemoNote")}</p>
                   <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
@@ -260,7 +260,7 @@ export function LandingPage() {
                   </Button>
                 </>
               )}
-              {nativeIos && (
+              {native && (
                 <Button type="button" className="h-11" onClick={() => void handleEnterDemo()}>
                   {tr("login.tryDemo")}
                   <ArrowRight className="size-4" />
@@ -268,7 +268,7 @@ export function LandingPage() {
               )}
             </div>
 
-            {!nativeIos && (
+            {!native && (
               <>
             <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
