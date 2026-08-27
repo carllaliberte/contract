@@ -90,7 +90,7 @@ export function createAiRoutes() {
         {
           error: "BAD_REQUEST",
           message:
-            "ideaId, title, description, and platform (youtube|tiktok|reels|x) are required",
+            "ideaId, title, description, and platform (youtube|tiktok|reels|instagram|x) are required",
         },
         400,
       );
