@@ -52,4 +52,11 @@ describe("landing assets", () => {
     expect(exampleGallery.length).toBe(4);
     expect(showcaseImages.length).toBe(3);
   });
+
+  it("ships first-party promo images and videos", () => {
+    expect(demoIdeas.every((idea) => idea.thumbnail.includes("/media/"))).toBe(true);
+    expect(exampleGallery.every((item) => item.src.includes("/media/"))).toBe(true);
+    expect(demoIdeas.some((idea) => idea.videoUrl?.includes("demo-booth.mp4"))).toBe(true);
+    expect(demoIdeas.some((idea) => idea.videoUrl?.includes("demo-vertical.mp4"))).toBe(true);
+  });
 });

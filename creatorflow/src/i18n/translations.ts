@@ -287,8 +287,8 @@ export const translations: Record<Locale, Translations> = {
     "paywall.cancelled": "Achat annulé.",
     "paywall.error": "Une erreur est survenue. Réessayez.",
     "lang.label": "Langue",
-    "lang.fr": "Français",
-    "lang.en": "English",
+    "lang.fr": "Français (Canada)",
+    "lang.en": "English (US)",
   },
   en: {
     "app.name": "CreatorFlow",
@@ -574,8 +574,8 @@ export const translations: Record<Locale, Translations> = {
     "paywall.cancelled": "Purchase cancelled.",
     "paywall.error": "Something went wrong. Please try again.",
     "lang.label": "Language",
-    "lang.fr": "Français",
-    "lang.en": "English",
+    "lang.fr": "Français (Canada)",
+    "lang.en": "English (US)",
   },
 };
 

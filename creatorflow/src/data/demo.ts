@@ -30,6 +30,11 @@ export type Idea = {
   videoUrl?: string;
 };
 
+export function mediaUrl(file: string): string {
+  const base = import.meta.env.BASE_URL ?? "/";
+  return `${base.endsWith("/") ? base : `${base}/`}media/${file}`;
+}
+
 export const demoIdeas: Idea[] = [
   {
     id: "1",
@@ -42,10 +47,8 @@ export const demoIdeas: Idea[] = [
     scheduledAt: "2026-08-28",
     script:
       "HOOK: « Ces 5 erreurs font fuir 70% de ton audience. »\n1. Transitions trop longues\n2. Audio non normalisé\n3. Hook trop lent\n4. Pas de pattern interrupt\n5. CTA mal placé\nCTA: Abonne-toi pour la checklist complète.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80",
-    videoUrl:
-      "https://cdn.coverr.co/videos/coverr-a-person-editing-a-video-on-a-computer-5633/1080p.mp4",
+    thumbnail: mediaUrl("still-edit.jpg"),
+    videoUrl: mediaUrl("demo-booth.mp4"),
   },
   {
     id: "2",
@@ -58,10 +61,8 @@ export const demoIdeas: Idea[] = [
     scheduledAt: "2026-08-26",
     script:
       "HOOK (0-3s): « Voici comment je structure ma matinée. »\nScène 1: réveil + café\nScène 2: 3 priorités max\nScène 3: deep work block\nCTA: Suis pour le template.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&q=80",
-    videoUrl:
-      "https://cdn.coverr.co/videos/coverr-young-woman-recording-a-vlog-4166/1080p.mp4",
+    thumbnail: mediaUrl("still-tiktok.jpg"),
+    videoUrl: mediaUrl("demo-vertical.mp4"),
   },
   {
     id: "3",
@@ -72,8 +73,7 @@ export const demoIdeas: Idea[] = [
     platform: "reels",
     updatedAt: "2026-08-22T09:15:00Z",
     scheduledAt: "2026-08-30",
-    thumbnail:
-      "https://images.unsplash.com/photo-1598488035135-bdbb2231bb80?w=800&q=80",
+    thumbnail: mediaUrl("still-reels.jpg"),
   },
   {
     id: "4",
@@ -86,10 +86,8 @@ export const demoIdeas: Idea[] = [
     scheduledAt: "2026-08-27",
     script:
       "Intro: le chaos des idées non structurées.\nDémo live du pipeline.\nSystème de priorisation.\nCTA: lien vers la démo.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&q=80",
-    videoUrl:
-      "https://cdn.coverr.co/videos/coverr-filming-with-a-professional-camera-1585/1080p.mp4",
+    thumbnail: mediaUrl("still-ideas.jpg"),
+    videoUrl: mediaUrl("demo-booth.mp4"),
   },
   {
     id: "5",
@@ -100,8 +98,8 @@ export const demoIdeas: Idea[] = [
     platform: "tiktok",
     updatedAt: "2026-08-18T20:30:00Z",
     script: "Formule: Constat choc → Preuve → Promesse.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1478737270233-763290ed8258?w=800&q=80",
+    thumbnail: mediaUrl("still-tiktok.jpg"),
+    videoUrl: mediaUrl("demo-vertical.mp4"),
   },
   {
     id: "6",
@@ -112,8 +110,8 @@ export const demoIdeas: Idea[] = [
     platform: "reels",
     updatedAt: "2026-08-20T11:20:00Z",
     script: "Plan séquence: caméra → lumière → script imprimé → action.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80",
+    thumbnail: mediaUrl("still-reels.jpg"),
+    videoUrl: mediaUrl("demo-vertical.mp4"),
   },
 ];
 
@@ -155,17 +153,17 @@ export function countByStatus(ideas: Idea[]) {
 
 export const showcaseImages = [
   {
-    src: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=1200&q=80",
+    src: mediaUrl("still-edit.jpg"),
     alt: "Créateur devant un écran de montage",
     label: "Dashboard",
   },
   {
-    src: "https://images.unsplash.com/photo-1533750349088-cd871a694021?w=1200&q=80",
+    src: mediaUrl("still-youtube.jpg"),
     alt: "Pipeline de contenus sur écran",
     label: "Pipeline",
   },
   {
-    src: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&q=80",
+    src: mediaUrl("still-reels.jpg"),
     alt: "Tournage vidéo vertical pour réseaux sociaux",
     label: "Production",
   },
@@ -173,33 +171,31 @@ export const showcaseImages = [
 
 export const exampleGallery = [
   {
-    src: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&q=80",
+    src: mediaUrl("still-tiktok.jpg"),
     title: "TikTok — Routine créateur",
     platform: "TikTok",
     aspect: "aspect-[9/16]",
   },
   {
-    src: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80",
+    src: mediaUrl("still-youtube.jpg"),
     title: "YouTube — Tutoriel montage",
     platform: "YouTube",
     aspect: "aspect-video",
   },
   {
-    src: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&q=80",
+    src: mediaUrl("still-reels.jpg"),
     title: "Reels — Behind the scenes",
     platform: "Reels",
     aspect: "aspect-[9/16]",
   },
   {
-    src: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=600&q=80",
+    src: mediaUrl("still-ideas.jpg"),
     title: "YouTube — Organisation d’idées",
     platform: "YouTube",
     aspect: "aspect-video",
   },
 ];
 
-export const demoVideoUrl =
-  "https://cdn.coverr.co/videos/coverr-a-content-creator-recording-a-video-4165/1080p.mp4";
+export const demoVideoUrl = mediaUrl("demo-booth.mp4");
 
-export const demoVideoPoster =
-  "https://images.unsplash.com/photo-1579869847514-7c1a19d2d867?w=1200&q=80";
+export const demoVideoPoster = mediaUrl("still-edit.jpg");

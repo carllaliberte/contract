@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import type { Idea, Priority } from "../data/demo";
+import { mediaUrl, type Idea, type Priority } from "../data/demo";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
 import { Button, Input, Label } from "./ui";
 
 const defaultThumbnails = [
-  "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80",
-  "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&q=80",
-  "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80",
+  mediaUrl("still-edit.jpg"),
+  mediaUrl("still-tiktok.jpg"),
+  mediaUrl("still-reels.jpg"),
 ];
 
 type AddIdeaDialogProps = {

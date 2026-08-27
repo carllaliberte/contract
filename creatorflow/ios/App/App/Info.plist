@@ -6,6 +6,13 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>en-US</string>
+		<string>fr</string>
+		<string>fr-CA</string>
+	</array>
 	<key>CFBundleDisplayName</key>
         <string>CreatorFlow</string>
 	<key>CFBundleExecutable</key>
