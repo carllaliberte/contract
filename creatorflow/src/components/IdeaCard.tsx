@@ -1,22 +1,20 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Clapperboard, Copy, CopyPlus, Sparkles, Loader2 } from "lucide-react";
+import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { copyScriptToClipboard } from "../lib/ideaActions";
+import { labelForPlatform } from "../lib/platforms";
 import { canAdvanceStatus } from "../lib/pipelineActions";
 import { Button } from "./ui";
-
-const platformLabel: Record<string, string> = {
-  youtube: "YouTube",
-  tiktok: "TikTok",
-  reels: "Reels",
-  x: "X",
-};
 
 type IdeaCardProps = {
   idea: Idea;
   onGenerateScript?: (idea: Idea) => void;
   onAdvance?: (idea: Idea) => void;
+  onShoot?: (idea: Idea) => void;
+  onDuplicate?: (idea: Idea) => void;
   isGenerating?: boolean;
   dragOverlay?: boolean;
 };
@@ -25,13 +23,26 @@ export function IdeaCard({
   idea,
   onGenerateScript,
   onAdvance,
+  onShoot,
+  onDuplicate,
   isGenerating,
   dragOverlay,
 }: IdeaCardProps) {
   const { tr } = useI18n();
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const canGenerate =
     onGenerateScript && (idea.status === "idea" || idea.status === "script");
   const canAdvance = onAdvance && canAdvanceStatus(idea.status);
+  const canShoot = Boolean(onShoot && idea.status === "production");
+  const canCopy = Boolean(idea.script?.trim());
+  const canDuplicate = Boolean(onDuplicate);
+
+  async function handleCopyCaptions() {
+    if (!idea.script) return;
+    const ok = await copyScriptToClipboard(idea.script);
+    setCopyState(ok ? "copied" : "failed");
+    window.setTimeout(() => setCopyState("idle"), 2000);
+  }
 
   return (
     <article
@@ -48,7 +59,7 @@ export function IdeaCard({
         />
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
-          {platformLabel[idea.platform] ?? idea.platform}
+          {labelForPlatform(idea.platform)}
         </span>
       </div>
       <div className="p-3">
@@ -56,37 +67,80 @@ export function IdeaCard({
         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           {idea.description}
         </p>
-        {(canGenerate || canAdvance) && (
-          <div className="mt-2.5 flex gap-2">
-            {canGenerate && (
+        {(canGenerate || canAdvance || canShoot || canCopy || canDuplicate) && (
+          <div className="mt-2.5 flex flex-col gap-2">
+            {canShoot && (
               <Button
                 type="button"
                 variant="secondary"
-                className="h-9 flex-1 text-xs"
-                disabled={isGenerating}
-                onClick={() => onGenerateScript(idea)}
+                className="h-9 w-full text-xs"
+                onClick={() => onShoot?.(idea)}
               >
-                <Sparkles className="size-3.5" />
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                    {tr("script.generating")}
-                  </>
-                ) : (
-                  tr("script.generate")
-                )}
+                <Clapperboard className="size-3.5" />
+                {tr("pipeline.shoot")}
               </Button>
             )}
-            {canAdvance && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 shrink-0 px-2.5 text-xs"
-                aria-label={tr("pipeline.advance")}
-                onClick={() => onAdvance(idea)}
-              >
-                <ArrowRight className="size-3.5" />
-              </Button>
+            <div className="flex gap-2">
+              {canGenerate && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-9 flex-1 text-xs"
+                  disabled={isGenerating}
+                  onClick={() => onGenerateScript(idea)}
+                >
+                  <Sparkles className="size-3.5" />
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                      {tr("script.generating")}
+                    </>
+                  ) : (
+                    tr("script.generate")
+                  )}
+                </Button>
+              )}
+              {canAdvance && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0 px-2.5 text-xs"
+                  aria-label={tr("pipeline.advance")}
+                  onClick={() => onAdvance(idea)}
+                >
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              )}
+            </div>
+            {(canCopy || canDuplicate) && (
+              <div className="flex gap-2">
+                {canCopy && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8 flex-1 text-xs"
+                    onClick={() => void handleCopyCaptions()}
+                  >
+                    <Copy className="size-3.5" />
+                    {copyState === "copied"
+                      ? tr("script.copied")
+                      : copyState === "failed"
+                        ? tr("script.copyFailed")
+                        : tr("script.copyCaptions")}
+                  </Button>
+                )}
+                {canDuplicate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8 shrink-0 px-2.5 text-xs"
+                    aria-label={tr("idea.duplicate")}
+                    onClick={() => onDuplicate?.(idea)}
+                  >
+                    <CopyPlus className="size-3.5" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         )}

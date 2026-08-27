@@ -72,6 +72,8 @@ xcodebuild build \
 
 Sign in with Apple : plugin `@capacitor-community/apple-sign-in`, entitlements dans `ios/App/App/App.entitlements`.
 
+Guide complet (Apple Developer, Supabase, API) : [`docs/SIGN_IN_WITH_APPLE.md`](./docs/SIGN_IN_WITH_APPLE.md).
+
 Sécurité iOS (ATS, Keychain, auth) : voir [`SECURITY.md`](./SECURITY.md).
 
 ## CI GitHub Actions

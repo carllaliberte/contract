@@ -1,4 +1,4 @@
-export type Platform = "youtube" | "tiktok" | "reels" | "x";
+export type Platform = "youtube" | "tiktok" | "reels" | "instagram" | "x";
 export type Language = "fr" | "en";
 export type GenerateMode = "generate" | "improve";
 export type ScriptFormat = "short" | "long";
@@ -50,7 +50,13 @@ export type GenerateScriptErrorBody = {
 };
 
 export function isPlatform(value: string): value is Platform {
-  return value === "youtube" || value === "tiktok" || value === "reels" || value === "x";
+  return (
+    value === "youtube" ||
+    value === "tiktok" ||
+    value === "reels" ||
+    value === "instagram" ||
+    value === "x"
+  );
 }
 
 export function isLanguage(value: string): value is Language {

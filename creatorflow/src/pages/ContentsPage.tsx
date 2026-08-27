@@ -1,7 +1,8 @@
-import { Play, Sparkles, Loader2 } from "lucide-react";
+import { Copy, CopyPlus, Play, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
 import { PaywallSheet } from "../components/PaywallSheet";
+import { SharePackRow } from "../components/SharePackRow";
 import {
   ScriptGenerateDialog,
   type ScriptGenerateOptions,
@@ -10,16 +11,20 @@ import { isGenerateScriptError, useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
+import { copyScriptToClipboard } from "../lib/ideaActions";
 import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { TtsPlayButton } from "../components/TtsPlayButton";
 import { useAiUsage } from "../hooks/useAiUsage";
+import { labelForPlatform } from "../lib/platforms";
 
 export function ContentsPage() {
   const { tr } = useI18n();
-  const { ideas, generateScript } = useIdeas();
+  const { ideas, generateScript, duplicateIdea } = useIdeas();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [copyNoticeId, setCopyNoticeId] = useState<string | null>(null);
+  const [copyNoticeState, setCopyNoticeState] = useState<"copied" | "failed" | null>(null);
   const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const aiUsage = useAiUsage();
@@ -67,6 +72,21 @@ export function ContentsPage() {
     }
   }
 
+  async function handleCopyCaptions(item: Idea) {
+    if (!item.script) return;
+    const ok = await copyScriptToClipboard(item.script);
+    setCopyNoticeId(item.id);
+    setCopyNoticeState(ok ? "copied" : "failed");
+    window.setTimeout(() => {
+      setCopyNoticeId(null);
+      setCopyNoticeState(null);
+    }, 2000);
+  }
+
+  function handleDuplicate(item: Idea) {
+    duplicateIdea(item.id);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -112,7 +132,7 @@ export function ContentsPage() {
                 <div>
                   <h2 className="font-medium">{item.title}</h2>
                   <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                    {item.platform}
+                    {labelForPlatform(item.platform)}
                   </p>
                 </div>
                 {item.videoUrl && (
@@ -120,12 +140,37 @@ export function ContentsPage() {
                 )}
               </div>
               {item.script && (
-                <>
-                  <p className="mt-3 line-clamp-4 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
+                <div className="mt-3 flex flex-col gap-2">
+                  <p className="line-clamp-4 rounded-lg bg-secondary/50 p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
                     {item.script}
                   </p>
-                  <TtsPlayButton text={item.script} className="mt-2" />
-                </>
+                  <TtsPlayButton text={item.script} />
+                  <SharePackRow idea={item} />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-8 flex-1 text-xs"
+                      onClick={() => void handleCopyCaptions(item)}
+                    >
+                      <Copy className="size-3.5" />
+                      {copyNoticeId === item.id && copyNoticeState === "copied"
+                        ? tr("script.copied")
+                        : copyNoticeId === item.id && copyNoticeState === "failed"
+                          ? tr("script.copyFailed")
+                          : tr("script.copyCaptions")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-8 shrink-0 px-2.5 text-xs"
+                      aria-label={tr("idea.duplicate")}
+                      onClick={() => handleDuplicate(item)}
+                    >
+                      <CopyPlus className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
               )}
               {(item.status === "idea" || item.status === "script") && (
                 <Button

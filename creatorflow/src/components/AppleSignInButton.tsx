@@ -1,6 +1,7 @@
 import { useAppleSignIn } from "../hooks/useAppleSignIn";
 import { useAuth } from "../hooks/useAuth";
 import { useI18n } from "../i18n/context";
+import { isNativePlatform } from "../lib/platform";
 import { Button } from "./ui";
 
 interface AppleSignInButtonProps {
@@ -13,7 +14,7 @@ export function AppleSignInButton({ onSuccess, className }: AppleSignInButtonPro
   const { refresh } = useAuth();
   const { signIn, available, isLoading } = useAppleSignIn();
 
-  if (!available) return null;
+  if (!available && !isNativePlatform()) return null;
 
   async function handleClick() {
     const ok = await signIn();

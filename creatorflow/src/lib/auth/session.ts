@@ -95,6 +95,7 @@ export async function clearSession(): Promise<void> {
 const LOCAL_APP_DATA_KEYS = [
   DEMO_FLAG,
   "cf-ideas",
+  "cf-cloud-queue",
   "cf-ai-usage",
   "cf-plan",
   "cf-demo-id",

@@ -9,6 +9,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DraggableIdeaCard, IdeaCard } from "../components/IdeaCard";
 import { PaywallSheet } from "../components/PaywallSheet";
 import {
@@ -66,7 +67,8 @@ function DroppableColumn({
 
 export function PipelinePage() {
   const { tr } = useI18n();
-  const { ideas, moveIdea, generateScript } = useIdeas();
+  const navigate = useNavigate();
+  const { ideas, moveIdea, generateScript, duplicateIdea } = useIdeas();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
@@ -166,6 +168,10 @@ export function PipelinePage() {
     if (next) moveIdea(idea.id, next);
   }
 
+  function handleDuplicate(idea: Idea) {
+    duplicateIdea(idea.id);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -216,6 +222,8 @@ export function PipelinePage() {
                       idea={idea}
                       onGenerateScript={openGenerateDialog}
                       onAdvance={handleAdvance}
+                      onShoot={(item) => navigate(`/app/shoot/${item.id}`)}
+                      onDuplicate={handleDuplicate}
                       isGenerating={generatingId === idea.id}
                     />
                   ))
