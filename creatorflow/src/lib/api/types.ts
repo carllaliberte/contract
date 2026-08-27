@@ -16,6 +16,10 @@ export type GenerateScriptRequest = {
   durationMinutes?: 8 | 12 | 20 | 30;
   /** Serialized style prompt from AIContext — injected server-side when supported. */
   styleContext?: string;
+  /** Public http(s) URL to fetch as source material. */
+  sourceUrl?: string;
+  /** Pasted public text (article, notes, transcript). */
+  sourceText?: string;
 };
 
 export type FormatQuota = {

@@ -1,3 +1,4 @@
+import { appendOpenSource } from "./openSource.ts";
 import type { Language, Platform, GenerateMode, PromptInput, ScriptFormat } from "./types.ts";
 
 function appendStyleContext(base: string, styleContext?: string): string {
@@ -306,7 +307,7 @@ export function buildScriptPrompt(input: PromptInput): {
   const prompt = buildScriptPromptCore(input);
   return {
     system: appendStyleContext(prompt.system, input.styleContext),
-    user: prompt.user,
+    user: appendOpenSource(prompt.user, input.sourceContext, input.language),
   };
 }
 

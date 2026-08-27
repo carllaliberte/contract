@@ -24,6 +24,19 @@ describe("buildScriptPrompt", () => {
     expect(user).not.toContain("YouTube");
   });
 
+  it("injects open source material into the user prompt", () => {
+    const { user } = buildScriptPrompt({
+      title: "Test titre",
+      description: "Une description",
+      platform: "youtube",
+      language: "fr",
+      mode: "generate",
+      sourceContext: "Un article Wikipedia sur le sujet",
+    });
+    expect(user).toContain("SOURCE OUVERTE");
+    expect(user).toContain("Un article Wikipedia sur le sujet");
+  });
+
   it("uses unified improve prompt for YouTube FR", () => {
     const { user } = buildScriptPrompt({
       title: "Mon titre",

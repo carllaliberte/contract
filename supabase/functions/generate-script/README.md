@@ -32,4 +32,6 @@ Contract: `POST` with JSON body matching `GenerateScriptRequest`, response `Gene
 
 Auth: `Authorization: Bearer <supabase_jwt>` or `x-demo-id` for demo mode.
 
+Optional body: `sourceUrl` (public http/https) and/or `sourceText` — Grok grounds the script in that open source.
+
 Limits: free = 8/month, pro = 200/month (from `profiles.plan`).

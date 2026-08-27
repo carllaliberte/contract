@@ -22,6 +22,7 @@ import {
   type Platform,
 } from "../_shared/types.ts";
 import { checkAiRateLimit } from "../_shared/rateLimit.ts";
+import { resolveOpenSource } from "../_shared/openSource.ts";
 import {
   hashPromptTitle,
   recordGenerationProvenance,
@@ -113,6 +114,14 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
     styleContext:
       typeof b.styleContext === "string" && b.styleContext.trim()
         ? b.styleContext.trim()
+        : undefined,
+    sourceUrl:
+      typeof b.sourceUrl === "string" && b.sourceUrl.trim()
+        ? b.sourceUrl.trim()
+        : undefined,
+    sourceText:
+      typeof b.sourceText === "string" && b.sourceText.trim()
+        ? b.sourceText.trim()
         : undefined,
   };
 }
@@ -404,6 +413,15 @@ Deno.serve(async (req) => {
         ? "improve"
         : "generate";
 
+    const source = await resolveOpenSource({
+      url: payload.sourceUrl,
+      text: payload.sourceText,
+    });
+    if ("error" in source) {
+      return json({ error: "BAD_REQUEST", message: source.error }, 400);
+    }
+    const sourceContext = source.context;
+
     const { system, user } = buildScriptPrompt({
       title: payload.title,
       description: payload.description,
@@ -414,6 +432,7 @@ Deno.serve(async (req) => {
       format,
       durationMinutes: payload.durationMinutes,
       styleContext: payload.styleContext,
+      sourceContext,
     });
 
     const { script, model } = await callGrok(system, user);

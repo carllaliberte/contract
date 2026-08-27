@@ -73,6 +73,8 @@ export async function dispatchScriptGenerate(
         format: options.format,
         durationMinutes: options.durationMinutes,
         styleContext: context.stylePrompt,
+        sourceUrl: options.sourceUrl,
+        sourceText: options.sourceText,
       });
 
       const pack: ContentPackage = {

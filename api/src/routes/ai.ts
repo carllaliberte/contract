@@ -8,6 +8,7 @@ import {
   type UsageStore,
 } from "../services/aiUsage.js";
 import { generateScriptWithLlm } from "../services/llm.js";
+import { resolveOpenSource } from "../services/openSource.js";
 import { generateTtsAudio } from "../services/tts.js";
 import {
   hashPromptTitle,
@@ -60,6 +61,14 @@ function parseBody(raw: unknown): GenerateScriptRequest | null {
     styleContext:
       typeof b.styleContext === "string" && b.styleContext.trim()
         ? b.styleContext.trim()
+        : undefined,
+    sourceUrl:
+      typeof b.sourceUrl === "string" && b.sourceUrl.trim()
+        ? b.sourceUrl.trim()
+        : undefined,
+    sourceText:
+      typeof b.sourceText === "string" && b.sourceText.trim()
+        ? b.sourceText.trim()
         : undefined,
   };
 }
@@ -139,6 +148,14 @@ export function createAiRoutes() {
           ? "improve"
           : "generate";
 
+      const source = await resolveOpenSource({
+        url: payload.sourceUrl,
+        text: payload.sourceText,
+      });
+      if ("error" in source) {
+        return c.json({ error: "BAD_REQUEST", message: source.error }, 400);
+      }
+
       const { script, model } = await generateScriptWithLlm({
         title: payload.title,
         description: payload.description,
@@ -149,6 +166,7 @@ export function createAiRoutes() {
         format,
         durationMinutes: payload.durationMinutes,
         styleContext: payload.styleContext,
+        sourceContext: source.context,
       });
 
       let finalUsage;

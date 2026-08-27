@@ -16,6 +16,8 @@ export type GenerateScriptRequest = {
   durationMinutes?: 8 | 12 | 20 | 30;
   /** Style memory prompt from AIContext (client-side). */
   styleContext?: string;
+  sourceUrl?: string;
+  sourceText?: string;
 };
 
 export type FormatQuota = {
