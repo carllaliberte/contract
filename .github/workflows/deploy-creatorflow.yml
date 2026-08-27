@@ -33,14 +33,12 @@ jobs:
       - name: Build CreatorFlow
         working-directory: creatorflow
         env:
-          # GitHub → Settings → Variables (recommended for live API on Pages):
-          # VITE_API_URL=https://TON-PROJET.supabase.co/functions/v1/generate-script
           VITE_BASE_PATH: /contract/creatorflow/
           VITE_ROUTER_BASENAME: /contract/creatorflow
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_AUTH_APPLE_URL: ${{ vars.VITE_AUTH_APPLE_URL }}
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://ralxriqcpvuxzetnfsim.supabase.co/functions/v1/generate-script' }}
+          VITE_AUTH_APPLE_URL: ${{ vars.VITE_AUTH_APPLE_URL || 'https://ralxriqcpvuxzetnfsim.supabase.co/functions/v1/auth-apple' }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ralxriqcpvuxzetnfsim.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_2zKceDEfPiue_LCqRoYzjg_MIhfCkX-' }}
         run: npm ci && npm run build
 
       - name: Require index + privacy
