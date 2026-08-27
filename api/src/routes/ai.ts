@@ -9,6 +9,7 @@ import {
 } from "../services/aiUsage.js";
 import { generateScriptWithLlm } from "../services/llm.js";
 import { resolveOpenSource } from "../services/openSource.js";
+import { grokNotConfiguredCode } from "../services/scriptPack.js";
 import { generateTtsAudio } from "../services/tts.js";
 import {
   hashPromptTitle,
@@ -156,7 +157,8 @@ export function createAiRoutes() {
         return c.json({ error: "BAD_REQUEST", message: source.error }, 400);
       }
 
-      const { script, model } = await generateScriptWithLlm({
+      const { script, titles, description, hashtags, hooks, model } =
+        await generateScriptWithLlm({
         title: payload.title,
         description: payload.description,
         platform: payload.platform,
@@ -202,7 +204,15 @@ export function createAiRoutes() {
         });
       }
 
-      return c.json({ script, usage: finalUsage, model });
+      return c.json({
+        script,
+        titles,
+        description,
+        hashtags,
+        hooks,
+        usage: finalUsage,
+        model,
+      });
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
         const usage =
@@ -214,11 +224,12 @@ export function createAiRoutes() {
       }
 
       console.error("generate-script error:", error);
+      const raw =
+        error instanceof Error ? error.message : "Script generation failed";
       return c.json(
         {
           error: "PROVIDER_ERROR",
-          message:
-            error instanceof Error ? error.message : "Script generation failed",
+          message: grokNotConfiguredCode(raw),
         },
         500,
       );

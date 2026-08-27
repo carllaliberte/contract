@@ -48,6 +48,7 @@ export type ContentPackage = {
   titles?: string[];
   description?: string;
   hashtags?: string[];
+  hooks?: string[];
   source?: "generated" | "edited" | "accepted";
   createdAt?: string;
 };

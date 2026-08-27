@@ -26,6 +26,8 @@ export type Idea = {
   packHashtags?: string[];
   /** Social caption / description from pack apply. */
   packCaption?: string;
+  /** Alternate opening hooks from pack apply. */
+  packHooks?: string[];
   thumbnail: string;
   videoUrl?: string;
 };

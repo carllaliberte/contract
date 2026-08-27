@@ -1,4 +1,5 @@
 import { Check, X } from "lucide-react";
+import type { ReactNode } from "react";
 import type { ContentPackage } from "../types/aiContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
@@ -14,6 +15,23 @@ type PackApplyDialogProps = {
   isApplying?: boolean;
 };
 
+function PackSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mt-3">
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        {title}
+      </p>
+      <div className="mt-1.5">{children}</div>
+    </div>
+  );
+}
+
 export function PackApplyDialog({
   idea,
   pack,
@@ -26,6 +44,11 @@ export function PackApplyDialog({
   const { tr } = useI18n();
 
   if (!open || !idea || !pack) return null;
+
+  const titles = pack.titles?.filter(Boolean) ?? [];
+  const hooks = pack.hooks?.filter(Boolean) ?? [];
+  const hashtags = pack.hashtags?.filter(Boolean) ?? [];
+  const caption = pack.description?.trim() ?? "";
 
   return (
     <div
@@ -57,9 +80,50 @@ export function PackApplyDialog({
           </button>
         </div>
 
-        <pre className="mt-4 max-h-64 overflow-auto rounded-xl bg-secondary/50 p-3 text-xs leading-relaxed whitespace-pre-wrap text-foreground">
-          {pack.script}
-        </pre>
+        <div className="mt-3 max-h-[min(28rem,60vh)] overflow-auto pr-1">
+          <PackSection title={tr("pack.script")}>
+            <pre className="rounded-xl bg-secondary/50 p-3 text-xs leading-relaxed whitespace-pre-wrap text-foreground">
+              {pack.script}
+            </pre>
+          </PackSection>
+
+          {hooks.length > 0 && (
+            <PackSection title={tr("pack.hooks")}>
+              <ol className="space-y-1.5 text-xs">
+                {hooks.map((hook, index) => (
+                  <li
+                    key={`${index}-${hook}`}
+                    className="rounded-lg bg-secondary/40 px-3 py-2"
+                  >
+                    {hook}
+                  </li>
+                ))}
+              </ol>
+            </PackSection>
+          )}
+
+          {titles.length > 0 && (
+            <PackSection title={tr("pack.titles")}>
+              <ol className="list-decimal space-y-1 pl-4 text-xs">
+                {titles.map((title) => (
+                  <li key={title}>{title}</li>
+                ))}
+              </ol>
+            </PackSection>
+          )}
+
+          {caption ? (
+            <PackSection title={tr("pack.description")}>
+              <p className="text-xs leading-relaxed">{caption}</p>
+            </PackSection>
+          ) : null}
+
+          {hashtags.length > 0 && (
+            <PackSection title={tr("pack.hashtags")}>
+              <p className="text-xs text-muted-foreground">{hashtags.join(" ")}</p>
+            </PackSection>
+          )}
+        </div>
 
         <div className="mt-4 flex gap-2">
           <Button
