@@ -8,6 +8,9 @@ interface ImportMetaEnv {
   readonly VITE_ROUTER_BASENAME?: string;
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  readonly VITE_AGENTS?: string;
+  readonly VITE_AGENT_WEB3?: string;
+  readonly VITE_AGENT_WEBHOOK?: string;
 }
 
 interface ImportMeta {

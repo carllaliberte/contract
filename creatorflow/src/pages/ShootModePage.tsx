@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, WifiOff } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AgentBar } from "../components/AgentBar";
 import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
@@ -70,6 +71,8 @@ export function ShootModePage() {
           {scriptText}
         </pre>
       </section>
+
+      <AgentBar idea={shootIdea} />
 
       {canMarkReady && (
         <Button type="button" className="h-12 w-full" onClick={handleMarkReady}>

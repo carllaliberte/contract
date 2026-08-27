@@ -1,3 +1,4 @@
+import { AgentBar } from "../components/AgentBar";
 import { Copy, CopyPlus, Play, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
@@ -172,6 +173,7 @@ export function ContentsPage() {
                   </div>
                 </div>
               )}
+              <AgentBar idea={item} />
               {(item.status === "idea" || item.status === "script") && (
                 <Button
                   type="button"
