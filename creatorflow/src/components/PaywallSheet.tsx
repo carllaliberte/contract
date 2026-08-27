@@ -85,12 +85,14 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-              {tr("paywall.badge")}
+              {nativeReady ? tr("paywall.badge") : tr("plan.freeName")}
             </p>
             <h2 id="paywall-title" className="mt-1 text-xl font-semibold">
-              {tr("paywall.title")}
+              {nativeReady ? tr("paywall.title") : tr("plan.freeName")}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{tr("paywall.subtitle")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {nativeReady ? tr("paywall.subtitle") : tr("paywall.stubNote")}
+            </p>
           </div>
           <button
             type="button"
@@ -102,67 +104,59 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
           </button>
         </div>
 
-        <ul className="mb-4 space-y-2">
-          {PRO_FEATURES.map((key) => (
-            <li key={key} className="flex items-start gap-2 text-sm">
-              <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-              <span>{tr(key)}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mb-4 grid gap-2">
-          {(Object.keys(IAP_CATALOG) as IapProductId[]).map((productId) => {
-            const item = IAP_CATALOG[productId];
-            const label =
-              productId === IAP_PRODUCT_IDS.monthly
-                ? tr("paywall.monthly")
-                : tr("paywall.yearly");
-            return (
-              <button
-                key={productId}
-                type="button"
-                disabled={!nativeReady}
-                onClick={() => setSelected(productId)}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${
-                  !nativeReady
-                    ? "cursor-not-allowed border-border bg-secondary/20 opacity-60"
-                    : selected === productId
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-secondary/30 hover:bg-secondary/60"
-                }`}
-              >
-                <div>
-                  <p className="text-sm font-semibold">{label}</p>
-                  {nativeReady ? (
-                    <p className="text-xs text-muted-foreground">{productId}</p>
-                  ) : null}
-                </div>
-                {nativeReady ? (
-                  <p className="text-sm font-semibold tabular-nums">
-                    {tr("paywall.priceCad", { price: item.displayPrice })}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {productId === IAP_PRODUCT_IDS.monthly
-                        ? tr("paywall.perMonth")
-                        : tr("paywall.perYear")}
-                    </span>
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">{tr("paywall.comingSoon")}</p>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
         {plan === "free" && (
-          <p className="mb-3 text-xs text-muted-foreground">
+          <p className="mb-4 text-sm text-muted-foreground">
             {tr("paywall.currentFree", {
               short: String(PLAN_LIMITS.free.short),
               long: String(PLAN_LIMITS.free.long),
             })}
           </p>
         )}
+
+        {nativeReady ? (
+          <>
+            <ul className="mb-4 space-y-2">
+              {PRO_FEATURES.map((key) => (
+                <li key={key} className="flex items-start gap-2 text-sm">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <span>{tr(key)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mb-4 grid gap-2">
+              {(Object.keys(IAP_CATALOG) as IapProductId[]).map((productId) => {
+                const item = IAP_CATALOG[productId];
+                const label =
+                  productId === IAP_PRODUCT_IDS.monthly
+                    ? tr("paywall.monthly")
+                    : tr("paywall.yearly");
+                return (
+                  <button
+                    key={productId}
+                    type="button"
+                    onClick={() => setSelected(productId)}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${
+                      selected === productId
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-secondary/30 hover:bg-secondary/60"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">{label}</p>
+                    <p className="text-sm font-semibold tabular-nums">
+                      {tr("paywall.priceCad", { price: item.displayPrice })}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {productId === IAP_PRODUCT_IDS.monthly
+                          ? tr("paywall.perMonth")
+                          : tr("paywall.perYear")}
+                      </span>
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
 
         {notice && (
           <p className="mb-3 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-muted-foreground">
@@ -171,41 +165,38 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
         )}
 
         <div className="flex flex-col gap-2">
-          <Button
-            type="button"
-            disabled={busy !== null || !nativeReady}
-            onClick={() => void handlePurchase()}
-          >
-            {busy === "purchase" ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {tr("paywall.processing")}
-              </>
-            ) : nativeReady ? (
-              tr("paywall.cta")
-            ) : (
-              tr("paywall.ctaUnavailable")
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy !== null}
-            onClick={() => void handleRestore()}
-          >
-            {busy === "restore" ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {tr("paywall.restoring")}
-              </>
-            ) : (
-              tr("paywall.restore")
-            )}
-          </Button>
-          {!nativeReady && (
-            <p className="text-center text-[11px] text-muted-foreground">
-              {tr("paywall.stubNote")}
-            </p>
+          {nativeReady ? (
+            <>
+              <Button type="button" disabled={busy !== null} onClick={() => void handlePurchase()}>
+                {busy === "purchase" ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    {tr("paywall.processing")}
+                  </>
+                ) : (
+                  tr("paywall.cta")
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy !== null}
+                onClick={() => void handleRestore()}
+              >
+                {busy === "restore" ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    {tr("paywall.restoring")}
+                  </>
+                ) : (
+                  tr("paywall.restore")
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="outline" onClick={onClose}>
+              {tr("script.dialogClose")}
+            </Button>
           )}
         </div>
       </div>

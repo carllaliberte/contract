@@ -1,10 +1,12 @@
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import {
   SHARE_DESTINATIONS,
   sharePack,
+  sharePackHasContent,
   type ShareDestination,
 } from "../lib/sharePack";
 import { Button } from "./ui";
@@ -16,10 +18,14 @@ type SharePackRowProps = {
 
 export function SharePackRow({ idea, className }: SharePackRowProps) {
   const { tr } = useI18n();
+  const { moveIdea } = useIdeas();
   const [loadingDest, setLoadingDest] = useState<ShareDestination | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [canMarkPublished, setCanMarkPublished] = useState(
+    idea.status !== "published",
+  );
 
-  if (!buildSharePackHasContent(idea)) return null;
+  if (!sharePackHasContent(idea)) return null;
 
   async function handleShare(destination: ShareDestination) {
     setLoadingDest(destination);
@@ -27,7 +33,14 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     const ok = await sharePack(idea, destination);
     setLoadingDest(null);
     setNotice(ok ? tr("share.success") : tr("share.failed"));
-    window.setTimeout(() => setNotice(null), 2500);
+    if (ok && idea.status !== "published") setCanMarkPublished(true);
+    window.setTimeout(() => setNotice(null), 4000);
+  }
+
+  function handleMarkPublished() {
+    moveIdea(idea.id, "published");
+    setCanMarkPublished(false);
+    setNotice(tr("dashboard.nextAction.publish"));
   }
 
   return (
@@ -50,6 +63,16 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
           </Button>
         ))}
       </div>
+      {canMarkPublished && idea.status !== "published" ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="mt-2 h-8 w-full text-xs"
+          onClick={handleMarkPublished}
+        >
+          {tr("dashboard.nextAction.publish")}
+        </Button>
+      ) : null}
       {notice && (
         <p className="mt-2 text-[11px] text-muted-foreground" role="status">
           {notice}
@@ -57,8 +80,4 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
       )}
     </div>
   );
-}
-
-function buildSharePackHasContent(idea: Idea): boolean {
-  return Boolean(idea.script?.trim() || idea.description.trim());
 }

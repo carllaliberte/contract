@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 
 test.describe("Landing page", () => {
-  test("shows brand, hero, and OAuth providers", async ({ page, landing }) => {
+  test("shows brand, hero, and honest entry", async ({ page, landing }) => {
     await expect(page.getByText("Clapshot").first()).toBeVisible();
     await expect(page.locator("h1")).toContainText(/4 idées|4 ideas/i);
     await expect(page.locator("h1")).not.toContainText(/friction|synergy|credit card|publish more content/i);
@@ -9,16 +9,12 @@ test.describe("Landing page", () => {
     await expect(
       page.getByRole("button", { name: /on commence|let['’]s go/i }).first(),
     ).toBeVisible();
-
+    await expect(
+      page.getByRole("button", { name: /explorer sans compte|explore without account/i }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /continuer avec google|continue with google/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /continuer avec x|continue with x/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /continuer avec github|continue with github/i }),
-    ).toBeVisible();
+    ).toHaveCount(0);
   });
 
   test("enters demo mode from primary CTA", async ({ page, demoApp }) => {
@@ -30,9 +26,9 @@ test.describe("Landing page", () => {
     await expect(page.getByRole("link", { name: /voir le pipeline|see pipeline/i })).toBeVisible();
   });
 
-  test("OAuth buttons route to demo (mock auth)", async ({ page, landing }) => {
+  test("explore without account opens demo", async ({ page, landing }) => {
     await page
-      .getByRole("button", { name: /continuer avec google|continue with google/i })
+      .getByRole("button", { name: /explorer sans compte|explore without account/i })
       .click();
     await page.waitForURL(/\/app/);
     await expect(page.locator("span.rounded-full", { hasText: /mode démo|demo mode/i })).toBeVisible();

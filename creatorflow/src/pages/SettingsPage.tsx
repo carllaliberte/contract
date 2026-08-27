@@ -16,11 +16,8 @@ import {
   resolveConfiguredApiUrl,
 } from "../lib/api/health";
 import { getAppleProfile } from "../lib/auth/session";
-import { restorePurchases } from "../lib/iap";
-import { isNativePlatform } from "../lib/platform";
+import { isIapNativeBridgeAvailable, restorePurchases } from "../lib/iap";
 import { PLAN_LIMITS } from "../lib/plans";
-import { META_HOLDER_BONUS_AI } from "../lib/limits";
-import { metaEntitlements } from "../../../shared/meta-entitlements";
 
 export function SettingsPage() {
   const { tr } = useI18n();
@@ -40,6 +37,7 @@ export function SettingsPage() {
     resolveConfiguredApiUrl(),
   );
   const apiBaseUrl = resolveApiBaseUrl();
+  const showIapActions = isIapNativeBridgeAvailable();
 
   const limits = PLAN_LIMITS[plan];
   const shortPct = limits.short
@@ -118,9 +116,6 @@ export function SettingsPage() {
   }
 
   const profileInitial = profileName.trim().charAt(0).toUpperCase() || "?";
-  const native = isNativePlatform();
-  const showMetaBlock = !native;
-  const showIapActions = !native;
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -303,18 +298,6 @@ export function SettingsPage() {
           </a>
         </div>
       </Card>
-
-      {showMetaBlock && (
-        <Card className="p-5">
-          <h2 className="text-sm font-semibold">META (utilitaire)</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Jeton utilitaire pour l&apos;écosystème — pas un produit d&apos;investissement. À terme :
-            wallet connecté + solde ≥ {metaEntitlements.thresholds.holder} META → +{META_HOLDER_BONUS_AI}{" "}
-            générations IA / mois (bonus holder). Pro iOS via achat in-app (IAP).
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
-        </Card>
-      )}
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </div>
