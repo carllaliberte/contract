@@ -43,7 +43,12 @@ export async function addIdea(page: Page, title: string, description?: string) {
     await page.getByLabel(/description/i).fill(description);
   }
   await page.getByRole("button", { name: /^Ajouter$|^Add$/i }).click();
-  await expect(page.getByText(title)).toBeVisible();
+  await expect
+    .poll(async () => {
+      const ideas = await readIdeas(page);
+      return ideas.some((idea) => idea.title === title);
+    })
+    .toBe(true);
 }
 
 export async function readIdeas(page: Page): Promise<IdeaRecord[]> {
