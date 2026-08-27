@@ -240,7 +240,7 @@ export function LandingPage() {
 
       <main className="relative z-10">
         <section className="mx-auto grid max-w-6xl items-center px-5 sm:px-6 lg:grid-cols-[minmax(0,1.35fr)_380px] lg:gap-16 lg:pb-20 lg:pt-6">
-          <div className="flex min-h-[calc(100dvh-5.5rem)] flex-col justify-center pb-16 lg:min-h-0 lg:pb-0">
+          <div className="flex min-h-[calc(100dvh-4.5rem)] flex-col justify-center lg:min-h-0">
             <h1 className="text-[2.6rem] font-extrabold leading-[1.06] tracking-tight sm:text-6xl sm:leading-[1.02] lg:text-7xl">
               {tr("app.heroTitle")}
             </h1>
