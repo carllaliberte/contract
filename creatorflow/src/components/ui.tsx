@@ -36,10 +36,13 @@ export function Logo({ size = "md" }: { size?: "sm" | "md" }) {
   const label = size === "sm" ? "text-[15px]" : "text-lg";
   return (
     <div className="flex items-center gap-2.5">
-      <span
-        className={`grid ${box} place-items-center rounded-[10px] bg-primary font-bold text-primary-foreground shadow-[0_0_0_1px_rgba(255,255,255,0.12)_inset]`}
-      >
-        C
+      <span className="relative">
+        <span
+          className={`grid ${box} place-items-center rounded-[10px] bg-[#161311] font-bold text-foreground shadow-[0_0_0_1px_rgba(255,59,48,0.35)]`}
+        >
+          C
+        </span>
+        <span className="rec-dot absolute -right-0.5 -top-0.5" aria-hidden />
       </span>
       <span className={`${label} font-semibold tracking-tight`}>Clapshot</span>
     </div>
