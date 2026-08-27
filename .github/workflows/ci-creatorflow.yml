@@ -113,7 +113,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const url = `https://carllaliberte.github.io/contract/creatorflow/pr-${context.payload.pull_request.number}/`;
+            const url = `https://carllaliberte.github.io/contract/creatorflow/pr-${{ github.event.pull_request.number }}/`;
             const marker = '<!-- creatorflow-preview -->';
             const body = `${marker}\n**CreatorFlow preview:** ${url}`;
             const { data: comments } = await github.rest.issues.listComments({
@@ -179,6 +179,7 @@ jobs:
           name: creatorflow-debug-apk
           path: creatorflow/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 7
 
   ios:
     needs: web
