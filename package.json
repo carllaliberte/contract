@@ -1,7 +1,7 @@
 {
   "name": "workspace",
   "version": "1.0.0",
-  "description": "This folder contains a Google-friendly app for the `META` ERC-20 smart contract in [`meta.sol`](https://github.com/carllaliberte/contract/blob/main/meta.sol).",
+  "description": "CreatorFlow — idée → pack → tourner. META google-app is archived.",
   "main": "index.js",
   "type": "module",
   "scripts": {

@@ -6,6 +6,7 @@ on:
     paths:
       - "creatorflow/**"
       - "shared/**"
+      - "pages-root/**"
       - ".github/workflows/deploy-creatorflow.yml"
   workflow_dispatch:
 
@@ -68,7 +69,18 @@ jobs:
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
 
+      - name: Publish Pages root redirect → CreatorFlow
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pages-root
+          keep_files: true
+          commit_message: Point Pages root at CreatorFlow [skip ci]
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+
       - name: Live URLs
         run: |
+          echo "Root redirects to CreatorFlow: https://carllaliberte.github.io/contract/"
           echo "App: https://carllaliberte.github.io/contract/creatorflow/"
           echo "Privacy: https://carllaliberte.github.io/contract/creatorflow/privacy.html"

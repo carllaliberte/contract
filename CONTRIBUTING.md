@@ -1,12 +1,15 @@
 # Contributing
 
-Thanks for helping improve **carllaliberte/contract** (META dashboard + CreatorFlow + API).
+This repository ships **one public product: CreatorFlow**.
+
+Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) first.
 
 ## Before you start
 
-1. Read the root [`README.md`](README.md) for the monorepo layout.
-2. Never commit secrets — see [`docs/SECRETS.md`](docs/SECRETS.md) and [`SECURITY.md`](SECURITY.md).
-3. Prefer small, focused pull requests over large mixed changes.
+1. The first screen is frozen (`#82`). Do not restyle it in a drive-by PR.
+2. Never commit secrets — [`docs/SECRETS.md`](docs/SECRETS.md) and [`SECURITY.md`](SECURITY.md).
+3. One lane. Do not open Quantum, META, or Dependabot work next to a CreatorFlow PR.
+4. Prefer small pull requests that serve **idée → pack → tourner**.
 
 ## Development setup
 
@@ -26,21 +29,10 @@ cp .env.example .env
 npm run dev
 ```
 
-Tests / checks (from `creatorflow/`):
-
 ```bash
-npm run typecheck   # if available
-npm test            # unit
-npm run test:e2e    # Playwright (when configured)
-```
-
-### META dashboard (`google-app/`)
-
-```bash
-cd google-app
-npm ci
-cp .env.example .env
-npm run dev
+npm run typecheck
+npm test
+npm run test:e2e
 ```
 
 ### API (`api/`)
@@ -49,42 +41,33 @@ npm run dev
 cd api
 npm ci
 cp .env.example .env
-# Prefer MOCK_LLM / stub modes in local CI — never commit real OpenAI keys
 ```
+
+Prefer `MOCK_LLM` / stub modes locally. Never commit real provider keys.
+
+### META (`google-app/`)
+
+Archived. Do not start new work here unless Carl explicitly reopens that lane.
 
 ## Branch & commit conventions
 
-- Branch from `main`: `feat/…`, `fix/…`, `docs/…`, or Cloud Agent style `cursor/<topic>-…`.
-- Prefer conventional commit titles: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`.
-- Keep commits reviewable; rebase/squash only when asked.
+- Branch from `main`: `feat/…`, `fix/…`, `docs/…`, `ci/…`.
+- Conventional titles: `feat:`, `fix:`, `docs:`, `ci:`, `chore:`.
+- Keep commits reviewable.
 
 ## Pull requests
 
-1. Open a PR against `main` using the repository template.
-2. Fill **Summary** and **Test plan**.
-3. Ensure CI is green:
-   - CI CreatorFlow (web / android / ios)
+1. Open a PR against `main` using the template.
+2. Tick **CreatorFlow** or **CI / docs** — not a second product.
+3. CI must be green:
+   - CI CreatorFlow (web)
    - Secret scan (TruffleHog)
-   - Secret hygiene
    - API CI when `api/` changes
-4. Link related issues with `Fixes #123` when applicable.
-5. Do not force-push to `main`. Avoid rewriting shared history on open PR branches unless coordinating with reviewers.
+4. Do **not** merge `#74`, `#75`, or Dependabot with product work.
+5. Do not force-push to `main`.
 
-For the canonical merge path (`--no-ff`, no force-push on `main`), see [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md).
-
-## Issues
-
-Use the issue templates:
-
-- **Bug report** — unexpected behavior with reproduction steps
-- **Feature request** — product or DX improvement with clear motivation
-
-Security issues → [`SECURITY.md`](SECURITY.md) (private advisory / email), not public issues.
-
-## Code owners
-
-See [`.github/CODEOWNERS`](.github/CODEOWNERS). Reviews may be requested automatically for sensitive paths (workflows, secrets docs, mobile signing).
+Canonical merge: [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md).
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the same terms as the repository ([`LICENSE`](LICENSE)).
+By contributing, you agree that your contributions are licensed under [`LICENSE`](LICENSE).
