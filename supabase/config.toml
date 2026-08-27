@@ -1,2 +1,8 @@
 [functions.generate-script]
 verify_jwt = false
+
+[functions.auth-apple]
+verify_jwt = false
+
+[functions.health]
+verify_jwt = false

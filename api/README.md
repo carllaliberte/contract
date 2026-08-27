@@ -63,6 +63,19 @@ MEMORY_STORE=true MOCK_LLM=true npm run dev
 
 Health check: `GET /health`
 
+### Render (Blueprint)
+
+1. Render Dashboard → **New** → **Blueprint** → connect `carllaliberte/contract`
+2. Set secret env vars in Render (`SUPABASE_*`, `OPENAI_API_KEY`) — see `render.yaml`
+3. Live URL: `https://creatorflow-api.onrender.com`
+4. GitHub Actions variable: `VITE_API_URL=https://creatorflow-api.onrender.com`
+
+```bash
+gh variable set VITE_API_URL --repo carllaliberte/contract --body "https://creatorflow-api.onrender.com"
+```
+
+Then re-run **Deploy CreatorFlow** workflow. Settings → **API en ligne** when `/health` responds.
+
 ### CreatorFlow frontend
 
 Set `VITE_API_URL` to the API origin (no trailing slash):
