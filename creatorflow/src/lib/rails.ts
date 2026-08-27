@@ -10,7 +10,7 @@ export function isWeb3RailAvailable(): boolean {
 
 export function isProviderAvailable(provider: AgentProvider): boolean {
   if (provider === "web3") return isWeb3RailAvailable();
-  if (provider === "grok" || provider === "gemini" || provider === "custom") {
+  if (provider === "gemini" || provider === "custom") {
     return false;
   }
   return true;

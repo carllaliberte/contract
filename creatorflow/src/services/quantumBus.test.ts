@@ -12,7 +12,7 @@ vi.mock("./agentBus", () => ({
         script: "Preview script",
         source: "generated",
       },
-      provider: "openai",
+      provider: "grok",
     })),
   },
 }));

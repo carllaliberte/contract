@@ -30,21 +30,21 @@ describe("agentBus", () => {
   });
 
   it("lists active providers", () => {
-    expect(listActiveProviders()).toEqual(["tally", "openai"]);
+    expect(listActiveProviders()).toEqual(["tally", "grok"]);
   });
 
-  it("dispatches script generation via openai", async () => {
+  it("dispatches script generation via grok", async () => {
     const { agentBus } = await import("./agentBus");
     const result = await agentBus.dispatchScriptGenerate({
       idea,
       language: "fr",
       options: { format: "short" },
     });
-    expect(result.provider).toBe("openai");
+    expect(result.provider).toBe("grok");
     expect(result.pack.script).toContain("HOOK");
   });
 
-  it("resolves openai for script.generate", () => {
-    expect(resolveProviderFor("script.generate")).toBe("openai");
+  it("resolves grok for script.generate", () => {
+    expect(resolveProviderFor("script.generate")).toBe("grok");
   });
 });

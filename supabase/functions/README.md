@@ -13,7 +13,8 @@ supabase functions deploy generate-script --no-verify-jwt
 supabase functions deploy auth-apple --no-verify-jwt
 supabase functions deploy health --no-verify-jwt
 supabase secrets set \
-  OPENAI_API_KEY=<your-openai-api-key> \
+  XAI_API_KEY=<your-xai-api-key> \
+  XAI_MODEL=grok-4.5 \
   APPLE_CLIENT_ID=com.carllaliberte.creatorflow
 ```
 

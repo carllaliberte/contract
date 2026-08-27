@@ -40,7 +40,7 @@ export function listActiveProviders(): AgentProvider[] {
 
 /**
  * AgentBus — routes AI capabilities to providers.
- * Today: script → openai, TTS → tally (OpenAI voices under the hood).
+ * AgentBus — Grok is master for scripts. Other LLM providers assist.
  */
 export async function dispatchScriptGenerate(
   input: ScriptGenerateInput,
@@ -60,6 +60,7 @@ export async function dispatchScriptGenerate(
   });
 
   switch (provider) {
+    case "grok":
     case "openai": {
       const data = await postGenerateScript({
         ideaId: idea.id,

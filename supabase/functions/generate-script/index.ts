@@ -234,17 +234,17 @@ function validateDurationForPlan(
   return null;
 }
 
-async function callOpenAi(
+async function callGrok(
   system: string,
   user: string,
 ): Promise<{ script: string; model: string }> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  const apiKey = Deno.env.get("XAI_API_KEY");
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+    throw new Error("XAI_API_KEY is not configured");
   }
 
-  const model = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o-mini";
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const model = Deno.env.get("XAI_MODEL") ?? "grok-4.5";
+  const res = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -257,6 +257,7 @@ async function callOpenAi(
         { role: "user", content: user },
       ],
       temperature: 0.7,
+      max_tokens: 1800,
     }),
   });
 
@@ -265,7 +266,7 @@ async function callOpenAi(
     const msg =
       typeof data?.error?.message === "string"
         ? data.error.message
-        : "OpenAI request failed";
+        : "Grok request failed";
     throw new Error(msg);
   }
 
@@ -415,7 +416,7 @@ Deno.serve(async (req) => {
       styleContext: payload.styleContext,
     });
 
-    const { script, model } = await callOpenAi(system, user);
+    const { script, model } = await callGrok(system, user);
 
     let finalUsage: AiUsageSnapshot;
     try {

@@ -17,9 +17,9 @@ supabase functions deploy health --no-verify-jwt
 Set secrets in Supabase (never commit):
 
 ```bash
-supabase secrets set OPENAI_API_KEY=<your-openai-api-key> APPLE_CLIENT_ID=com.carllaliberte.creatorflow
+supabase secrets set XAI_API_KEY=<your-xai-api-key> APPLE_CLIENT_ID=com.carllaliberte.creatorflow
 # optional
-supabase secrets set OPENAI_MODEL=gpt-4o-mini
+supabase secrets set XAI_MODEL=grok-4.5
 ```
 
 Client `VITE_API_URL`:
