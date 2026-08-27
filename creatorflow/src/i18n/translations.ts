@@ -5,10 +5,10 @@ export type Translations = Record<string, string>;
 export const translations: Record<Locale, Translations> = {
   fr: {
     "app.name": "CreatorFlow",
-    "app.heroTitle": "Publiez plus de contenu, avec moins de friction",
+    "app.heroTitle": "T’as 4 idées. 0 plan tourné.",
     "app.tagline": "CreatorFlow — publiez plus, avec moins de friction.",
     "app.lead":
-      "Structurez vos idées, générez vos scripts et gardez le cap jusqu'à la publication.",
+      "La régie. Pas un autre dashboard.",
     "app.heroBadge": "Scripts IA + organisation · Démo gratuite",
     "nav.demo": "Voir la démo",
     "nav.viewPipeline": "Voir le parcours",
@@ -46,6 +46,7 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet3": "Une vue claire sur toutes vos idées vidéo",
     "login.bullet4": "Essai immédiat, sans carte bancaire",
     "login.tryDemo": "Explorer sans compte",
+    "login.start": "On commence.",
     "showcase.title": "Voyez CreatorFlow en action",
     "showcase.subtitle":
       "Aperçus du parcours de création, du tableau de bord et des contenus prêts à publier.",
@@ -130,6 +131,10 @@ export const translations: Record<Locale, Translations> = {
     "dashboard.nextAction.advance": "Passer à l'étape suivante",
     "dashboard.nextAction.shoot": "Mode tournage",
     "dashboard.nextAction.publish": "Marquer publié",
+    "dashboard.prompt.generate": "Écris le script de « {title} ».",
+    "dashboard.prompt.advance": "Fais avancer « {title} ».",
+    "dashboard.prompt.shoot": "Tourne « {title} ».",
+    "dashboard.prompt.publish": "Publie « {title} ».",
     "cloud.offline": "Hors ligne",
     "cloud.pending": "{count} en attente",
     "shoot.mode": "Mode tournage",
@@ -287,10 +292,10 @@ export const translations: Record<Locale, Translations> = {
   },
   en: {
     "app.name": "CreatorFlow",
-    "app.heroTitle": "Publish more content, with less friction",
+    "app.heroTitle": "4 ideas. 0 shots filmed.",
     "app.tagline": "CreatorFlow — publish more, with less friction.",
     "app.lead":
-      "Organize your ideas, generate scripts, and stay on track until you publish.",
+      "The booth. Not another dashboard.",
     "app.heroBadge": "AI scripts + organization · Free demo",
     "nav.demo": "View demo",
     "nav.viewPipeline": "See the workflow",
@@ -328,6 +333,7 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet3": "A clear view of every video idea",
     "login.bullet4": "Try it now, no credit card required",
     "login.tryDemo": "Explore without account",
+    "login.start": "Let’s go.",
     "showcase.title": "See CreatorFlow in action",
     "showcase.subtitle":
       "Previews of your creation workflow, dashboard, and publish-ready content.",
@@ -412,6 +418,10 @@ export const translations: Record<Locale, Translations> = {
     "dashboard.nextAction.advance": "Advance stage",
     "dashboard.nextAction.shoot": "Open shoot mode",
     "dashboard.nextAction.publish": "Mark published",
+    "dashboard.prompt.generate": "Write the script for “{title}”.",
+    "dashboard.prompt.advance": "Move “{title}” forward.",
+    "dashboard.prompt.shoot": "Film “{title}”.",
+    "dashboard.prompt.publish": "Publish “{title}”.",
     "cloud.offline": "Offline",
     "cloud.pending": "{count} pending",
     "shoot.mode": "Shoot mode",
