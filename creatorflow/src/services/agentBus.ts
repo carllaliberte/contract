@@ -1,5 +1,5 @@
 import { postGenerateScript } from "../lib/api/generateScript";
-import type { GenerateScriptResponse } from "../lib/api/types";
+import type { GenerateScriptResponse, Language } from "../lib/api/types";
 import { resolveAgentProvider } from "../lib/rails";
 import { aiContext } from "./aiContext";
 import type { ContentPackage } from "../types/aiContext";
@@ -11,10 +11,11 @@ import {
 } from "../types/agentBus";
 import type { Idea } from "../data/demo";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
+import { readSavedLocale } from "../i18n/locales";
 
 export type ScriptGenerateInput = {
   idea: Idea;
-  language: "fr" | "en";
+  language: Language;
   options: ScriptGenerateOptions;
 };
 
@@ -25,9 +26,8 @@ export type ScriptGenerateOutput = {
   provider: AgentProvider;
 };
 
-function readLanguage(): "fr" | "en" {
-  const saved = localStorage.getItem("cf-locale");
-  return saved === "en" ? "en" : "fr";
+function readLanguage(): Language {
+  return readSavedLocale();
 }
 
 export function resolveProviderFor(capability: AgentCapability): AgentProvider | null {

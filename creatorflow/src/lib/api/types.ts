@@ -1,5 +1,5 @@
 export type Platform = "youtube" | "tiktok" | "reels" | "instagram" | "x";
-export type Language = "fr" | "en";
+export type Language = string;
 export type GenerateMode = "generate" | "improve";
 export type ScriptFormat = "short" | "long";
 export type PlanId = "free" | "pro";
@@ -60,7 +60,7 @@ export function isPlatform(value: string): value is Platform {
 }
 
 export function isLanguage(value: string): value is Language {
-  return value === "fr" || value === "en";
+  return /^[A-Za-z]{2,3}([-_][A-Za-z0-9]+)*$/.test(value);
 }
 
 export function isGenerateMode(value: string): value is GenerateMode {

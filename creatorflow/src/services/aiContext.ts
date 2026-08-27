@@ -7,6 +7,7 @@ import type {
   UserStyleProfile,
 } from "../types/aiContext";
 import type { Language } from "../lib/api/types";
+import { readSavedLocale } from "../i18n/locales";
 
 const STORAGE_KEY = "cf-style-profile";
 const STYLE_EVENT = "cf-style-profile-change";
@@ -56,8 +57,7 @@ const STOP_WORDS = new Set([
 ]);
 
 function readLanguage(): Language {
-  const saved = localStorage.getItem("cf-locale");
-  return saved === "en" ? "en" : "fr";
+  return readSavedLocale();
 }
 
 function createDefaultProfile(): UserStyleProfile {
@@ -207,6 +207,10 @@ function mergeVocabulary(existing: string[], script: string, titles?: string[]):
     .map(([word]) => word);
 }
 
+function promptLanguage(language: Language): "fr" | "en" {
+  return language === "fr" || language.startsWith("fr-") ? "fr" : "en";
+}
+
 function buildStylePrompt(profile: UserStyleProfile, language: Language): string {
   const toneLabel: Record<StyleTone, { fr: string; en: string }> = {
     direct: { fr: "direct et punchy", en: "direct and punchy" },
@@ -216,29 +220,30 @@ function buildStylePrompt(profile: UserStyleProfile, language: Language): string
     casual: { fr: "décontracté et conversationnel", en: "casual and conversational" },
   };
 
-  const tone = toneLabel[profile.tone][language];
+  const promptLang = promptLanguage(language);
+  const tone = toneLabel[profile.tone][promptLang];
   const vocab =
     profile.vocabulary.length > 0
       ? profile.vocabulary.slice(0, 12).join(", ")
-      : language === "fr"
+      : promptLang === "fr"
         ? "aucun mot récurrent détecté"
         : "no recurring vocabulary detected";
 
   const hooks =
     profile.hookPatterns.length > 0
       ? profile.hookPatterns.slice(-3).join(" | ")
-      : language === "fr"
+      : promptLang === "fr"
         ? "hooks percutants"
         : "punchy hooks";
 
   const ctas =
     profile.ctaPatterns.length > 0
       ? profile.ctaPatterns.slice(-2).join(" | ")
-      : language === "fr"
+      : promptLang === "fr"
         ? "CTA naturels"
         : "natural CTAs";
 
-  if (language === "fr") {
+  if (promptLang === "fr") {
     return [
       "Style du créateur à respecter :",
       `- Ton : ${tone}`,

@@ -5,6 +5,7 @@ import { aiContext } from "./aiContext";
 import type { ContentPackage } from "../types/aiContext";
 import type { QuantumEvent, ScriptPreviewResult } from "../types/quantumBus";
 import type { Idea } from "../data/demo";
+import { readSavedLocale } from "../i18n/locales";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 export type QuantumHandlers = {
@@ -14,9 +15,8 @@ export type QuantumHandlers = {
   isOnline: () => boolean;
 };
 
-function readLanguage(): "fr" | "en" {
-  const saved = localStorage.getItem("cf-locale");
-  return saved === "en" ? "en" : "fr";
+function readLanguage() {
+  return readSavedLocale();
 }
 
 /**

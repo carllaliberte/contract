@@ -7,7 +7,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { t, type Locale } from "./translations";
+import { t } from "./translations";
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  localeOption,
+  type Locale,
+} from "./locales";
 
 type I18nContextValue = {
   locale: Locale;
@@ -19,8 +25,7 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 function readLocaleFromUrl(): Locale | null {
   const lang = new URLSearchParams(window.location.search).get("lang");
-  if (lang === "en" || lang === "fr") return lang;
-  return null;
+  return isLocale(lang) ? lang : null;
 }
 
 function readInitialLocale(): Locale {
@@ -28,22 +33,20 @@ function readInitialLocale(): Locale {
   if (fromUrl) return fromUrl;
 
   const saved = localStorage.getItem("cf-locale");
-  if (saved === "fr" || saved === "en") return saved;
+  if (isLocale(saved)) return saved;
 
-  return "en";
+  return DEFAULT_LOCALE;
 }
 
 function syncDocumentLocale(locale: Locale) {
+  const option = localeOption(locale);
   document.documentElement.lang = locale;
+  document.documentElement.dir = option.dir;
 }
 
 function syncLangQueryParam(locale: Locale) {
   const url = new URL(window.location.href);
-  if (locale === "en") {
-    url.searchParams.set("lang", "en");
-  } else {
-    url.searchParams.delete("lang");
-  }
+  url.searchParams.set("lang", locale);
   const query = url.searchParams.toString();
   const nextUrl = `${url.pathname}${query ? `?${query}` : ""}${url.hash}`;
   const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;

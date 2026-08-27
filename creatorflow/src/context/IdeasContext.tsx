@@ -45,6 +45,7 @@ import { isSupabaseConfigured } from "../lib/supabase/client";
 import { quantumBus } from "../services/quantumBus";
 import type { ScriptPreviewResult } from "../types/quantumBus";
 import type { ContentPackage } from "../types/aiContext";
+import { readSavedLocale } from "../i18n/locales";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 type IdeasContextValue = {
@@ -65,11 +66,6 @@ type IdeasContextValue = {
 };
 
 const IdeasContext = createContext<IdeasContextValue | null>(null);
-
-function readLanguage(): "fr" | "en" {
-  const saved = localStorage.getItem("cf-locale");
-  return saved === "en" ? "en" : "fr";
-}
 
 function hasCustomLocalIdeas(localIdeas: Idea[]): boolean {
   return (
@@ -331,7 +327,8 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       const source = ideas.find((item) => item.id === id);
       if (!source) return;
-      const suffix = readLanguage() === "en" ? " (copy)" : " (copie)";
+      const locale = readSavedLocale();
+      const suffix = locale === "fr" || locale === "fr-CA" ? " (copie)" : " (copy)";
       addIdea(buildDuplicateIdea(source, suffix));
     },
     [ideas, addIdea],
