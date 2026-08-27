@@ -71,7 +71,7 @@ jobs:
             -exportOptionsPlist ExportOptions-AdHoc.plist
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: creatorflow-ios-adhoc-ipa
           path: creatorflow/ios/App/build/export/*.ipa
