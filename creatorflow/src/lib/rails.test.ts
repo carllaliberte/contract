@@ -6,8 +6,8 @@ vi.mock("./platform", () => ({
 }));
 
 describe("rails", () => {
-  it("routes script generation to openai by default", () => {
-    expect(resolveAgentProvider("script.generate")).toBe("openai");
+  it("routes script generation to grok by default", () => {
+    expect(resolveAgentProvider("script.generate")).toBe("grok");
   });
 
   it("routes TTS to tally by default", () => {
@@ -15,7 +15,7 @@ describe("rails", () => {
   });
 
   it("marks planned providers unavailable", () => {
-    expect(resolveAgentProvider("script.generate", "grok")).toBeNull();
+    expect(resolveAgentProvider("script.generate", "gemini")).toBeNull();
   });
 
   it("enables web3 rail on web", () => {

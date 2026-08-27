@@ -32,8 +32,9 @@ export const env = {
   supabaseAnonKey: supabasePublishableKey,
   /** @deprecated Prefer supabaseSecretKey */
   supabaseServiceRoleKey: supabaseSecretKey,
+  xaiApiKey: process.env.XAI_API_KEY ?? "",
+  xaiModel: process.env.XAI_MODEL ?? "grok-4.5",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
-  openaiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
   monthlyAiLimit: Number(process.env.MONTHLY_AI_LIMIT ?? LIMITS.free),
   monthlyAiLimitPro: Number(process.env.MONTHLY_AI_LIMIT_PRO ?? LIMITS.pro),
   corsOrigins: parseList(process.env.CORS_ORIGINS, [
@@ -44,7 +45,7 @@ export const env = {
     process.env.MEMORY_STORE === "true" ||
     !supabaseUrl ||
     !supabaseSecretKey,
-  mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
+  mockLlm: process.env.MOCK_LLM === "true" || !process.env.XAI_API_KEY,
   appleClientId:
     process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",
   appleAuthStub: process.env.APPLE_AUTH_STUB === "true",

@@ -1,15 +1,2 @@
-export {
-  LIMITS,
-  PLAN_LIMITS,
-  allowedLongDurations,
-  defaultLongDuration,
-  isLongDuration,
-  isScriptFormat,
-  limitForFormat,
-  limitForPlan,
-  maxLongMinutesForPlan,
-  type LongDuration,
-  type Plan,
-  type PlanId,
-  type ScriptFormat,
-} from "../../../../shared/plans.ts";
+/** Re-export plan quotas for Edge Functions. Source: _shared/plans.ts (copy of shared/plans.ts). */
+export * from "./plans.ts";

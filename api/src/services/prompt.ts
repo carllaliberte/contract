@@ -1,3 +1,4 @@
+import { appendOpenSource } from "./openSource.js";
 import type { Language, Platform, GenerateMode, ScriptFormat } from "../types.js";
 
 function buildLongChapteredStructure(
@@ -175,6 +176,7 @@ export type PromptInput = {
   format?: ScriptFormat;
   durationMinutes?: 8 | 12 | 20 | 30;
   styleContext?: string;
+  sourceContext?: string;
 };
 
 function appendStyleContext(base: string, styleContext?: string): string {
@@ -318,7 +320,7 @@ export function buildScriptPrompt(input: PromptInput): {
   const prompt = buildScriptPromptCore(input);
   return {
     system: appendStyleContext(prompt.system, input.styleContext),
-    user: prompt.user,
+    user: appendOpenSource(prompt.user, input.sourceContext, input.language),
   };
 }
 

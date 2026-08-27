@@ -32,13 +32,18 @@ export const AGENT_PROVIDERS: AgentProviderMeta[] = [
     capabilities: ["tts.speak"],
   },
   {
-    id: "openai",
+    id: "grok",
     status: "active",
-    label: "OpenAI — scripts",
+    label: "Grok — scripts (master)",
+    capabilities: ["script.generate"],
+  },
+  {
+    id: "openai",
+    status: "planned",
+    label: "OpenAI — assistant",
     capabilities: ["script.generate", "tts.speak"],
   },
-  { id: "grok", status: "planned", label: "Grok", capabilities: ["script.generate"] },
-  { id: "gemini", status: "planned", label: "Gemini", capabilities: ["script.generate"] },
+  { id: "gemini", status: "planned", label: "Gemini — assistant", capabilities: ["script.generate"] },
   {
     id: "web3",
     status: "planned",
@@ -54,7 +59,7 @@ export const AGENT_PROVIDERS: AgentProviderMeta[] = [
 ];
 
 export const DEFAULT_AGENT_ROUTING: Record<AgentCapability, AgentProvider> = {
-  "script.generate": "openai",
+  "script.generate": "grok",
   "tts.speak": "tally",
   "web3.read": "web3",
   "webhook.dispatch": "custom",

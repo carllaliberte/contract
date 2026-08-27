@@ -12,7 +12,7 @@ create or replace function public.increment_demo_ai_usage(
   p_demo_id text,
   p_month text
 )
-returns table(count integer, limit integer, remaining integer)
+returns table("count" integer, "limit" integer, remaining integer)
 language plpgsql
 security definer
 set search_path = public

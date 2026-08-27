@@ -13,16 +13,20 @@ export async function generateScriptWithLlm(
     return { script: buildMockScript(input), model: "mock" };
   }
 
-  const client = new OpenAI({ apiKey: env.openaiApiKey });
+  const client = new OpenAI({
+    apiKey: env.xaiApiKey,
+    baseURL: "https://api.x.ai/v1",
+  });
   const { system, user } = buildScriptPrompt(input);
 
   const completion = await client.chat.completions.create({
-    model: env.openaiModel,
+    model: env.xaiModel,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
     ],
     temperature: 0.7,
+    max_tokens: 1800,
   });
 
   const script = completion.choices[0]?.message?.content?.trim();
@@ -30,5 +34,5 @@ export async function generateScriptWithLlm(
     throw new Error("Empty LLM response");
   }
 
-  return { script, model: completion.model ?? env.openaiModel };
+  return { script, model: completion.model ?? env.xaiModel };
 }

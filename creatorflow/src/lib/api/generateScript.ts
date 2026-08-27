@@ -49,6 +49,8 @@ export async function postGenerateScript(
       format: payload.format ?? "short",
       durationMinutes: payload.durationMinutes,
       styleContext: payload.styleContext,
+      sourceUrl: payload.sourceUrl,
+      sourceText: payload.sourceText,
     }),
   });
 

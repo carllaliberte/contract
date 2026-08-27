@@ -7,7 +7,7 @@
 #
 # Usage:
 #   bash scripts/deploy-supabase-functions.sh
-#   OPENAI_API_KEY=sk-... bash scripts/deploy-supabase-functions.sh
+#   XAI_API_KEY=xai-... bash scripts/deploy-supabase-functions.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,14 +33,15 @@ echo "=== Deploying Edge Functions ==="
 "$CLI" functions deploy auth-apple --no-verify-jwt
 "$CLI" functions deploy health --no-verify-jwt
 
-if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+if [[ -n "${XAI_API_KEY:-}" ]]; then
   echo "=== Setting secrets ==="
   "$CLI" secrets set \
-    "OPENAI_API_KEY=${OPENAI_API_KEY}" \
+    "XAI_API_KEY=${XAI_API_KEY}" \
+    "XAI_MODEL=${XAI_MODEL:-grok-4.5}" \
     "APPLE_CLIENT_ID=${APPLE_CLIENT_ID:-com.carllaliberte.creatorflow}"
 else
-  echo "Skip secrets (set OPENAI_API_KEY env to configure):"
-  echo "  supabase secrets set OPENAI_API_KEY=... APPLE_CLIENT_ID=com.carllaliberte.creatorflow"
+  echo "Skip secrets (set XAI_API_KEY env to configure):"
+  echo "  supabase secrets set XAI_API_KEY=... XAI_MODEL=grok-4.5 APPLE_CLIENT_ID=com.carllaliberte.creatorflow"
 fi
 
 echo "Done."

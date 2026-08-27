@@ -13,9 +13,25 @@ import { canUseAiGeneration } from "../lib/aiUsage";
 import { useAiUsage } from "../hooks/useAiUsage";
 import { Button } from "./ui";
 
+export function parseUserSource(raw: string): {
+  sourceUrl?: string;
+  sourceText?: string;
+} {
+  const t = raw.trim();
+  if (!t) return {};
+  const first = t.split(/\s/, 1)[0] ?? "";
+  if (/^https?:\/\//i.test(first)) {
+    const rest = t.slice(first.length).trim();
+    return { sourceUrl: first, sourceText: rest || undefined };
+  }
+  return { sourceText: t };
+}
+
 export type ScriptGenerateOptions = {
   format: ScriptFormat;
   durationMinutes?: LongDuration;
+  sourceUrl?: string;
+  sourceText?: string;
 };
 
 type ScriptGenerateDialogProps = {
@@ -40,6 +56,7 @@ export function ScriptGenerateDialog({
   const usage = useAiUsage();
   const [format, setFormat] = useState<ScriptFormat>("short");
   const [duration, setDuration] = useState<LongDuration>(() => defaultLongDuration(plan));
+  const [sourceRaw, setSourceRaw] = useState("");
 
   const durations = allowedLongDurations(plan);
   const isXPlatform = idea?.platform === "x";
@@ -51,6 +68,7 @@ export function ScriptGenerateDialog({
     if (!open) return;
     setFormat("short");
     setDuration(defaultLongDuration(plan));
+    setSourceRaw("");
   }, [open, idea?.id, plan]);
 
   useEffect(() => {
@@ -83,6 +101,7 @@ export function ScriptGenerateDialog({
     await onSubmit(idea!, {
       format,
       durationMinutes: format === "long" ? duration : undefined,
+      ...parseUserSource(sourceRaw),
     });
   }
 
@@ -179,6 +198,21 @@ export function ScriptGenerateDialog({
                   limit: String(usage.long.limit),
                 })}
           </p>
+
+          <div>
+            <label htmlFor="script-source" className="mb-2 block text-sm font-medium">
+              {tr("script.sourceLabel")}
+            </label>
+            <textarea
+              id="script-source"
+              value={sourceRaw}
+              onChange={(e) => setSourceRaw(e.target.value)}
+              rows={3}
+              placeholder={tr("script.sourcePlaceholder")}
+              className="w-full resize-y rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">{tr("script.sourceHint")}</p>
+          </div>
         </div>
 
         <div className="mt-5 flex gap-2">
