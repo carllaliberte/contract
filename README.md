@@ -1,34 +1,29 @@
-# contract
+# CreatorFlow
 
 [![CI CreatorFlow](https://github.com/carllaliberte/contract/actions/workflows/ci-creatorflow.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/ci-creatorflow.yml)
 [![Secret scan](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Monorepo for the **META** ERC-20 surface and **CreatorFlow** (content pipeline) — web, Android, and iOS.
+**The booth. Not another dashboard.**
 
-| App | Path | Platforms | Live |
-| --- | --- | --- | --- |
-| **META Dashboard** | [`google-app/`](google-app/) | Web, Android (Play) | [GitHub Pages](https://carllaliberte.github.io/contract/) |
-| **CreatorFlow** | [`creatorflow/`](creatorflow/) | Web, iOS, Android | [GitHub Pages](https://carllaliberte.github.io/contract/creatorflow/) |
-| **API** | [`api/`](api/) | Node | Deploy separately / Supabase Edge |
-| **Contract** | [`meta.sol`](meta.sol) | Solidity | Read-only from the META dashboard |
+CreatorFlow is the only public product in this repository.
 
-## Repository layout
+Live: [carllaliberte.github.io/contract/creatorflow/](https://carllaliberte.github.io/contract/creatorflow/)
 
-```
-.
-├── google-app/     # META web + Capacitor Android + Play listing
-├── creatorflow/    # CreatorFlow web + Capacitor iOS/Android
-├── api/            # Backend for scripts / auth helpers
-├── shared/         # Shared plans / constants
-├── supabase/       # Edge functions (e.g. generate-script)
-├── scripts/        # Local deploy / keystore helpers
-└── docs/           # Ops: secrets, GHA, TruffleHog, GitHub Pro setup
-```
+The loop: **idée → pack → tourner**.
+
+The repo is still named `contract` for history. That is not the product name.
+
+## Product rule
+
+Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) before opening a PR.
+
+- One face (frozen in `#82`)
+- Quantum **OFF**
+- Do not merge `#74`, `#75`, or Dependabot into this lane
+- META (`google-app/`, `meta.sol`) is an archived surface, not a co-equal app
 
 ## Quick start
-
-### CreatorFlow
 
 ```bash
 cd creatorflow
@@ -37,112 +32,64 @@ cp .env.example .env
 npm run dev
 ```
 
-- Docs: [`creatorflow/README.md`](creatorflow/README.md) · Mobile: [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
-- CI: `.github/workflows/ci-creatorflow.yml` (web + Android debug APK + iOS simulator)
+Docs: [`creatorflow/README.md`](creatorflow/README.md) · Mobile: [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
 
-### META dashboard
+CI: `.github/workflows/ci-creatorflow.yml` (web + Android debug APK + iOS simulator)
 
-```bash
-cd google-app
-npm ci
-cp .env.example .env
-npm run dev
-```
-
-Open the URL printed by Vite (usually `http://localhost:5173`).
-
-Demo config lives in `google-app/deployment.json` (contract address, Sepolia RPC, privacy URL, package `com.carllaliberte.meta`).
-
-### API
+Deploy Pages: `.github/workflows/deploy-creatorflow.yml`
 
 ```bash
-cd api
-npm ci
-cp .env.example .env
+gh workflow run deploy-creatorflow.yml --ref main
 ```
 
-See [`api/README.md`](api/README.md). Never put LLM keys in client `VITE_*` env.
+- App: https://carllaliberte.github.io/contract/creatorflow/
+- Privacy: https://carllaliberte.github.io/contract/creatorflow/privacy.html
+- Repo root URL (`/contract/`) redirects to CreatorFlow
+
+## Layout
+
+```
+.
+├── creatorflow/    # THE product — web + Capacitor iOS/Android
+├── api/            # Scripts / auth helpers for CreatorFlow
+├── shared/         # Shared plans / constants
+├── supabase/       # Edge functions (generate-script, auth-apple)
+├── docs/           # Ops + the product lane
+├── google-app/     # ARCHIVED — META token dashboard (not the public face)
+└── meta.sol        # ARCHIVED — read-only ERC-20, not sold to creators
+```
 
 ## Documentation
 
 | Doc | Topic |
 | --- | --- |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute, PR expectations |
-| [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md) | Merge canonique, deploy Pages, archive iOS |
+| [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) | One product, what is off |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute |
+| [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md) | Merge canon, deploy Pages |
 | [`SECURITY.md`](SECURITY.md) | Vulnerability reporting |
-| [`docs/SECRETS.md`](docs/SECRETS.md) | Public `VITE_*` vs secrets, GitHub Actions |
-| [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | CreatorFlow CI → deploy control plane |
-| [`docs/TRUFFLEHOG.md`](docs/TRUFFLEHOG.md) | Secret scan policy |
-| [`docs/GITHUB_PRO_SETUP.md`](docs/GITHUB_PRO_SETUP.md) | Branch protection, Security, CODEOWNERS checklist |
+| [`docs/SECRETS.md`](docs/SECRETS.md) | Public `VITE_*` vs secrets |
+| [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | CreatorFlow CI → deploy |
 
-## META — Google Play & Firebase
+## Environment (CreatorFlow)
 
-Android is a Capacitor wrapper (`google-app/android/`).
+| Variable | Notes |
+| --- | --- |
+| `VITE_API_URL` | Public API base (empty = demo / relative) |
+| `VITE_BASE_PATH` / `VITE_ROUTER_BASENAME` | Pages vs native `/` |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Client-side only when set |
 
-```bash
-cd google-app
-npm ci
-npm run generate-icons
-npm run cap:sync
-npm run android:bundle   # requires Android SDK
-```
+Full matrix: [`docs/SECRETS.md`](docs/SECRETS.md). Never put LLM keys in client `VITE_*`.
 
-CI builds a release AAB on pushes to `main` (`.github/workflows/android-play-release.yml`).
+## Archived: META
 
-Play Console checklist (FR): `google-app/play-store/LISTING.md`.  
-Privacy: https://carllaliberte.github.io/contract/privacy.html
+`google-app/` and `meta.sol` stay in the tree so history is not rewritten. They are **not** the product.
 
-Generate an upload keystore and prepare GitHub secrets:
+- Pages no longer serves META at the site root
+- META deploy is **manual** (`workflow_dispatch` only) and publishes under `/contract/meta/`
+- Dependabot no longer watches `google-app/`
+- A creator does not buy a token. The App Store does not want a mixed identity
 
-```bash
-ANDROID_KEYSTORE_PASSWORD='…' ANDROID_KEY_PASSWORD='…' \
-  bash scripts/generate-android-keystore.sh
-bash scripts/prepare-play-github-secrets.sh
-```
-
-### Firebase Hosting
-
-```bash
-cd google-app
-npm run build
-npx firebase deploy --only hosting
-```
-
-Set the project ID in `google-app/.firebaserc`. Optional CI secret: `FIREBASE_TOKEN`.
-
-### WalletConnect
-
-The META dashboard uses **wagmi + viem + WalletConnect** (non-custodial). Chains: `google-app/src/wallet/chains.ts`.
-
-1. Create a project at [WalletConnect Cloud](https://cloud.walletconnect.com).
-2. Set `VITE_WALLETCONNECT_PROJECT_ID` in `google-app/.env` (or Actions **vars**).
-3. Whitelist origins: `https://carllaliberte.github.io`, `http://localhost:5173`, and your Firebase domain if used.
-
-### Google Sheets
-
-Copy `google-app/apps-script/Code.gs` into a sheet’s Apps Script editor; set `CONTRACT_ADDRESS` and `RPC_URL`.
-
-### Regenerate ABI
-
-After editing `meta.sol`:
-
-```bash
-cd google-app
-npm run compile-contract
-```
-
-The on-chain token is a reflection-style ERC-20 (`METAVERSE` / `META`) with transfer fee, max tx, and sell lock. The Google app is **read-only**.
-
-## Environment variables (summary)
-
-| Variable | App | Notes |
-| --- | --- | --- |
-| `VITE_API_URL` | CreatorFlow | Public API base (empty = demo / relative) |
-| `VITE_BASE_PATH` / `VITE_ROUTER_BASENAME` | CreatorFlow / META | Pages vs native `/` |
-| `VITE_CONTRACT_ADDRESS` / `VITE_RPC_URL` | META | Contract + RPC |
-| `VITE_WALLETCONNECT_PROJECT_ID` | META | Public WalletConnect project ID |
-
-Full matrix: [`docs/SECRETS.md`](docs/SECRETS.md).
+Do not add META features, Play uploads, or WalletConnect work in parallel with CreatorFlow.
 
 ## Contributing & license
 
