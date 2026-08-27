@@ -3,13 +3,21 @@
 Deploy:
 
 ```bash
+bash scripts/deploy-supabase-functions.sh
+```
+
+Or:
+
+```bash
 supabase functions deploy generate-script --no-verify-jwt
+supabase functions deploy auth-apple --no-verify-jwt
+supabase functions deploy health --no-verify-jwt
 ```
 
 Set secrets in Supabase (never commit):
 
 ```bash
-supabase secrets set OPENAI_API_KEY=<your-openai-api-key>
+supabase secrets set OPENAI_API_KEY=<your-openai-api-key> APPLE_CLIENT_ID=com.carllaliberte.creatorflow
 # optional
 supabase secrets set OPENAI_MODEL=gpt-4o-mini
 ```

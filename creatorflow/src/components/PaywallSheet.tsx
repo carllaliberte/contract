@@ -122,25 +122,34 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
               <button
                 key={productId}
                 type="button"
+                disabled={!nativeReady}
                 onClick={() => setSelected(productId)}
                 className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${
-                  selected === productId
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-secondary/30 hover:bg-secondary/60"
+                  !nativeReady
+                    ? "cursor-not-allowed border-border bg-secondary/20 opacity-60"
+                    : selected === productId
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-secondary/30 hover:bg-secondary/60"
                 }`}
               >
                 <div>
                   <p className="text-sm font-semibold">{label}</p>
-                  <p className="text-xs text-muted-foreground">{productId}</p>
+                  {nativeReady ? (
+                    <p className="text-xs text-muted-foreground">{productId}</p>
+                  ) : null}
                 </div>
-                <p className="text-sm font-semibold tabular-nums">
-                  {tr("paywall.priceCad", { price: item.displayPrice })}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    {productId === IAP_PRODUCT_IDS.monthly
-                      ? tr("paywall.perMonth")
-                      : tr("paywall.perYear")}
-                  </span>
-                </p>
+                {nativeReady ? (
+                  <p className="text-sm font-semibold tabular-nums">
+                    {tr("paywall.priceCad", { price: item.displayPrice })}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {productId === IAP_PRODUCT_IDS.monthly
+                        ? tr("paywall.perMonth")
+                        : tr("paywall.perYear")}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{tr("paywall.comingSoon")}</p>
+                )}
               </button>
             );
           })}
@@ -162,14 +171,20 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
         )}
 
         <div className="flex flex-col gap-2">
-          <Button type="button" disabled={busy !== null} onClick={() => void handlePurchase()}>
+          <Button
+            type="button"
+            disabled={busy !== null || !nativeReady}
+            onClick={() => void handlePurchase()}
+          >
             {busy === "purchase" ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden />
                 {tr("paywall.processing")}
               </>
-            ) : (
+            ) : nativeReady ? (
               tr("paywall.cta")
+            ) : (
+              tr("paywall.ctaUnavailable")
             )}
           </Button>
           <Button

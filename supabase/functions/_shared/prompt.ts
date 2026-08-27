@@ -56,6 +56,10 @@ const platformGuidance: Record<Platform, { fr: string; en: string }> = {
     fr: "Format Reels/Instagram : vertical, 30–90 s, hook immédiat, rythme rapide, CTA discret (suivre, partager).",
     en: "Reels/Instagram format: vertical, 30–90 s, immediate hook, fast pace, subtle CTA (follow, share).",
   },
+  x: {
+    fr: "Format X (Twitter) : thread 6–12 posts, hook très fort sur le premier post, ton conversationnel thought-leadership, CTA clair en fin de thread. Alternative : post unique fort. Inclure 3–5 variantes de hooks et une version post unique condensée.",
+    en: "X (Twitter) format: 6–12 post thread, very strong hook on the first post, conversational thought-leadership tone, clear CTA at the end. Alternative: strong single post. Include 3–5 hook variants and a condensed single-post version.",
+  },
 };
 
 const YOUTUBE_FR_STRUCTURE = [
@@ -99,6 +103,62 @@ const REELS_FR_STRUCTURE = [
   "- 20–40 secondes",
   "- Pensé vertical 9:16",
   "- Hook compréhensible sans le son",
+].join("\n");
+
+const X_FR_STRUCTURE = [
+  "Produis un contenu X (Twitter) multi-format :",
+  "",
+  "=== THREAD PRINCIPAL (6–12 posts) ===",
+  "POST 1 — HOOK : accroche très forte qui stoppe le scroll (max 280 car.)",
+  "POSTS 2–N — CORPS : 1 idée par post, ton conversationnel thought-leadership, transitions fluides entre posts",
+  "POST FINAL — CTA : appel à l'action clair (follow, répondre, RT, lien)",
+  "",
+  "=== ALTERNATIVE — POST UNIQUE FORT ===",
+  "(Un post autonome percutant, max 280 caractères)",
+  "",
+  "=== VARIANTES DE HOOKS (3–5 options) ===",
+  "1. ...",
+  "2. ...",
+  "3. ...",
+  "",
+  "=== VERSION POST UNIQUE CONDENSÉE ===",
+  "(Résumé du thread en un seul post optimisé, max 280 car.)",
+  "",
+  "Contraintes :",
+  "- Ton conversationnel, thought-leadership, zéro corporate",
+  "- Chaque post ≤ 280 caractères (indique le nombre de caractères entre parenthèses)",
+  "- Premier post = hook irrésistible, pattern interrupt",
+  "- CTA explicite en fin de thread",
+  "- Pas de hashtags forcés (1–2 max si pertinent)",
+  "- Numérote chaque post du thread (1/N, 2/N, etc.)",
+].join("\n");
+
+const X_EN_STRUCTURE = [
+  "Produce multi-format X (Twitter) content:",
+  "",
+  "=== MAIN THREAD (6–12 posts) ===",
+  "POST 1 — HOOK: very strong scroll-stopping hook (max 280 chars)",
+  "POSTS 2–N — BODY: one idea per post, conversational thought-leadership tone, smooth transitions",
+  "FINAL POST — CTA: clear call to action (follow, reply, RT, link)",
+  "",
+  "=== ALTERNATIVE — STRONG SINGLE POST ===",
+  "(One punchy standalone post, max 280 characters)",
+  "",
+  "=== HOOK VARIANTS (3–5 options) ===",
+  "1. ...",
+  "2. ...",
+  "3. ...",
+  "",
+  "=== CONDENSED SINGLE-POST VERSION ===",
+  "(Thread summary as one optimized post, max 280 chars)",
+  "",
+  "Constraints:",
+  "- Conversational, thought-leadership tone, zero corporate speak",
+  "- Each post ≤ 280 characters (show character count in parentheses)",
+  "- First post = irresistible hook, pattern interrupt",
+  "- Explicit CTA at end of thread",
+  "- No forced hashtags (1–2 max if relevant)",
+  "- Number each thread post (1/N, 2/N, etc.)",
 ].join("\n");
 
 function buildImproveUserPrompt(
@@ -198,11 +258,46 @@ function buildReelsFrPrompt(input: PromptInput): { system: string; user: string 
   return { system, user };
 }
 
+function buildXPrompt(input: PromptInput): { system: string; user: string } {
+  const isFr = input.language === "fr";
+  const system = isFr
+    ? "Tu es expert en contenu X (Twitter) et thought-leadership. Tu maîtrises les threads viraux, les hooks percutants et le ton conversationnel. Réponds uniquement avec le contenu structuré, sans méta-commentaire."
+    : "You are an X (Twitter) content and thought-leadership expert. You master viral threads, punchy hooks, and conversational tone. Reply with only the structured content, no meta commentary.";
+
+  if (input.mode === "improve" && input.existingScript?.trim()) {
+    return {
+      system,
+      user: buildImproveUserPrompt(
+        input.platform,
+        input.existingScript,
+        input.language,
+      ),
+    };
+  }
+
+  const structure = isFr ? X_FR_STRUCTURE : X_EN_STRUCTURE;
+  const titleLabel = isFr ? "Titre" : "Title";
+  const descLabel = isFr ? "Description" : "Description";
+
+  const user = [
+    `${titleLabel}: ${input.title}`,
+    `${descLabel}: ${input.description}`,
+    "",
+    structure,
+  ].join("\n");
+
+  return { system, user };
+}
+
 export function buildScriptPrompt(input: PromptInput): {
   system: string;
   user: string;
 } {
   const format = resolveFormat(input);
+
+  if (input.platform === "x") {
+    return buildXPrompt(input);
+  }
 
   if (format === "long") {
     const duration = input.durationMinutes ?? 12;
