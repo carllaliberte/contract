@@ -1,0 +1,5 @@
+# CreatorFlow — https://carllaliberte.github.io/contract/creatorflow/
+User-agent: *
+Allow: /
+
+Sitemap: https://carllaliberte.github.io/contract/creatorflow/sitemap.xml
