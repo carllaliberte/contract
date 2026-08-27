@@ -1,11 +1,26 @@
+import type { Idea, IdeaStatus, Priority } from "../../data/demo";
 import { peekAuthToken, getAuthToken } from "../auth/session";
+import { isPlatform } from "./types";
 
 const DEMO_ID_KEY = "cf-demo-id";
+
+const STATUSES: IdeaStatus[] = [
+  "idea",
+  "script",
+  "production",
+  "ready",
+  "published",
+];
+const PRIORITIES: Priority[] = ["high", "medium", "low"];
 
 export function resolveApiBase(): string {
   const configured = import.meta.env.VITE_API_URL?.trim() ?? "";
   if (!configured) return "";
   return configured.replace(/\/$/, "");
+}
+
+export function isApiConfigured(): boolean {
+  return Boolean(resolveApiBase());
 }
 
 function resolveIdeasUrl(): string {
@@ -50,6 +65,50 @@ export type ApiIdea = {
   videoUrl?: string;
   scheduledAt?: string;
 };
+
+function isIdeaStatus(value: string): value is IdeaStatus {
+  return (STATUSES as string[]).includes(value);
+}
+
+function isPriority(value: string): value is Priority {
+  return (PRIORITIES as string[]).includes(value);
+}
+
+export function ideaToApi(idea: Idea): ApiIdea {
+  return {
+    id: idea.id,
+    title: idea.title,
+    description: idea.description,
+    status: idea.status,
+    priority: idea.priority,
+    platform: idea.platform,
+    updatedAt: idea.updatedAt,
+    script: idea.script,
+    thumbnail: idea.thumbnail,
+    videoUrl: idea.videoUrl,
+    scheduledAt: idea.scheduledAt,
+  };
+}
+
+export function ideaFromApi(raw: ApiIdea): Idea | null {
+  if (!raw.id.trim() || !raw.title.trim()) return null;
+  if (!isIdeaStatus(raw.status) || !isPriority(raw.priority)) return null;
+  if (!isPlatform(raw.platform)) return null;
+
+  return {
+    id: raw.id,
+    title: raw.title,
+    description: raw.description,
+    status: raw.status,
+    priority: raw.priority,
+    platform: raw.platform,
+    updatedAt: raw.updatedAt,
+    script: raw.script,
+    thumbnail: raw.thumbnail,
+    videoUrl: raw.videoUrl,
+    scheduledAt: raw.scheduledAt,
+  };
+}
 
 export async function fetchIdeasFromApi(): Promise<ApiIdea[]> {
   const res = await fetch(resolveIdeasUrl(), {

@@ -1,5 +1,5 @@
 import { ArrowRight, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
 import {
@@ -9,7 +9,9 @@ import {
 import { Button, Card } from "../components/ui";
 import { useIdeas, isGenerateScriptError } from "../context/IdeasContext";
 import { countByStatus, getNextUp, type Idea, type IdeaStatus } from "../data/demo";
+import { useAuth } from "../hooks/useAuth";
 import { useI18n } from "../i18n/context";
+import { getAppleProfile } from "../lib/auth/session";
 import { deriveNextAction } from "../lib/nextAction";
 import { getNextStatus } from "../lib/pipelineActions";
 
@@ -30,10 +32,29 @@ function formatDate(iso: string, locale: string) {
 export function DashboardPage() {
   const { tr, locale } = useI18n();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { ideas, moveIdea, generateScript } = useIdeas();
   const [addOpen, setAddOpen] = useState(false);
   const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [helloName, setHelloName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (isAuthenticated) {
+        const profile = await getAppleProfile();
+        if (!cancelled) {
+          setHelloName(profile.displayName?.trim() || tr("settings.appleUser"));
+        }
+        return;
+      }
+      if (!cancelled) setHelloName(tr("settings.demoName"));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, tr]);
   const counts = countByStatus(ideas);
   const nextUp = getNextUp(ideas);
   const nextAction = nextUp ? deriveNextAction(nextUp) : null;
@@ -82,7 +103,7 @@ export function DashboardPage() {
         <header className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {tr("dashboard.hello", { name: "Alex" })}
+              {tr("dashboard.hello", { name: helloName || tr("settings.guestName") })}
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">{tr("dashboard.subtitle")}</p>
           </div>

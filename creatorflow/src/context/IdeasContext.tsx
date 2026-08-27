@@ -14,6 +14,13 @@ import {
   type IdeaStatus,
 } from "../data/demo";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import {
+  fetchIdeasFromApi,
+  ideaFromApi,
+  ideaToApi,
+  isApiConfigured,
+  syncIdeasToApi,
+} from "../lib/api/ideas";
 import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import { getAppleProfile, resolveSessionKind } from "../lib/auth/session";
@@ -30,11 +37,13 @@ import {
   upsertIdeasInSupabase,
 } from "../lib/ideas/supabaseStore";
 import { drainCloudQueue, enqueueCloudOp } from "../lib/cloudQueue";
+import {
+  resolvePersistenceMode,
+  type PersistenceMode,
+} from "../lib/persistence";
 import { isSupabaseConfigured } from "../lib/supabase/client";
 import { aiContext } from "../services/aiContext";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
-
-type PersistenceMode = "local" | "supabase";
 
 type IdeasContextValue = {
   ideas: Idea[];
@@ -54,6 +63,13 @@ function readLanguage(): "fr" | "en" {
   return saved === "en" ? "en" : "fr";
 }
 
+function hasCustomLocalIdeas(localIdeas: Idea[]): boolean {
+  return (
+    localStorage.getItem("cf-ideas") !== null &&
+    localIdeas.some((idea) => !demoIdeas.some((demo) => demo.id === idea.id))
+  );
+}
+
 export function IdeasProvider({ children }: { children: ReactNode }) {
   const online = useNetworkStatus();
   const [ideas, setIdeas] = useState<Idea[]>(() => loadLocalIdeas());
@@ -61,10 +77,15 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
   const supabaseUserIdRef = useRef<string | null>(null);
   const hydratedRef = useRef(false);
   const ideasRef = useRef(ideas);
+  const persistenceModeRef = useRef<PersistenceMode>("local");
 
   useEffect(() => {
     ideasRef.current = ideas;
   }, [ideas]);
+
+  useEffect(() => {
+    persistenceModeRef.current = persistenceMode;
+  }, [persistenceMode]);
 
   const runGenerateScript = useCallback(
     async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
@@ -124,17 +145,24 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!online) return;
+    if (!online || !hydratedRef.current) return;
     void drainCloudQueue({
       onGenerateScript: runGenerateScript,
       onIdeasSync: async (queuedIdeas) => {
-        const userId = supabaseUserIdRef.current;
-        if (!userId) return;
-        await upsertIdeasInSupabase(queuedIdeas, userId);
+        const mode = persistenceModeRef.current;
+        if (mode === "supabase") {
+          const userId = supabaseUserIdRef.current;
+          if (!userId) return;
+          await upsertIdeasInSupabase(queuedIdeas, userId);
+        } else if (mode === "api") {
+          await syncIdeasToApi(queuedIdeas.map(ideaToApi));
+        } else {
+          return;
+        }
         setIdeas(queuedIdeas);
       },
     });
-  }, [online, runGenerateScript]);
+  }, [online, persistenceMode, runGenerateScript]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,46 +171,72 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       const session = await resolveSessionKind();
       if (cancelled) return;
 
-      if (session === "apple" && isSupabaseConfigured()) {
+      let mode = resolvePersistenceMode({
+        session,
+        supabaseConfigured: isSupabaseConfigured(),
+        apiConfigured: isApiConfigured(),
+      });
+
+      if (mode === "supabase") {
         const profile = await getAppleProfile();
         if (cancelled) return;
 
         const userId = profile.userId;
         if (!userId) {
-          setPersistenceMode("local");
-          hydratedRef.current = true;
-          return;
-        }
+          mode = isApiConfigured() ? "api" : "local";
+        } else {
+          supabaseUserIdRef.current = userId;
+          setPersistenceMode("supabase");
 
-        supabaseUserIdRef.current = userId;
-        setPersistenceMode("supabase");
+          const remote = await fetchIdeasFromSupabase();
+          if (cancelled) return;
 
-        const remote = await fetchIdeasFromSupabase();
-        if (cancelled) return;
-
-        if (remote && remote.length > 0) {
-          setIdeas(remote);
-          hydratedRef.current = true;
-          return;
-        }
-
-        const localIdeas = loadLocalIdeas();
-        const hasCustomLocal =
-          localStorage.getItem("cf-ideas") !== null &&
-          localIdeas.some(
-            (idea) => !demoIdeas.some((demo) => demo.id === idea.id),
-          );
-
-        if (hasCustomLocal) {
-          await upsertIdeasInSupabase(localIdeas, userId);
-          if (!cancelled) {
-            clearLocalIdeas();
-            setIdeas(localIdeas);
+          if (remote && remote.length > 0) {
+            setIdeas(remote);
+            hydratedRef.current = true;
+            return;
           }
-        } else if (remote) {
-          setIdeas(remote);
-        }
 
+          const localIdeas = loadLocalIdeas();
+          if (hasCustomLocalIdeas(localIdeas)) {
+            await upsertIdeasInSupabase(localIdeas, userId);
+            if (!cancelled) {
+              clearLocalIdeas();
+              setIdeas(localIdeas);
+            }
+          } else if (remote) {
+            setIdeas(remote);
+          }
+
+          hydratedRef.current = true;
+          return;
+        }
+      }
+
+      if (mode === "api") {
+        setPersistenceMode("api");
+        try {
+          const remote = (await fetchIdeasFromApi())
+            .map(ideaFromApi)
+            .filter((idea): idea is Idea => idea !== null);
+          if (cancelled) return;
+
+          if (remote.length > 0) {
+            setIdeas(remote);
+            hydratedRef.current = true;
+            return;
+          }
+
+          const localIdeas = loadLocalIdeas();
+          if (hasCustomLocalIdeas(localIdeas)) {
+            await syncIdeasToApi(localIdeas.map(ideaToApi));
+            if (!cancelled) setIdeas(localIdeas);
+          } else {
+            setIdeas([]);
+          }
+        } catch {
+          // Keep the local cache when the API is unreachable.
+        }
         hydratedRef.current = true;
         return;
       }
@@ -201,14 +255,26 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydratedRef.current) return;
 
-    if (persistenceMode === "local") {
-      saveLocalIdeas(ideas);
-      return;
-    }
+    saveLocalIdeas(ideas);
+
+    if (persistenceMode === "local") return;
 
     if (!online) {
       enqueueCloudOp({ type: "ideas-sync", ideas });
-      saveLocalIdeas(ideas);
+      return;
+    }
+
+    if (persistenceMode === "api") {
+      void syncIdeasToApi(ideas.map(ideaToApi)).catch(() => {
+        enqueueCloudOp({ type: "ideas-sync", ideas });
+      });
+      return;
+    }
+
+    if (persistenceMode === "supabase" && supabaseUserIdRef.current) {
+      void upsertIdeasInSupabase(ideas, supabaseUserIdRef.current).catch(() => {
+        enqueueCloudOp({ type: "ideas-sync", ideas });
+      });
     }
   }, [ideas, persistenceMode, online]);
 
@@ -300,7 +366,7 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       deleteIdea,
       duplicateIdea,
       generateScript,
-      isCloudBacked: persistenceMode === "supabase",
+      isCloudBacked: persistenceMode !== "local",
     }),
     [
       ideas,

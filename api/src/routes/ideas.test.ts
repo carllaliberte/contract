@@ -48,4 +48,54 @@ describe("ideas routes", () => {
     expect(data.ideas).toHaveLength(1);
     expect(data.ideas[0].title).toBe("Test idea");
   });
+
+  it("PUT /ideas accepts instagram and x platforms", async () => {
+    const app = createIdeasRoutes();
+    const idea = {
+      id: "22222222-2222-4222-8222-222222222222",
+      title: "X thread",
+      description: "Desc",
+      status: "idea",
+      priority: "high",
+      platform: "x",
+      updatedAt: "2026-08-27T12:00:00.000Z",
+      thumbnail: "https://example.com/thumb.jpg",
+    };
+
+    const putRes = await app.request("/", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-demo-id": "ideas-platform",
+      },
+      body: JSON.stringify({ ideas: [idea] }),
+    });
+    expect(putRes.status).toBe(200);
+  });
+
+  it("PUT /ideas rejects unknown platforms", async () => {
+    const app = createIdeasRoutes();
+    const putRes = await app.request("/", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-demo-id": "ideas-platform",
+      },
+      body: JSON.stringify({
+        ideas: [
+          {
+            id: "33333333-3333-4333-8333-333333333333",
+            title: "Bad platform",
+            description: "Desc",
+            status: "idea",
+            priority: "low",
+            platform: "facebook",
+            updatedAt: "2026-08-27T12:00:00.000Z",
+            thumbnail: "https://example.com/thumb.jpg",
+          },
+        ],
+      }),
+    });
+    expect(putRes.status).toBe(400);
+  });
 });

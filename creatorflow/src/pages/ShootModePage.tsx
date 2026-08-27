@@ -1,13 +1,15 @@
-import { ArrowLeft, WifiOff } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, Check, WifiOff } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 export function ShootModePage() {
   const { ideaId } = useParams<{ ideaId: string }>();
-  const { ideas } = useIdeas();
+  const { ideas, moveIdea } = useIdeas();
   const { tr } = useI18n();
+  const navigate = useNavigate();
   const online = useNetworkStatus();
   const idea = ideas.find((item) => item.id === ideaId);
 
@@ -26,6 +28,12 @@ export function ShootModePage() {
   }
 
   const scriptText = idea.script?.trim() ?? idea.description;
+  const canMarkReady = idea.status === "production" || idea.status === "script";
+
+  function handleMarkReady() {
+    moveIdea(idea.id, "ready");
+    navigate("/app");
+  }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -61,6 +69,13 @@ export function ShootModePage() {
           {scriptText}
         </pre>
       </section>
+
+      {canMarkReady && (
+        <Button type="button" className="h-12 w-full" onClick={handleMarkReady}>
+          <Check className="size-4" />
+          {tr("shoot.markReady")}
+        </Button>
+      )}
     </div>
   );
 }

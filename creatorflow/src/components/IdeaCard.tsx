@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRight, Copy, CopyPlus, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Clapperboard, Copy, CopyPlus, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
@@ -13,6 +13,7 @@ type IdeaCardProps = {
   idea: Idea;
   onGenerateScript?: (idea: Idea) => void;
   onAdvance?: (idea: Idea) => void;
+  onShoot?: (idea: Idea) => void;
   onDuplicate?: (idea: Idea) => void;
   isGenerating?: boolean;
   dragOverlay?: boolean;
@@ -22,6 +23,7 @@ export function IdeaCard({
   idea,
   onGenerateScript,
   onAdvance,
+  onShoot,
   onDuplicate,
   isGenerating,
   dragOverlay,
@@ -31,6 +33,7 @@ export function IdeaCard({
   const canGenerate =
     onGenerateScript && (idea.status === "idea" || idea.status === "script");
   const canAdvance = onAdvance && canAdvanceStatus(idea.status);
+  const canShoot = Boolean(onShoot && idea.status === "production");
   const canCopy = Boolean(idea.script?.trim());
   const canDuplicate = Boolean(onDuplicate);
 
@@ -64,8 +67,19 @@ export function IdeaCard({
         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           {idea.description}
         </p>
-        {(canGenerate || canAdvance || canCopy || canDuplicate) && (
+        {(canGenerate || canAdvance || canShoot || canCopy || canDuplicate) && (
           <div className="mt-2.5 flex flex-col gap-2">
+            {canShoot && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-9 w-full text-xs"
+                onClick={() => onShoot?.(idea)}
+              >
+                <Clapperboard className="size-3.5" />
+                {tr("pipeline.shoot")}
+              </Button>
+            )}
             <div className="flex gap-2">
               {canGenerate && (
                 <Button
