@@ -2,13 +2,12 @@
 
 Public product: **Clapshot** (logo monogram **C**).
 
-Archived utility token display name: **ClapShot**.
-On-chain ticker on any already-deployed contract stays `META` / `METAVERSE`.
-Do not treat a ticker change as a redeploy in this lane.
+Crypto / META is **later**. `google-app/` and `meta.sol` stay archived.
+Do not rename the token, ship a wallet, or mix a second public identity with Clapshot.
 
 ## What changes with the name
 
-User-facing copy, store listings, PWA names, Pages titles, iOS/Android **display** names.
+User-facing Clapshot copy, store listings, PWA names, Pages titles, iOS/Android **display** names.
 
 ## What does not change (on purpose)
 
@@ -25,5 +24,6 @@ These are infrastructure identities. Renaming them splits the App Store, Play, P
 | Native IAP bridge | `CreatorFlowStoreKit` |
 | IAP product ids | `cf_pro_monthly`, `cf_pro_yearly` |
 | Demo flags | `cf-demo`, `cf-ideas` |
+| On-chain ticker | `META` / `METAVERSE` |
 
-To ship a new bundle id or Pages path, that is a later store/DNS project — not this lane.
+To ship a new bundle id, Pages path, or crypto product, that is a later project — not this lane.
