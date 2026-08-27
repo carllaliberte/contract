@@ -30,7 +30,7 @@ function readInitialLocale(): Locale {
   const saved = localStorage.getItem("cf-locale");
   if (saved === "fr" || saved === "en") return saved;
 
-  return navigator.language.startsWith("fr") ? "fr" : "en";
+  return "en";
 }
 
 function syncDocumentLocale(locale: Locale) {
@@ -53,7 +53,11 @@ function syncLangQueryParam(locale: Locale) {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(readInitialLocale);
+  const [locale, setLocale] = useState<Locale>(() => {
+    const initial = readInitialLocale();
+    syncDocumentLocale(initial);
+    return initial;
+  });
 
   useEffect(() => {
     syncDocumentLocale(locale);
