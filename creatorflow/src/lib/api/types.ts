@@ -38,6 +38,7 @@ export type GenerateScriptResponse = {
 
 export type GenerateScriptErrorCode =
   | "LIMIT_REACHED"
+  | "RATE_LIMITED"
   | "UNAUTHORIZED"
   | "BAD_REQUEST"
   | "PROVIDER_ERROR";

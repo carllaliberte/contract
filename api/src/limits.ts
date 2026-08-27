@@ -1,4 +1,6 @@
 export {
+  IAP_CATALOG,
+  IAP_PRODUCT_IDS,
   LIMITS,
   PLAN_LIMITS,
   allowedLongDurations,
@@ -8,6 +10,7 @@ export {
   limitForFormat,
   limitForPlan,
   maxLongMinutesForPlan,
+  type IapProductId,
   type LongDuration,
   type Plan,
   type PlanId,

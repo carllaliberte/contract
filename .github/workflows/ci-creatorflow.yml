@@ -21,12 +21,6 @@ concurrency:
 permissions:
   contents: read
 
-permissions:
-  contents: read
-
-permissions:
-  contents: read
-
 jobs:
   web:
     runs-on: ubuntu-latest

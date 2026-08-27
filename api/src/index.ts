@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { env } from "./env.js";
 import { createAiRoutes } from "./routes/ai.js";
 import { createAuthRoutes } from "./routes/auth.js";
+import { createIapRoutes } from "./routes/iap.js";
 import { createIdeasRoutes } from "./routes/ideas.js";
 
 const app = new Hono();
@@ -23,10 +24,12 @@ app.get("/health", (c) =>
     memoryStore: env.memoryStore,
     mockLlm: env.mockLlm,
     appleAuthStub: env.appleAuthStub,
+    iapAppleStub: env.iapAppleStub,
   }),
 );
 
 app.route("/auth", createAuthRoutes());
+app.route("/iap", createIapRoutes());
 app.route("/ideas", createIdeasRoutes());
 app.route("/ai", createAiRoutes());
 

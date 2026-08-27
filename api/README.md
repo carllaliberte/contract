@@ -2,20 +2,26 @@
 
 Backend for CreatorFlow AI script generation.
 
-## Endpoint
+## Endpoints
 
-`POST /ai/generate-script`
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/auth/apple` | Exchange Apple `identityToken` for Supabase session |
+| `POST` | `/iap/apple/validate` | Verify StoreKit transaction; upgrade `profiles.plan` |
+| `POST` | `/ai/generate-script` | Generate script with quota + burst rate limits |
+| `GET` | `/health` | Liveness + stub flags |
 
-### Flow
+### `POST /ai/generate-script` flow
 
 1. **Auth** — Supabase JWT (`Authorization: Bearer`) or demo mode (`x-demo-id`)
 2. **Quota** — read `ai_usage` + `profiles.plan` for current month
-3. **Limit** — free = 8/mo, pro = 200/mo; if `count >= limit` → `429` `LIMIT_REACHED`
-4. **Prompt** — platform-specific instructions (YouTube / TikTok / Reels)
-5. **LLM** — OpenAI chat completion (or mock when `MOCK_LLM=true`)
-6. **Increment** — atomic `increment_ai_usage(user_id uuid, month)` RPC
-7. **Log** — optional row in `ai_generations`
-8. **Response** — `{ script, usage, model }`
+3. **Burst limit** — sliding window (default 6/min); if exceeded → `429 RATE_LIMITED` + `Retry-After`
+4. **Limit** — monthly quota; if `count >= limit` → `429 LIMIT_REACHED` + `Retry-After: 86400`
+5. **Prompt** — platform-specific instructions (YouTube / TikTok / Reels)
+6. **LLM** — OpenAI chat completion (or mock when `MOCK_LLM=true`)
+7. **Increment** — atomic usage RPC
+8. **Provenance** — metadata row in `ai_generations` (see `provenanceService.ts`)
+9. **Response** — `{ script, usage, model }`
 
 ### Environment
 
