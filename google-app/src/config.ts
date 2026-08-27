@@ -9,9 +9,9 @@ export const META_CHAIN_ID = metaEntitlements.chainId
 
 export const DASHBOARD_ORIGIN = 'https://carllaliberte.github.io/contract'
 
-export const DASHBOARD_NAME = 'META Token Dashboard'
+export const DASHBOARD_NAME = 'ClapShot Dashboard'
 
-export const DASHBOARD_DESCRIPTION = 'Read-only dashboard for the META ERC-20 contract'
+export const DASHBOARD_DESCRIPTION = 'Read-only dashboard for the ClapShot utility token (on-chain ticker META)'
 
 export const DASHBOARD_ICON_URL = `${DASHBOARD_ORIGIN}/favicon.svg`
 

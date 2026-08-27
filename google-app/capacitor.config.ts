@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'com.carllaliberte.meta',
-  appName: 'META Dashboard',
+  appName: 'ClapShot',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

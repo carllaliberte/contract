@@ -3,9 +3,9 @@ contact_links:
   - name: Security vulnerability
     url: https://github.com/carllaliberte/contract/security/advisories/new
     about: Report a security issue privately (do not open a public issue).
-  - name: CreatorFlow live
+  - name: Clapshot live
     url: https://carllaliberte.github.io/contract/creatorflow/
-    about: Open the CreatorFlow web app on GitHub Pages.
-  - name: META dashboard live
-    url: https://carllaliberte.github.io/contract/
-    about: Open the META token dashboard on GitHub Pages.
+    about: Open the Clapshot web app on GitHub Pages.
+  - name: ClapShot dashboard (archived)
+    url: https://carllaliberte.github.io/contract/meta/
+    about: Archived utility-token dashboard. Not the public product.

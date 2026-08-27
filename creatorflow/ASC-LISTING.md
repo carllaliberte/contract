@@ -1,4 +1,4 @@
-# App Store Connect — CreatorFlow 1.0
+# App Store Connect — Clapshot 1.0
 
 Textes à coller dans App Store Connect. Limites Apple respectées.
 
@@ -8,7 +8,7 @@ Textes à coller dans App Store Connect. Limites Apple respectées.
 
 | Champ | Texte |
 | --- | --- |
-| **Nom** | CreatorFlow |
+| **Nom** | Clapshot |
 | **Sous-titre** (30) | Idée → script → publié |
 | **Texte promo** (170) | Un pipeline vidéo pour sortir chaque semaine : idée, script, brief de tournage, calendrier. Pas dix onglets. Une prochaine action. |
 | **Catégorie** | Productivité / Photo et vidéo |
@@ -20,7 +20,7 @@ Textes à coller dans App Store Connect. Limites Apple respectées.
 
 ### Description
 
-CreatorFlow est le tableau de bord du créateur solo qui publie sur YouTube, TikTok et Reels.
+Clapshot est le tableau de bord du créateur solo qui publie sur YouTube, TikTok et Reels.
 Tu captures une idée. L'app te dit la prochaine action : écrire le script, filmer les plans, coller le lien publié.
 • Pipeline Idée → Script → Production → Prêt → Publié
 • Scripts adaptés YouTube, TikTok et Reels
@@ -28,7 +28,7 @@ Tu captures une idée. L'app te dit la prochaine action : écrire le script, fil
 • Français et anglais
 • Connexion avec Apple
 • Mode démo sans compte
-CreatorFlow ne remplace pas CapCut. CapCut monte. CreatorFlow fait que la vidéo sort.
+Clapshot ne remplace pas CapCut. CapCut monte. Clapshot fait que la vidéo sort.
 Créateur : Carl Laliberté, Québec.
 
 ---
@@ -43,7 +43,7 @@ Créateur : Carl Laliberté, Québec.
 
 ### Description
 
-CreatorFlow is the solo creator's dashboard for YouTube, TikTok, and Reels.
+Clapshot is the solo creator's dashboard for YouTube, TikTok, and Reels.
 Capture an idea. The app tells you the next action: write the script, shoot the shots, paste the published link.
 • Pipeline Idea → Script → Production → Ready → Published
 • Scripts tailored for YouTube, TikTok, and Reels
@@ -51,7 +51,7 @@ Capture an idea. The app tells you the next action: write the script, shoot the 
 • French and English
 • Sign in with Apple
 • Demo mode without an account
-CreatorFlow doesn't replace CapCut. CapCut edits. CreatorFlow gets the video out.
+Clapshot doesn't replace CapCut. CapCut edits. Clapshot gets the video out.
 By Carl Laliberté, Québec.
 
 ---

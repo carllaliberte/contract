@@ -1,7 +1,7 @@
 {
-  "name": "META Token Dashboard",
-  "short_name": "META",
-  "description": "Read-only dashboard for the META ERC-20 smart contract.",
+  "name": "ClapShot Dashboard",
+  "short_name": "ClapShot",
+  "description": "Read-only dashboard for the ClapShot utility token (on-chain ticker META).",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

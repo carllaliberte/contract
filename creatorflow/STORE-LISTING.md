@@ -1,4 +1,4 @@
-# CreatorFlow — Store listing (FR)
+# Clapshot — Store listing (FR)
 
 ## Short description
 
@@ -6,7 +6,7 @@ Le pipeline des créateurs de contenu — de l'idée à la publication.
 
 ## Full description
 
-CreatorFlow — le pipeline des créateurs de contenu.
+Clapshot — le pipeline des créateurs de contenu.
 
 Passez de l'idée à la publication sans friction :
 • Kanban Idée → Script → Production → Prêt → Publié
@@ -23,10 +23,10 @@ Créateurs YouTube, TikTok, Instagram Reels, solopreneurs et équipes contenu.
 – Tableau de bord des priorités
 – Interface dark premium, bilingue FR/EN
 
-**Pourquoi CreatorFlow ?**
+**Pourquoi Clapshot ?**
 Moins de chaos mental. Plus de publications. Un seul endroit pour vos idées, scripts et statuts de production.
 
-Téléchargez CreatorFlow et publiez plus régulièrement.
+Téléchargez Clapshot et publiez plus régulièrement.
 
 ## Web demo
 
