@@ -6,7 +6,49 @@ export type ShareDestination = "x" | "instagram" | "tiktok";
 
 export const SHARE_DESTINATIONS: ShareDestination[] = ["x", "instagram", "tiktok"];
 
-export function buildSharePackText(idea: Idea): string {
+const IG_CAPTION_MAX = 2200;
+const X_TEXT_MAX = 280;
+
+function formatHashtags(tags: string[] | undefined): string {
+  if (!tags?.length) return "";
+  return tags
+    .map((raw) => raw.trim())
+    .filter(Boolean)
+    .map((tag) => (tag.startsWith("#") ? tag : `#${tag.replace(/\s+/g, "")}`))
+    .join(" ");
+}
+
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
+export function buildSharePackText(
+  idea: Idea,
+  destination?: ShareDestination,
+): string {
+  if (destination === "instagram" || destination === "tiktok") {
+    const hook = idea.packHooks?.[0]?.trim();
+    const caption = idea.packCaption?.trim();
+    const hashtags = formatHashtags(idea.packHashtags);
+    const body =
+      caption ||
+      idea.description.trim() ||
+      idea.script?.trim() ||
+      "";
+    const parts = [hook, body, hashtags].filter(Boolean) as string[];
+    if (parts.length === 0 && idea.title.trim()) parts.push(idea.title.trim());
+    return clip(parts.join("\n\n").trim(), IG_CAPTION_MAX);
+  }
+
+  if (destination === "x") {
+    const hook = idea.packHooks?.[0]?.trim();
+    const caption = idea.packCaption?.trim();
+    const body = hook || caption || idea.title.trim();
+    const hashtags = formatHashtags(idea.packHashtags);
+    return clip([body, hashtags].filter(Boolean).join("\n\n").trim(), X_TEXT_MAX);
+  }
+
   const parts = [idea.title.trim()];
   if (idea.script?.trim()) {
     parts.push("", idea.script.trim());
@@ -14,6 +56,16 @@ export function buildSharePackText(idea: Idea): string {
     parts.push("", idea.description.trim());
   }
   return parts.join("\n").trim();
+}
+
+export function sharePackHasContent(idea: Idea): boolean {
+  return Boolean(
+    idea.script?.trim() ||
+      idea.description.trim() ||
+      idea.packCaption?.trim() ||
+      idea.packHooks?.some((h) => h.trim()) ||
+      idea.packHashtags?.some((h) => h.trim()),
+  );
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -49,13 +101,17 @@ export async function shareViaSystemShare(title: string, text: string): Promise<
 }
 
 export async function sharePack(idea: Idea, destination: ShareDestination): Promise<boolean> {
-  const text = buildSharePackText(idea);
+  const text = buildSharePackText(idea, destination);
   if (!text) return false;
+
+  if (destination === "instagram" || destination === "tiktok") {
+    await copyToClipboard(text);
+    return shareViaSystemShare("Clapshot", text);
+  }
 
   if (destination === "x") {
     return shareToX(text);
   }
 
-  const title = idea.title.trim() || "CreatorFlow";
-  return shareViaSystemShare(title, text);
+  return shareViaSystemShare("Clapshot", text);
 }

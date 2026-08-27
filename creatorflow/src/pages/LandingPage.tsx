@@ -1,13 +1,12 @@
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { AppleSignInButton } from "../components/AppleSignInButton";
-import { Button, Input, Label, Logo } from "../components/ui";
+import { Button, Logo } from "../components/ui";
 import { useI18n } from "../i18n/context";
 import { useAuth } from "../hooks/useAuth";
 import { applyLandingRobots, setFaqJsonLd } from "../lib/seo";
-import { isNativePlatform } from "../lib/platform";
 
 const faqItems = [
   { q: "faq.q1", a: "faq.a1" },
@@ -20,11 +19,6 @@ export function LandingPage() {
   const { tr, locale } = useI18n();
   const navigate = useNavigate();
   const { enterDemo } = useAuth();
-  const native = isNativePlatform();
-  const [authTab, setAuthTab] = useState<"in" | "up">("in");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
 
   useEffect(() => {
     applyLandingRobots();
@@ -39,11 +33,6 @@ export function LandingPage() {
   async function handleEnterDemo() {
     await enterDemo();
     navigate("/app");
-  }
-
-  function handleAuth(e: React.FormEvent) {
-    e.preventDefault();
-    void handleEnterDemo();
   }
 
   return (
@@ -77,92 +66,16 @@ export function LandingPage() {
 
           <div id="login" className="flex justify-center pb-16 lg:justify-end lg:pb-0">
             <div className="w-full max-w-[380px] rounded-2xl border border-border bg-card p-6 shadow-card sm:p-7">
-              <div className="mb-5 flex rounded-xl bg-secondary p-1">
-                {(["in", "up"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setAuthTab(tab)}
-                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-                      authTab === tab
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {tr(tab === "in" ? "login.signIn" : "login.signUp")}
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-sm font-medium">
-                {tr(authTab === "in" ? "login.welcomeBack" : "login.createAccount")}
-              </p>
+              <p className="text-sm font-medium">{tr("login.welcomeBack")}</p>
               <p className="mt-1 mb-4 text-sm text-muted-foreground">
-                {tr(native ? "login.providersHintIos" : "login.providersHintWeb")}
+                {tr("login.providersHintIos")}
               </p>
-
               <div className="flex flex-col gap-2">
                 <AppleSignInButton onSuccess={() => navigate("/app")} />
-                {!native && (
-                  <>
-                    <p className="text-[11px] text-muted-foreground">{tr("login.socialDemoNote")}</p>
-                    <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
-                      {tr("login.continueGoogle")}
-                    </Button>
-                    <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
-                      {tr("login.continueX")}
-                    </Button>
-                    <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
-                      {tr("login.continueGitHub")}
-                    </Button>
-                  </>
-                )}
+                <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
+                  {tr("login.tryDemo")}
+                </Button>
               </div>
-
-              {!native && (
-                <>
-                  <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="h-px flex-1 bg-border" />
-                    {tr("login.or")}
-                    <span className="h-px flex-1 bg-border" />
-                  </div>
-
-                  <form onSubmit={handleAuth} className="flex flex-col gap-3.5">
-                    {authTab === "up" && (
-                      <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="name">{tr("login.name")}</Label>
-                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="email">{tr("login.email")}</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="password">{tr("login.password")}</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        required
-                        minLength={6}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoComplete={authTab === "up" ? "new-password" : "current-password"}
-                      />
-                    </div>
-                    <Button type="submit" className="mt-1 h-11">
-                      {tr(authTab === "in" ? "login.submitIn" : "login.submitUp")}
-                    </Button>
-                  </form>
-                </>
-              )}
             </div>
           </div>
         </section>
@@ -171,14 +84,7 @@ export function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 text-sm text-muted-foreground sm:px-6">
           <Logo size="sm" />
-          <a
-            href="https://github.com/carllaliberte/contract"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-          >
-            {tr("nav.github")}
-          </a>
+          <span>{tr("footer.rights")}</span>
         </div>
       </footer>
     </div>
