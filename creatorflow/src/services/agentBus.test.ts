@@ -4,12 +4,16 @@ import { resolveProviderFor, listActiveProviders } from "./agentBus";
 vi.mock("../lib/api/generateScript", () => ({
   postGenerateScript: vi.fn(async () => ({
     script: "HOOK: generated",
+    titles: ["Title A", "Title B", "Title C"],
+    description: "Caption",
+    hashtags: ["#creatorflow"],
+    hooks: ["H1", "H2", "H3"],
     usage: {
       plan: "free",
       short: { count: 1, limit: 8, remaining: 7 },
       long: { count: 0, limit: 2, remaining: 2 },
     },
-    model: "gpt-4o-mini",
+    model: "grok-4.5",
   })),
 }));
 
@@ -42,6 +46,9 @@ describe("agentBus", () => {
     });
     expect(result.provider).toBe("grok");
     expect(result.pack.script).toContain("HOOK");
+    expect(result.pack.titles).toEqual(["Title A", "Title B", "Title C"]);
+    expect(result.pack.hooks).toEqual(["H1", "H2", "H3"]);
+    expect(result.pack.hashtags).toEqual(["#creatorflow"]);
   });
 
   it("resolves grok for script.generate", () => {

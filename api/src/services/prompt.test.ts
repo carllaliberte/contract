@@ -37,6 +37,19 @@ describe("buildScriptPrompt", () => {
     expect(user).toContain("Un article Wikipedia sur le sujet");
   });
 
+  it("asks Grok for a JSON pack", () => {
+    const { system } = buildScriptPrompt({
+      title: "Test titre",
+      description: "Une description",
+      platform: "youtube",
+      language: "fr",
+      mode: "generate",
+    });
+    expect(system).toContain("SORTIE PACK");
+    expect(system).toContain('"hooks"');
+    expect(system).toContain('"titles"');
+  });
+
   it("uses unified improve prompt for YouTube FR", () => {
     const { user } = buildScriptPrompt({
       title: "Mon titre",

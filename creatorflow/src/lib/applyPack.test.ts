@@ -41,9 +41,11 @@ describe("buildApplyPackPatch", () => {
       titles: ["T1", "T2"],
       hashtags: ["#cf"],
       description: "Caption",
+      hooks: ["H1", "H2", "H3"],
     });
     expect(patch.packTitles).toEqual(["T1", "T2"]);
     expect(patch.packHashtags).toEqual(["#cf"]);
     expect(patch.packCaption).toBe("Caption");
+    expect(patch.packHooks).toEqual(["H1", "H2", "H3"]);
   });
 });

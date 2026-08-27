@@ -1,16 +1,17 @@
 import OpenAI from "openai";
 import { env } from "../env.js";
 import {
-  buildMockScript,
+  buildMockPack,
   buildScriptPrompt,
   type PromptInput,
 } from "./prompt.js";
+import { parseScriptPack, type ScriptPackPayload } from "./scriptPack.js";
 
 export async function generateScriptWithLlm(
   input: PromptInput,
-): Promise<{ script: string; model: string }> {
+): Promise<ScriptPackPayload & { model: string }> {
   if (env.mockLlm) {
-    return { script: buildMockScript(input), model: "mock" };
+    return { ...buildMockPack(input), model: "mock" };
   }
 
   const client = new OpenAI({
@@ -26,13 +27,14 @@ export async function generateScriptWithLlm(
       { role: "user", content: user },
     ],
     temperature: 0.7,
-    max_tokens: 1800,
+    max_tokens: 2500,
+    response_format: { type: "json_object" },
   });
 
-  const script = completion.choices[0]?.message?.content?.trim();
-  if (!script) {
+  const raw = completion.choices[0]?.message?.content?.trim();
+  if (!raw) {
     throw new Error("Empty LLM response");
   }
 
-  return { script, model: completion.model ?? env.xaiModel };
+  return { ...parseScriptPack(raw), model: completion.model ?? env.xaiModel };
 }

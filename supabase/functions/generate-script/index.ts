@@ -24,6 +24,10 @@ import {
 import { checkAiRateLimit } from "../_shared/rateLimit.ts";
 import { resolveOpenSource } from "../_shared/openSource.ts";
 import {
+  grokNotConfiguredCode,
+  parseScriptPack,
+} from "../_shared/scriptPack.ts";
+import {
   hashPromptTitle,
   recordGenerationProvenance,
 } from "../_shared/provenance.ts";
@@ -246,7 +250,7 @@ function validateDurationForPlan(
 async function callGrok(
   system: string,
   user: string,
-): Promise<{ script: string; model: string }> {
+): Promise<{ pack: ReturnType<typeof parseScriptPack>; model: string }> {
   const apiKey = Deno.env.get("XAI_API_KEY");
   if (!apiKey) {
     throw new Error("XAI_API_KEY is not configured");
@@ -266,7 +270,8 @@ async function callGrok(
         { role: "user", content: user },
       ],
       temperature: 0.7,
-      max_tokens: 1800,
+      max_tokens: 2500,
+      response_format: { type: "json_object" },
     }),
   });
 
@@ -279,10 +284,10 @@ async function callGrok(
     throw new Error(msg);
   }
 
-  const script = data?.choices?.[0]?.message?.content?.trim();
-  if (!script) throw new Error("Empty LLM response");
+  const raw = data?.choices?.[0]?.message?.content?.trim();
+  if (!raw) throw new Error("Empty LLM response");
 
-  return { script, model: data?.model ?? model };
+  return { pack: parseScriptPack(raw), model: data?.model ?? model };
 }
 
 async function logGeneration(
@@ -435,7 +440,7 @@ Deno.serve(async (req) => {
       sourceContext,
     });
 
-    const { script, model } = await callGrok(system, user);
+    const { pack, model } = await callGrok(system, user);
 
     let finalUsage: AiUsageSnapshot;
     try {
@@ -470,13 +475,23 @@ Deno.serve(async (req) => {
       title: payload.title,
     });
 
-    return json({ script, usage: finalUsage, model });
+    return json({
+      script: pack.script,
+      titles: pack.titles,
+      description: pack.description,
+      hashtags: pack.hashtags,
+      hooks: pack.hooks,
+      usage: finalUsage,
+      model,
+    });
   } catch (error) {
     console.error("generate-script error:", error);
+    const raw =
+      error instanceof Error ? error.message : "Script generation failed";
     return json(
       {
         error: "PROVIDER_ERROR",
-        message: error instanceof Error ? error.message : "Script generation failed",
+        message: grokNotConfiguredCode(raw),
       },
       500,
     );

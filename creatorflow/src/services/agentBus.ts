@@ -83,6 +83,10 @@ export async function dispatchScriptGenerate(
         language,
         format: options.format,
         script: data.script,
+        titles: data.titles,
+        description: data.description,
+        hashtags: data.hashtags,
+        hooks: data.hooks,
         source: "generated",
         createdAt: new Date().toISOString(),
       };
