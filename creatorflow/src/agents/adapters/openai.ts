@@ -5,6 +5,7 @@ export const openaiAdapter: AgentPort = {
   id: "openai",
   kind: "copy",
   label: "Script",
+  cost: "paid",
   available: () => true,
   async run(ctx) {
     const input = ctx as AgentRunContext;

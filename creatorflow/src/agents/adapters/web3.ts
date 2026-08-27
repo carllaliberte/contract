@@ -9,6 +9,7 @@ export const web3Adapter: AgentPort = {
   id: "web3",
   kind: "web3",
   label: "Web",
+  cost: "local",
   available: () => isWeb3Enabled(),
   async run() {
     return {

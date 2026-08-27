@@ -67,6 +67,7 @@ export const tallyAdapter: AgentPort = {
   id: "tally",
   kind: "coach",
   label: "Régie",
+  cost: "local",
   available: () => true,
   async run(ctx) {
     return { text: tallyText(ctx as AgentRunContext), apply: "script" };

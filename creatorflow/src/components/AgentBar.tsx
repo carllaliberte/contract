@@ -68,6 +68,7 @@ export function AgentBar({ idea }: { idea: Idea }) {
               .filter((item) => item.available())
               .map((item) => item.id),
             ctx,
+            { kind: port.kind },
           )
         : await run(port.id, ctx);
       setPending(result);

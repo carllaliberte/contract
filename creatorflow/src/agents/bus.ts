@@ -1,6 +1,13 @@
 import { AgentTimeoutError, withTimeout } from "./timeout";
-import type { AgentId, AgentPort, AgentResult, AgentRunContext } from "./types";
-import { QUANTUM_CONCAT_MAX } from "./types";
+import { AGENT_TIMEOUT_MS } from "./types";
+import type {
+  AgentId,
+  AgentKind,
+  AgentPort,
+  AgentResult,
+  AgentRunContext,
+  QuantumRunOptions,
+} from "./types";
 
 const ports = new Map<AgentId, AgentPort>();
 
@@ -28,22 +35,49 @@ export async function run(id: AgentId, ctx: AgentRunContext): Promise<AgentResul
   if (!port.available()) {
     throw new Error(`AGENT_DOWN:${id}`);
   }
-  return withTimeout(port.run(ctx), id);
+  const result = await withTimeout(port.run(ctx), id);
+  return { ...result, source: result.source ?? id };
 }
 
-function settledText(result: PromiseSettledResult<AgentResult>): string | null {
-  if (result.status === "fulfilled") {
-    const text = result.value.text.trim();
-    return text || null;
+function isLocal(port: AgentPort): boolean {
+  return port.cost === "local";
+}
+
+function uniquePorts(queue: AgentPort[]): AgentPort[] {
+  const seen = new Set<AgentId>();
+  const out: AgentPort[] = [];
+  for (const port of queue) {
+    if (seen.has(port.id)) continue;
+    seen.add(port.id);
+    out.push(port);
   }
-  return null;
+  return out;
 }
 
 /**
- * Call available agents in parallel.
- * Keep the first successful result; if none succeed, concat short texts (max 600).
+ * Local of the requested kind, then at most the paid adapters of that kind,
+ * then a free Régie fallback. Web3 never sneaks in as a silent fallback.
  */
-export async function runQuantum(ids: AgentId[], ctx: AgentRunContext): Promise<AgentResult> {
+export function quantumQueue(selected: AgentPort[], kind?: AgentKind): AgentPort[] {
+  const same = kind ? selected.filter((port) => port.kind === kind) : selected;
+  const localSame = same.filter(isLocal);
+  const paidSame = same.filter((port) => !isLocal(port));
+  const localFallback = selected.filter(
+    (port) => isLocal(port) && port.kind !== "web3" && (!kind || port.kind !== kind),
+  );
+  return uniquePorts([...localSame, ...paidSame, ...localFallback]);
+}
+
+/**
+ * Cascade, not a spray.
+ * Local first (0 tokens). One paid call max on a miss. Stop at the first OK.
+ * Whole run shares a 12s budget so paid adapters cannot stack.
+ */
+export async function runQuantum(
+  ids: AgentId[],
+  ctx: AgentRunContext,
+  opts?: QuantumRunOptions,
+): Promise<AgentResult> {
   const selected = ids
     .map((id) => ports.get(id))
     .filter((port): port is AgentPort => Boolean(port && port.available()));
@@ -52,25 +86,30 @@ export async function runQuantum(ids: AgentId[], ctx: AgentRunContext): Promise<
     throw new Error("AGENT_DOWN:quantum");
   }
 
-  const raced = selected.map((port) => withTimeout(port.run(ctx), port.id));
-  const settled = await Promise.allSettled(raced);
+  const queue = quantumQueue(selected, opts?.kind);
+  const started = Date.now();
+  let sawTimeout = false;
 
-  const firstOk = settled.find((item) => item.status === "fulfilled" && item.value.text.trim());
-  if (firstOk && firstOk.status === "fulfilled") {
-    return firstOk.value;
+  for (const port of queue) {
+    const remaining = AGENT_TIMEOUT_MS - (Date.now() - started);
+    if (!isLocal(port) && remaining <= 0) {
+      continue;
+    }
+    const budget = isLocal(port)
+      ? AGENT_TIMEOUT_MS
+      : Math.min(AGENT_TIMEOUT_MS, Math.max(remaining, 1));
+    try {
+      const result = await withTimeout(port.run(ctx), port.id, budget);
+      const text = result.text.trim();
+      if (text) {
+        return { ...result, text, source: result.source ?? port.id };
+      }
+    } catch (error) {
+      if (error instanceof AgentTimeoutError) {
+        sawTimeout = true;
+      }
+    }
   }
 
-  const fragments = settled
-    .map(settledText)
-    .filter((text): text is string => Boolean(text));
-
-  if (fragments.length === 0) {
-    const timedOut = settled.some(
-      (item) => item.status === "rejected" && item.reason instanceof AgentTimeoutError,
-    );
-    throw new Error(timedOut ? "AGENT_TIMEOUT:quantum" : "AGENT_DOWN:quantum");
-  }
-
-  const text = fragments.join("\n\n").slice(0, QUANTUM_CONCAT_MAX);
-  return { text, apply: "script" };
+  throw new Error(sawTimeout ? "AGENT_TIMEOUT:quantum" : "AGENT_DOWN:quantum");
 }

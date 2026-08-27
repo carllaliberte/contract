@@ -22,6 +22,7 @@ describe("tally adapter", () => {
   it("is a local coach, always available", () => {
     expect(tallyAdapter.id).toBe("tally");
     expect(tallyAdapter.kind).toBe("coach");
+    expect(tallyAdapter.cost).toBe("local");
     expect(tallyAdapter.label).toBe("Régie");
     expect(tallyAdapter.available()).toBe(true);
   });

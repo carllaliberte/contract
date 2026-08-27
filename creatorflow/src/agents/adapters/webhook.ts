@@ -6,6 +6,7 @@ function createWebhookAdapter(id: AgentId, kind: AgentKind, label: string): Agen
     id,
     kind,
     label,
+    cost: "paid",
     available: () => Boolean(agentWebhookUrl()),
     async run(ctx) {
       const url = agentWebhookUrl();
