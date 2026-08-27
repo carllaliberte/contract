@@ -1,5 +1,13 @@
 name: Prune branches
 
+# Exceptions — never deleted:
+#   main       default / product
+#   gh-pages   live Pages deploy
+# Runtime exceptions (not listed here):
+#   any branch that currently has an OPEN pull request
+#   fork heads (other repos)
+# To keep another branch, add its exact name to KEEP_BRANCHES.
+
 on:
   pull_request:
     types: [closed]
@@ -10,6 +18,11 @@ on:
 permissions:
   contents: write
   pull-requests: read
+
+env:
+  KEEP_BRANCHES: |
+    main
+    gh-pages
 
 jobs:
   delete-pr-head:
@@ -24,32 +37,33 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$HEAD_REPO" != "${{ github.repository }}" ]; then
-            echo "Skip fork branch"
+            echo "Skip fork branch $HEAD_REF"
             exit 0
           fi
-          case "$HEAD_REF" in
-            main|gh-pages) echo "Skip protected $HEAD_REF"; exit 0 ;;
-          esac
+          if printf '%s\n' "$KEEP_BRANCHES" | grep -Fxq "$HEAD_REF"; then
+            echo "Keep exception $HEAD_REF"
+            exit 0
+          fi
+          echo "Delete $HEAD_REF"
           gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/${HEAD_REF}" || true
 
   prune-stale:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Delete stale local branches
+      - name: Delete branches not in the keep-list
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          KEEP='^(main|gh-pages)$'
           OPEN=$(gh pr list --repo "${{ github.repository }}" --state open --json headRefName --jq '.[].headRefName' || true)
           gh api --paginate "repos/${{ github.repository }}/branches?per_page=100" --jq '.[].name' | while read -r name; do
-            if echo "$name" | grep -Eq "$KEEP"; then
-              echo "keep $name"
+            if printf '%s\n' "$KEEP_BRANCHES" | grep -Fxq "$name"; then
+              echo "keep (exception) $name"
               continue
             fi
             if echo "$OPEN" | grep -Fxq "$name"; then
-              echo "open PR $name"
+              echo "keep (open PR) $name"
               continue
             fi
             echo "delete $name"
