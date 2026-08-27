@@ -188,7 +188,7 @@ jobs:
         run: |
           AAB="${{ steps.release_aab.outputs.path }}"
           gh release create "play-internal-$(date +%Y%m%d-%H%M)" \
-            --repo "${{ github.repository }}/" \
+            --repo "${{ github.repository }}" \
             --title "META Dashboard AAB (signed)" \
             --notes "AAB signé. Play Console → Testing → Internal → Upload." \
             "$AAB"
