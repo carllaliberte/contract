@@ -1,0 +1,1 @@
+var e=[`idea`,`script`,`production`,`ready`,`published`];function t(t){let n=e.indexOf(t);return n<0||n>=e.length-1?null:e[n+1]}function n(e){return t(e)!==null}export{t as n,n as t};
