@@ -1,0 +1,125 @@
+name: macOS iOS build (virtual Mac)
+
+# GitHub-hosted macOS runner = "virtual Mac" for iOS builds.
+# Triggers on tag push — no Mac hardware required locally.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "ios-release/*"
+      - "deliverable/app-store-*"
+
+permissions:
+  contents: read
+
+jobs:
+  virtual-mac:
+    name: macOS virtual builder
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: creatorflow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Virtual Mac info
+        run: |
+          echo "🖥 GitHub-hosted macOS (virtual Mac)"
+          sw_vers
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: creatorflow/package-lock.json
+
+      - name: Build web + cap sync iOS
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || '' }}
+        run: |
+          npm ci
+          unset VITE_AUTH_STUB || true
+          npm run build:ios
+
+      - name: Xcode compile (simulator — no signing)
+        working-directory: creatorflow/ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Load CREATORFLOW_APPLE_CONFIG (one secret)
+        id: apple_config
+        env:
+          CREATORFLOW_APPLE_CONFIG: ${{ secrets.CREATORFLOW_APPLE_CONFIG }}
+        run: node ../scripts/load-creatorflow-apple-config.cjs
+
+      - name: Resolve Apple credentials (bundle or legacy secrets)
+        shell: bash
+        env:
+          LEGACY_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          LEGACY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          LEGACY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          LEGACY_KEY_B64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          LEGACY_CERT_B64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          LEGACY_CERT_PASS: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          LEGACY_PROFILE_B64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
+        run: |
+          set_env() {
+            if [ -n "${2:-}" ]; then
+              echo "$1=$2" >> "$GITHUB_ENV"
+            fi
+          }
+          set_env APPLE_TEAM_ID "${APPLE_TEAM_ID:-$LEGACY_TEAM_ID}"
+          set_env APP_STORE_CONNECT_API_KEY_ID "${APP_STORE_CONNECT_API_KEY_ID:-$LEGACY_KEY_ID}"
+          set_env APP_STORE_CONNECT_API_ISSUER_ID "${APP_STORE_CONNECT_API_ISSUER_ID:-$LEGACY_ISSUER_ID}"
+          set_env APP_STORE_CONNECT_API_KEY_BASE64 "${APP_STORE_CONNECT_API_KEY_BASE64:-$LEGACY_KEY_B64}"
+          set_env APPLE_CERTIFICATE_BASE64 "${APPLE_CERTIFICATE_BASE64:-$LEGACY_CERT_B64}"
+          set_env APPLE_CERTIFICATE_PASSWORD "${APPLE_CERTIFICATE_PASSWORD:-$LEGACY_CERT_PASS}"
+          set_env APPLE_PROVISION_PROFILE_BASE64 "${APPLE_PROVISION_PROFILE_BASE64:-$LEGACY_PROFILE_B64}"
+
+      - name: Archive + upload (virtual Mac → App Store Connect)
+        run: |
+          if [ -z "$APPLE_TEAM_ID" ]; then
+            echo "::warning::Apple credentials missing — skipping App Store archive/upload."
+            echo "Set GitHub secret CREATORFLOW_APPLE_CONFIG (recommended) or individual APPLE_* secrets."
+            echo "Generate JSON: bash scripts/print-creatorflow-apple-config.sh"
+            exit 0
+          fi
+          if [ -n "$APPLE_CERTIFICATE_BASE64" ]; then
+            KEYCHAIN=$RUNNER_TEMP/app-signing.keychain-db
+            security create-keychain -p "" "$KEYCHAIN"
+            security set-keychain-settings -lut 21600 "$KEYCHAIN"
+            security unlock-keychain -p "" "$KEYCHAIN"
+            echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+            security import "$RUNNER_TEMP/cert.p12" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+            security list-keychain -d user -s "$KEYCHAIN"
+            security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
+          fi
+          if [ -n "$APPLE_PROVISION_PROFILE_BASE64" ]; then
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            echo "$APPLE_PROVISION_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+            UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' /dev/stdin <<< "$(security cms -D -i "$RUNNER_TEMP/profile.mobileprovision")")
+            cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID.mobileprovision"
+          fi
+          if [ -n "$APP_STORE_CONNECT_API_KEY_BASE64" ] && [ -n "$APP_STORE_CONNECT_API_KEY_ID" ]; then
+            mkdir -p ~/.private_keys
+            echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+            export APP_STORE_CONNECT_API_KEY_PATH="$HOME/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          fi
+          bash ../scripts/ios-archive-and-upload.sh
+
+      - name: Upload IPA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creatorflow-ios-ipa
+          path: creatorflow/ios/build/export/*.ipa
+          if-no-files-found: ignore

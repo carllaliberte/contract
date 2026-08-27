@@ -28,6 +28,7 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 | Domaine | Nom | Type | Où le définir | Obligatoire |
 |---------|-----|------|---------------|-------------|
 | **CreatorFlow** | `VITE_API_URL` | Public (var) | `creatorflow/.env`, Actions **var** `VITE_API_URL` | Non — vide = démo / chemin relatif |
+| **CreatorFlow** | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Public (var) | `creatorflow/.env.local`, Actions **vars** | Non — vide = ideas en localStorage seulement |
 | **CreatorFlow** | `VITE_BASE_PATH` | Public (var) | Local ou Actions **var** | Non — défaut `/contract/creatorflow/` |
 | **CreatorFlow** | `VITE_ROUTER_BASENAME` | Public (var) | Local ou Actions **var** | Non — défaut aligné GitHub Pages |
 | **CreatorFlow** | `OPENAI_API_KEY` | **Secret** | Supabase Edge / API serveur uniquement | Non côté client |
@@ -54,7 +55,10 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 Workflow : `.github/workflows/deploy-creatorflow.yml`
 
 - `VITE_BASE_PATH` et `VITE_ROUTER_BASENAME` sont **forcés** à `/contract/creatorflow/` dans le workflow (Pages).
-- `VITE_API_URL` — variable optionnelle (Settings → Variables) pour l’endpoint scripts IA.
+- `VITE_API_URL` — variable **recommandée** (Settings → Variables) : URL complète de la Edge Function Supabase, ex.  
+  `https://TON-PROJET.supabase.co/functions/v1/generate-script`
+- `VITE_AUTH_APPLE_URL` — optionnel : `https://TON-PROJET.supabase.co/functions/v1/auth-apple`
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — client Supabase (persistance des idées authentifiées)
 
 Si `VITE_API_URL` n’est pas définie, le build utilise le comportement démo.
 
@@ -131,7 +135,7 @@ bash scripts/print-ci-secrets-checklist.sh   # audit Variables vs Secrets
 bash scripts/setup-github-ci-env.sh          # pousse les VITE_* non vides
 ```
 
-- **Variables** (`gh variable set`) : `VITE_API_URL`, `VITE_WALLETCONNECT_PROJECT_ID`, `VITE_CONTRACT_ADDRESS`, `VITE_RPC_URL`
+- **Variables** (`gh variable set`) : `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WALLETCONNECT_PROJECT_ID`, `VITE_CONTRACT_ADDRESS`, `VITE_RPC_URL`
 - **Secrets** (`gh secret set`) : `META_PLAY_CONFIG` (Play), `FIREBASE_TOKEN` (optionnel)
 - Ne pas ajouter `OPENAI_API_KEY` ni `VITE_BASE_PATH=/` dans GitHub Actions (voir checklist)
 
