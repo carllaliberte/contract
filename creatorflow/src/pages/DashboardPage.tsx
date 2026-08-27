@@ -78,7 +78,11 @@ export function DashboardPage() {
         </div>
 
         <section className="flex flex-col items-start gap-6">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl sm:leading-[1.08]">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            <span className="rec-dot" />
+            REC
+          </p>
+          <h1 className="font-display text-3xl font-medium italic tracking-tight sm:text-5xl sm:leading-[1.08]">
             {nextUp && nextAction
               ? tr(`dashboard.prompt.${nextAction.kind}`, { title: nextUp.title })
               : tr("app.heroTitle")}
