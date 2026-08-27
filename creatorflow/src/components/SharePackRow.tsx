@@ -5,6 +5,7 @@ import { useI18n } from "../i18n/context";
 import {
   SHARE_DESTINATIONS,
   sharePack,
+  sharePackHasContent,
   type ShareDestination,
 } from "../lib/sharePack";
 import { Button } from "./ui";
@@ -19,7 +20,7 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
   const [loadingDest, setLoadingDest] = useState<ShareDestination | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  if (!buildSharePackHasContent(idea)) return null;
+  if (!sharePackHasContent(idea)) return null;
 
   async function handleShare(destination: ShareDestination) {
     setLoadingDest(destination);
@@ -57,8 +58,4 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
       )}
     </div>
   );
-}
-
-function buildSharePackHasContent(idea: Idea): boolean {
-  return Boolean(idea.script?.trim() || idea.description.trim());
 }
