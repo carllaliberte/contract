@@ -30,7 +30,7 @@ async function clearCreatorFlowStorage(page: Page) {
 
 async function enterDemoFromLanding(page: Page) {
   await page
-    .getByRole("button", { name: /explorer sans compte|explore without account/i })
+    .getByRole("button", { name: /on commence|let['’]s go/i })
     .first()
     .click();
   await page.waitForURL(/\/app/);
