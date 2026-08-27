@@ -102,7 +102,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
               >
                 <option value="youtube">YouTube</option>
                 <option value="tiktok">TikTok</option>
-                <option value="reels">Reels</option>
+                <option value="instagram">Instagram</option>
                 <option value="x">X</option>
               </select>
             </div>

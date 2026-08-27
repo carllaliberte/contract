@@ -2,6 +2,7 @@ import { ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
+import { StyleMemoryPanel } from "../components/StyleMemoryPanel";
 import { PaywallSheet } from "../components/PaywallSheet";
 import { Button, Card } from "../components/ui";
 import { useI18n } from "../i18n/context";
@@ -9,8 +10,12 @@ import { useAiUsage } from "../hooks/useAiUsage";
 import { useAuth } from "../hooks/useAuth";
 import { usePlan } from "../hooks/usePlan";
 import { PRIVACY_POLICY_URL, SUPPORT_URL } from "../lib/appLinks";
+import {
+  checkApiHealth,
+  resolveApiBaseUrl,
+  resolveConfiguredApiUrl,
+} from "../lib/api/health";
 import { getAppleProfile } from "../lib/auth/session";
-import { checkApiHealth, resolveApiBaseUrl } from "../lib/api/health";
 import { restorePurchases } from "../lib/iap";
 import { isNativePlatform } from "../lib/platform";
 import { PLAN_LIMITS } from "../lib/plans";
@@ -31,6 +36,9 @@ export function SettingsPage() {
   const [profileEmail, setProfileEmail] = useState("");
   const [apiChecking, setApiChecking] = useState(false);
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [apiDisplayUrl, setApiDisplayUrl] = useState<string | null>(() =>
+    resolveConfiguredApiUrl(),
+  );
   const apiBaseUrl = resolveApiBaseUrl();
 
   const limits = PLAN_LIMITS[plan];
@@ -67,13 +75,15 @@ export function SettingsPage() {
   useEffect(() => {
     if (!apiBaseUrl) {
       setApiOnline(null);
+      setApiDisplayUrl(null);
       return;
     }
     let cancelled = false;
     setApiChecking(true);
-    void checkApiHealth().then(({ online }) => {
+    void checkApiHealth().then(({ online, url }) => {
       if (cancelled) return;
       setApiOnline(online);
+      setApiDisplayUrl(url);
       setApiChecking(false);
     });
     return () => {
@@ -118,6 +128,8 @@ export function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">{tr("settings.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{tr("settings.subtitle")}</p>
       </header>
+
+      <StyleMemoryPanel />
 
       <Card className="p-5">
         <h2 className="text-sm font-semibold">{tr("lang.label")}</h2>
@@ -261,8 +273,10 @@ export function SettingsPage() {
             <p className="text-sm text-muted-foreground">{tr("settings.apiDemo")}</p>
           )}
         </div>
-        {apiBaseUrl ? (
-          <p className="mt-2 break-all text-xs text-muted-foreground">{apiBaseUrl}</p>
+        {apiDisplayUrl ? (
+          <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{apiDisplayUrl}</p>
+        ) : !apiBaseUrl ? (
+          <p className="mt-2 text-xs text-muted-foreground">{tr("settings.apiDemoHint")}</p>
         ) : null}
       </Card>
 
@@ -291,15 +305,15 @@ export function SettingsPage() {
       </Card>
 
       {showMetaBlock && (
-      <Card className="p-5">
-        <h2 className="text-sm font-semibold">META (utilitaire)</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Jeton utilitaire pour l&apos;écosystème — pas un produit d&apos;investissement. À terme :
-          wallet connecté + solde ≥ {metaEntitlements.thresholds.holder} META → +{META_HOLDER_BONUS_AI}{" "}
-          générations IA / mois (bonus holder). Pro iOS via achat in-app (IAP).
-        </p>
-        <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
-      </Card>
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold">META (utilitaire)</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Jeton utilitaire pour l&apos;écosystème — pas un produit d&apos;investissement. À terme :
+            wallet connecté + solde ≥ {metaEntitlements.thresholds.holder} META → +{META_HOLDER_BONUS_AI}{" "}
+            générations IA / mois (bonus holder). Pro iOS via achat in-app (IAP).
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">{metaEntitlements.disclaimer.fr}</p>
+        </Card>
       )}
 
       <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />

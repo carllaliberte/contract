@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { exchangeAppleSession } from "../lib/api/auth";
 import { establishAppleSession } from "../lib/auth/session";
-import { isNativeIos } from "../lib/platform";
+import { isNativePlatform } from "../lib/platform";
 import { ROUTER_BASENAME } from "../lib/router";
 
 export interface AppleSignInResult {
@@ -73,10 +73,10 @@ async function loadAppleJs(): Promise<void> {
 }
 
 /**
- * Sign in with Apple on native iOS (Capacitor) or web (Apple JS redirect flow).
+ * Sign in with Apple on native (Capacitor) or web (Apple JS redirect flow).
  */
 export function useAppleSignIn() {
-  const native = isNativeIos();
+  const native = isNativePlatform();
   const webAvailable = typeof window !== "undefined";
   const available = native || webAvailable;
   const [status, setStatus] = useState<AppleSignInStatus>(available ? "idle" : "unavailable");
@@ -95,7 +95,7 @@ export function useAppleSignIn() {
         });
       })
       .catch(() => {
-        // Web SDK is optional; native iOS remains the primary path.
+        // Web SDK is optional; native remains the primary path.
       });
   }, [native, webAvailable]);
 

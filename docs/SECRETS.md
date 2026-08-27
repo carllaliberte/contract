@@ -43,6 +43,10 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 | **API** | `SUPABASE_SERVICE_ROLE_KEY` | **Secret** | Hébergeur uniquement | Non en CI (`MEMORY_STORE`) |
 | **API** | `MOCK_LLM`, `MEMORY_STORE` | Flags CI/dev | `api-ci.yml`, `.env` local | CI : toujours `true` |
 | **API** | `CORS_ORIGINS`, `MONTHLY_AI_LIMIT*` | Config | `.env` / hébergeur | Non |
+| **API** | `APPLE_CLIENT_IDS` | Config (public IDs) | Fly / `.env` | Prod : les deux IDs Apple |
+| **API** | Fichier `.p8` Sign in with Apple | **Secret** | Supabase Dashboard uniquement | Jamais dans git |
+| **API** | Apple Team ID / Key ID | **Secret** (config) | Supabase Dashboard | Jamais dans le client Vite |
+| **CreatorFlow** | `VITE_AUTH_STUB` | Flag dev web | `.env.local` | **Interdit** build iOS (`build:ios`) |
 | **Play** (Android META) | `META_PLAY_CONFIG` | **Secret** (JSON) | Actions **secret** | Non — upload skip sinon |
 | **Play** | `ANDROID_KEYSTORE_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | **Secret** | Actions **secrets** ou WIF | Non — build unsigned / skip upload |
 | **Play** | WIF (`google-app/play-store/github-wif.json`) | Config repo (non secret) | Fichier versionné sans placeholders | Option upload sans JSON |
@@ -55,7 +59,10 @@ Les variables **`VITE_*`** sont injectées **au build** Vite et finissent dans l
 Workflow : `.github/workflows/deploy-creatorflow.yml`
 
 - `VITE_BASE_PATH` et `VITE_ROUTER_BASENAME` sont **forcés** à `/contract/creatorflow/` dans le workflow (Pages).
-- `VITE_API_URL` — variable optionnelle (Settings → Variables) pour l’endpoint scripts IA.
+- `VITE_API_URL` — variable **recommandée** (Settings → Variables) : URL complète de la Edge Function Supabase, ex.  
+  `https://TON-PROJET.supabase.co/functions/v1/generate-script`
+- `VITE_AUTH_APPLE_URL` — optionnel : `https://TON-PROJET.supabase.co/functions/v1/auth-apple`
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — client Supabase (persistance des idées authentifiées)
 
 Si `VITE_API_URL` n’est pas définie, le build utilise le comportement démo.
 

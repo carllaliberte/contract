@@ -2,6 +2,7 @@ import { Copy, CopyPlus, Play, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui";
 import { PaywallSheet } from "../components/PaywallSheet";
+import { SharePackRow } from "../components/SharePackRow";
 import {
   ScriptGenerateDialog,
   type ScriptGenerateOptions,
@@ -15,6 +16,7 @@ import type { ScriptFormat } from "../lib/plans";
 import { AiUsageBadge } from "../components/AiUsageBadge";
 import { TtsPlayButton } from "../components/TtsPlayButton";
 import { useAiUsage } from "../hooks/useAiUsage";
+import { labelForPlatform } from "../lib/platforms";
 
 export function ContentsPage() {
   const { tr } = useI18n();
@@ -130,7 +132,7 @@ export function ContentsPage() {
                 <div>
                   <h2 className="font-medium">{item.title}</h2>
                   <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                    {item.platform}
+                    {labelForPlatform(item.platform)}
                   </p>
                 </div>
                 {item.videoUrl && (
@@ -143,6 +145,7 @@ export function ContentsPage() {
                     {item.script}
                   </p>
                   <TtsPlayButton text={item.script} />
+                  <SharePackRow idea={item} />
                   <div className="flex gap-2">
                     <Button
                       type="button"

@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import type { AuthVariables } from "../middleware/auth.js";
 import { authMiddleware, getSupabaseAdminClient } from "../middleware/auth.js";
 import { env } from "../env.js";
@@ -72,15 +71,6 @@ function limitError(
 export function createAiRoutes() {
   const ai = new Hono<AppEnv>();
 
-  ai.use(
-    "*",
-    cors({
-      origin: env.corsOrigins,
-      allowHeaders: ["Content-Type", "Authorization", "x-demo-id"],
-      allowMethods: ["POST", "OPTIONS"],
-    }),
-  );
-
   ai.use("*", authMiddleware);
 
   ai.post("/generate-script", async (c) => {
@@ -100,7 +90,7 @@ export function createAiRoutes() {
         {
           error: "BAD_REQUEST",
           message:
-            "ideaId, title, description, and platform (youtube|tiktok|reels|x) are required",
+            "ideaId, title, description, and platform (youtube|tiktok|reels|instagram|x) are required",
         },
         400,
       );
