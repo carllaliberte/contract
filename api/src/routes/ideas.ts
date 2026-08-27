@@ -57,6 +57,22 @@ function clientToRow(userId: string, idea: ClientIdea): IdeaRow {
   };
 }
 
+const IDEA_STATUSES = new Set([
+  "idea",
+  "script",
+  "production",
+  "ready",
+  "published",
+]);
+const IDEA_PRIORITIES = new Set(["high", "medium", "low"]);
+const IDEA_PLATFORMS = new Set([
+  "youtube",
+  "tiktok",
+  "reels",
+  "instagram",
+  "x",
+]);
+
 function parseIdeasPayload(raw: unknown): ClientIdea[] | null {
   if (!raw || typeof raw !== "object") return null;
   const ideas = (raw as { ideas?: unknown }).ideas;
@@ -69,9 +85,13 @@ function parseIdeasPayload(raw: unknown): ClientIdea[] | null {
     if (typeof i.id !== "string" || !i.id.trim()) return null;
     if (typeof i.title !== "string" || !i.title.trim()) return null;
     if (typeof i.description !== "string") return null;
-    if (typeof i.status !== "string") return null;
-    if (typeof i.priority !== "string") return null;
-    if (typeof i.platform !== "string") return null;
+    if (typeof i.status !== "string" || !IDEA_STATUSES.has(i.status)) return null;
+    if (typeof i.priority !== "string" || !IDEA_PRIORITIES.has(i.priority)) {
+      return null;
+    }
+    if (typeof i.platform !== "string" || !IDEA_PLATFORMS.has(i.platform)) {
+      return null;
+    }
     if (typeof i.updatedAt !== "string") return null;
     if (typeof i.thumbnail !== "string") return null;
 
