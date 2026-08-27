@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">CreatorFlow</string>
-    <string name="title_activity_main">CreatorFlow</string>
+    <string name="app_name">Clapshot</string>
+    <string name="title_activity_main">Clapshot</string>
     <string name="package_name">com.carllaliberte.creatorflow</string>
     <string name="custom_url_scheme">com.carllaliberte.creatorflow</string>
 </resources>

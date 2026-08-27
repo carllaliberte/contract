@@ -4,8 +4,8 @@
 
 ## Lane
 
-- [ ] CreatorFlow (idée → pack → tourner)
-- [ ] API / Supabase (serves CreatorFlow only)
+- [ ] Clapshot (idée → pack → tourner)
+- [ ] API / Supabase (serves Clapshot only)
 - [ ] CI / workflows
 - [ ] Docs
 

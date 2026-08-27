@@ -1,4 +1,4 @@
-import { ArrowRight, Github } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
@@ -177,7 +177,6 @@ export function LandingPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
           >
-            <Github className="size-3.5" />
             {tr("nav.github")}
           </a>
         </div>

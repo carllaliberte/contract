@@ -41,7 +41,7 @@ export function Logo({ size = "md" }: { size?: "sm" | "md" }) {
       >
         C
       </span>
-      <span className={`${label} font-semibold tracking-tight`}>CreatorFlow</span>
+      <span className={`${label} font-semibold tracking-tight`}>Clapshot</span>
     </div>
   );
 }

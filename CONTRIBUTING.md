@@ -1,6 +1,6 @@
 # Contributing
 
-This repository ships **one public product: CreatorFlow**.
+This repository ships **one public product: Clapshot**.
 
 Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) first.
 
@@ -8,7 +8,7 @@ Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) first.
 
 1. The first screen is frozen (`#82`). Do not restyle it in a drive-by PR.
 2. Never commit secrets — [`docs/SECRETS.md`](docs/SECRETS.md) and [`SECURITY.md`](SECURITY.md).
-3. One lane. Do not open Quantum, META, or Dependabot work next to a CreatorFlow PR.
+3. One lane. Do not open Quantum, META, or Dependabot work next to a Clapshot PR.
 4. Prefer small pull requests that serve **idée → pack → tourner**.
 
 ## Development setup
@@ -20,7 +20,7 @@ Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) first.
 - For Android: JDK 21 + Android SDK
 - For iOS: macOS + Xcode 15+
 
-### CreatorFlow
+### Clapshot
 
 ```bash
 cd creatorflow
@@ -47,7 +47,7 @@ Prefer `MOCK_LLM` / stub modes locally. Never commit real provider keys.
 
 ### META (`google-app/`)
 
-Archived. Do not start new work here unless Carl explicitly reopens that lane.
+Archived (display name ClapShot). Do not start new work here unless Carl explicitly reopens that lane.
 
 ## Branch & commit conventions
 
@@ -58,9 +58,9 @@ Archived. Do not start new work here unless Carl explicitly reopens that lane.
 ## Pull requests
 
 1. Open a PR against `main` using the template.
-2. Tick **CreatorFlow** or **CI / docs** — not a second product.
+2. Tick **Clapshot** or **CI / docs** — not a second product.
 3. CI must be green:
-   - CI CreatorFlow (web)
+   - CI Clapshot (web)
    - Secret scan (TruffleHog)
    - API CI when `api/` changes
 4. Do **not** merge `#74`, `#75`, or Dependabot with product work.

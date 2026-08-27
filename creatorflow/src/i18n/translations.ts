@@ -4,9 +4,9 @@ export type Translations = Record<string, string>;
 
 export const translations: Record<Locale, Translations> = {
   fr: {
-    "app.name": "CreatorFlow",
+    "app.name": "Clapshot",
     "app.heroTitle": "4 idées. 0 plan tourné.",
-    "app.tagline": "CreatorFlow — le booth.",
+    "app.tagline": "Clapshot — le booth.",
     "app.lead":
       "Le booth. Pas un dashboard de plus. Structure tes idées, écris tes scripts, et filme.",
     "app.heroBadge": "Le booth · Démo gratuite",
@@ -47,7 +47,7 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet4": "Essai immédiat, sans carte bancaire",
     "login.tryDemo": "Explorer sans compte",
     "login.start": "On commence.",
-    "showcase.title": "Voyez CreatorFlow en action",
+    "showcase.title": "Voyez Clapshot en action",
     "showcase.subtitle":
       "Aperçus du parcours de création, du tableau de bord et des contenus prêts à publier.",
     "showcase.videoTitle": "Démo produit (2 min)",
@@ -74,14 +74,14 @@ export const translations: Record<Locale, Translations> = {
     "audience.title": "Pour qui ?",
     "audience.body":
       "Créateurs YouTube, TikTok, Instagram Reels, solopreneurs et équipes contenu.",
-    "why.title": "Pourquoi CreatorFlow ?",
+    "why.title": "Pourquoi Clapshot ?",
     "why.body":
       "Moins de chaos mental. Plus de publications. Un seul endroit pour vos idées, scripts et statuts de production.",
     "faq.title": "Questions fréquentes",
-    "faq.q1": "Qu'est-ce que CreatorFlow ?",
+    "faq.q1": "Qu'est-ce que Clapshot ?",
     "faq.a1":
-      "CreatorFlow est une application web pour créateurs : organisez vos idées vidéo, générez des scripts avec l'IA et suivez chaque contenu jusqu'à la publication.",
-    "faq.q2": "CreatorFlow est-il gratuit ?",
+      "Clapshot est une application web pour créateurs : organisez vos idées vidéo, générez des scripts avec l'IA et suivez chaque contenu jusqu'à la publication.",
+    "faq.q2": "Clapshot est-il gratuit ?",
     "faq.a2":
       "Vous pouvez explorer la démo sans compte ni carte bancaire. Les comptes offrent des quotas de génération IA selon le plan choisi.",
     "faq.q3": "Quelles plateformes sont supportées ?",
@@ -89,7 +89,7 @@ export const translations: Record<Locale, Translations> = {
       "Les scripts et le parcours de création ciblent YouTube, TikTok et Instagram Reels, avec une interface en français et en anglais.",
     "faq.q4": "Comment fonctionnent les scripts IA ?",
     "faq.a4":
-      "Depuis une idée, CreatorFlow génère un script structuré (accroche, sections, appel à l'action) adapté au format choisi, dans la limite de votre quota mensuel.",
+      "Depuis une idée, Clapshot génère un script structuré (accroche, sections, appel à l'action) adapté au format choisi, dans la limite de votre quota mensuel.",
     "dev.title": "Pour les développeurs",
     "dev.subtitle":
       "Stack, API et commandes utiles pour vos démos techniques et intégrations.",
@@ -106,9 +106,9 @@ export const translations: Record<Locale, Translations> = {
     "dev.build.body":
       "npm run build:seo — build Vite + prerender Playwright pour GitHub Pages (base /contract/creatorflow/).",
     "dev.footerLink": "Pour les développeurs",
-    "cta.title": "Téléchargez CreatorFlow et publiez plus régulièrement.",
+    "cta.title": "Téléchargez Clapshot et publiez plus régulièrement.",
     "cta.subtitle": "Explorez la démo interactive. Aucun compte requis.",
-    "footer.rights": "© 2026 CreatorFlow. Tous droits réservés.",
+    "footer.rights": "© 2026 Clapshot. Tous droits réservés.",
     "footer.terms": "Conditions",
     "footer.privacy": "Confidentialité",
     "footer.contact": "Contact",
@@ -244,7 +244,7 @@ export const translations: Record<Locale, Translations> = {
     "settings.privacy": "Politique de confidentialité",
     "settings.support": "Support",
     "settings.demoName": "Explorateur démo",
-    "settings.demoEmail": "demo@creatorflow.app",
+    "settings.demoEmail": "demo@clapshot.app",
     "settings.appleUser": "Compte Apple",
     "settings.appleEmailHidden": "E-mail masqué par Apple",
     "settings.guestName": "Invité",
@@ -269,9 +269,9 @@ export const translations: Record<Locale, Translations> = {
     "styleMemory.learnDone": "Exemple intégré à votre profil de style.",
     "styleMemory.previewEmpty": "Aucun signal de style enregistré pour le moment.",
     "plan.freeName": "Gratuit",
-    "plan.proName": "CreatorFlow Pro",
+    "plan.proName": "Clapshot Pro",
     "plan.longMaxHint": "Durée long max : {minutes} min sur ce forfait.",
-    "paywall.badge": "CreatorFlow Pro",
+    "paywall.badge": "Clapshot Pro",
     "paywall.title": "Publiez plus, sans limite",
     "paywall.subtitle": "Débloquez des quotas généreux pour vos scripts courts et longs.",
     "paywall.featureShort": "100 scripts courts / mois",
@@ -301,9 +301,9 @@ export const translations: Record<Locale, Translations> = {
     "lang.en": "English",
   },
   en: {
-    "app.name": "CreatorFlow",
+    "app.name": "Clapshot",
     "app.heroTitle": "4 ideas. 0 shots filmed.",
-    "app.tagline": "CreatorFlow — the booth.",
+    "app.tagline": "Clapshot — the booth.",
     "app.lead":
       "The booth. Not another dashboard. Structure your ideas, write scripts, and film.",
     "app.heroBadge": "The booth · Free demo",
@@ -344,7 +344,7 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet4": "Try it now, no credit card required",
     "login.tryDemo": "Explore without account",
     "login.start": "Let’s go.",
-    "showcase.title": "See CreatorFlow in action",
+    "showcase.title": "See Clapshot in action",
     "showcase.subtitle":
       "Previews of your creation workflow, dashboard, and publish-ready content.",
     "showcase.videoTitle": "Product demo (2 min)",
@@ -371,14 +371,14 @@ export const translations: Record<Locale, Translations> = {
     "audience.title": "Who is it for?",
     "audience.body":
       "YouTube, TikTok, Instagram Reels creators, solopreneurs, and content teams.",
-    "why.title": "Why CreatorFlow?",
+    "why.title": "Why Clapshot?",
     "why.body":
       "Less mental chaos. More publishing. One place for ideas, scripts, and production status.",
     "faq.title": "Frequently asked questions",
-    "faq.q1": "What is CreatorFlow?",
+    "faq.q1": "What is Clapshot?",
     "faq.a1":
-      "CreatorFlow is a web app for creators: organize video ideas, generate AI scripts, and track each piece until you publish.",
-    "faq.q2": "Is CreatorFlow free?",
+      "Clapshot is a web app for creators: organize video ideas, generate AI scripts, and track each piece until you publish.",
+    "faq.q2": "Is Clapshot free?",
     "faq.a2":
       "You can explore the demo without an account or credit card. Accounts include monthly AI generation quotas depending on your plan.",
     "faq.q3": "Which platforms are supported?",
@@ -386,7 +386,7 @@ export const translations: Record<Locale, Translations> = {
       "Scripts and the creation workflow target YouTube, TikTok, and Instagram Reels, with a French and English interface.",
     "faq.q4": "How do AI scripts work?",
     "faq.a4":
-      "From an idea, CreatorFlow generates a structured script (hook, sections, call to action) for your chosen format, within your monthly quota.",
+      "From an idea, Clapshot generates a structured script (hook, sections, call to action) for your chosen format, within your monthly quota.",
     "dev.title": "For developers",
     "dev.subtitle":
       "Stack, API, and commands for technical demos and integrations.",
@@ -403,9 +403,9 @@ export const translations: Record<Locale, Translations> = {
     "dev.build.body":
       "npm run build:seo — Vite build plus Playwright prerender for GitHub Pages (base /contract/creatorflow/).",
     "dev.footerLink": "For developers",
-    "cta.title": "Get CreatorFlow and publish more consistently.",
+    "cta.title": "Get Clapshot and publish more consistently.",
     "cta.subtitle": "Try the interactive demo. No account required.",
-    "footer.rights": "© 2026 CreatorFlow. All rights reserved.",
+    "footer.rights": "© 2026 Clapshot. All rights reserved.",
     "footer.terms": "Terms",
     "footer.privacy": "Privacy",
     "footer.contact": "Contact",
@@ -541,7 +541,7 @@ export const translations: Record<Locale, Translations> = {
     "settings.privacy": "Privacy policy",
     "settings.support": "Support",
     "settings.demoName": "Demo explorer",
-    "settings.demoEmail": "demo@creatorflow.app",
+    "settings.demoEmail": "demo@clapshot.app",
     "settings.appleUser": "Apple account",
     "settings.appleEmailHidden": "Email hidden by Apple",
     "settings.guestName": "Guest",
@@ -566,9 +566,9 @@ export const translations: Record<Locale, Translations> = {
     "styleMemory.learnDone": "Sample added to your style profile.",
     "styleMemory.previewEmpty": "No style signals recorded yet.",
     "plan.freeName": "Free",
-    "plan.proName": "CreatorFlow Pro",
+    "plan.proName": "Clapshot Pro",
     "plan.longMaxHint": "Max long length: {minutes} min on this plan.",
-    "paywall.badge": "CreatorFlow Pro",
+    "paywall.badge": "Clapshot Pro",
     "paywall.title": "Publish more, without limits",
     "paywall.subtitle": "Unlock generous quotas for short and long scripts.",
     "paywall.featureShort": "100 short scripts / month",

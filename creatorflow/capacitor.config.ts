@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.carllaliberte.creatorflow",
-  appName: "CreatorFlow",
+  appName: "Clapshot",
   webDir: "dist",
   server: {
     iosScheme: "https",

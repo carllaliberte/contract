@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures";
 
 test.describe("Landing page", () => {
   test("shows brand, hero, and OAuth providers", async ({ page, landing }) => {
-    await expect(page.getByText("CreatorFlow").first()).toBeVisible();
+    await expect(page.getByText("Clapshot").first()).toBeVisible();
     await expect(page.locator("h1")).toContainText(/4 idées|4 ideas/i);
     await expect(page.locator("h1")).not.toContainText(/friction|synergy|credit card|publish more content/i);
 
