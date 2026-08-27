@@ -57,7 +57,7 @@ create or replace function public.increment_ai_usage(
   p_user_id uuid,
   p_month text
 )
-returns table(count integer, limit integer, remaining integer)
+returns table("count" integer, "limit" integer, remaining integer)
 language plpgsql
 security definer
 set search_path = public
