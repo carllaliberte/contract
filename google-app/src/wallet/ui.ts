@@ -23,6 +23,16 @@ import { defaultChain, getChainName, isSupportedChainId, supportedChains } from 
 const DISCLAIMER =
   'Connexion non-custodiale — nous ne détenons jamais vos clés. / Non-custodial — we never hold your keys.'
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => {
+    if (ch === '&') return '&' + 'amp;'
+    if (ch === '<') return '&' + 'lt;'
+    if (ch === '>') return '&' + 'gt;'
+    if (ch === '"') return '&' + 'quot;'
+    return '&#39;'
+  })
+}
+
 const SIGN_MESSAGE = 'META Token Dashboard — Vérification de propriété du portefeuille'
 
 export type WalletEntitlementsView = {
@@ -84,7 +94,7 @@ function renderEntitlements(): string {
   }
 
   if (entitlementsView.error) {
-    return `<p class="wallet-bar__meta wallet-bar__meta--error" role="alert">${entitlementsView.error}</p>`
+    return `<p class="wallet-bar__meta wallet-bar__meta--error" role="alert">${escapeHtml(entitlementsView.error)}</p>`
   }
 
   if (!entitlementsView.balance || !entitlementsView.tier) return ''
@@ -96,11 +106,11 @@ function renderEntitlements(): string {
     <div class="wallet-bar__meta">
       <p class="wallet-bar__balance">
         <span class="wallet-bar__balance-label">Solde META</span>
-        <strong>${entitlementsView.balance} ${entitlementsView.symbol ?? metaEntitlements.symbol}</strong>
+        <strong>${escapeHtml(entitlementsView.balance)} ${escapeHtml(entitlementsView.symbol ?? metaEntitlements.symbol)}</strong>
       </p>
       <p class="wallet-bar__tier-row">
-        <span class="wallet-tier wallet-tier--${entitlementsView.tier}">${label}</span>
-        <span class="wallet-bar__tier-hint">${description}</span>
+        <span class="wallet-tier wallet-tier--${escapeHtml(entitlementsView.tier)}">${escapeHtml(label)}</span>
+        <span class="wallet-bar__tier-hint">${escapeHtml(description)}</span>
       </p>
     </div>
   `
@@ -175,11 +185,11 @@ function renderUnsupportedChainBanner(chainId: number): string {
   return `
     <div class="wallet-bar__unsupported" role="alert">
       <p>
-        <strong>Réseau non pris en charge :</strong> ${getChainName(chainId)} (chain ID ${chainId}).
+        <strong>Réseau non pris en charge :</strong> ${escapeHtml(getChainName(chainId))} (chain ID ${chainId}).
         Changez de réseau pour utiliser ce tableau de bord.
       </p>
       <button type="button" id="wallet-switch-default" class="wallet-btn wallet-btn--secondary">
-        Passer à ${defaultChain.name}
+        Passer à ${escapeHtml(defaultChain.name)}
       </button>
     </div>
   `
@@ -197,8 +207,8 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
     <div class="wallet-bar__body">
       <div class="wallet-bar__info">
         <p class="wallet-bar__label">Connecté</p>
-        <p class="wallet-bar__address mono" title="${address}">${shortenAddress(address)}</p>
-        <p class="wallet-bar__chain">${getChainName(displayChainId)}</p>
+        <p class="wallet-bar__address mono" title="${escapeHtml(address)}">${escapeHtml(shortenAddress(address))}</p>
+        <p class="wallet-bar__chain">${escapeHtml(getChainName(displayChainId))}</p>
         ${renderEntitlements()}
       </div>
       <div class="wallet-bar__actions">
@@ -208,7 +218,7 @@ function renderConnected(walletBar: HTMLElement, account: WalletAccount) {
             ${supportedChains
               .map(
                 (chain) =>
-                  `<option value="${chain.id}"${chain.id === displayChainId ? ' selected' : ''}>${chain.name}</option>`,
+                  `<option value="${chain.id}"${chain.id === displayChainId ? ' selected' : ''}>${escapeHtml(chain.name)}</option>`,
               )
               .join('')}
           </select>
