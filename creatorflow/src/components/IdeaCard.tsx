@@ -1,24 +1,19 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRight, Copy, CopyPlus, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Clapperboard, Copy, CopyPlus, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { copyScriptToClipboard } from "../lib/ideaActions";
+import { labelForPlatform } from "../lib/platforms";
 import { canAdvanceStatus } from "../lib/pipelineActions";
 import { Button } from "./ui";
-
-const platformLabel: Record<string, string> = {
-  youtube: "YouTube",
-  tiktok: "TikTok",
-  reels: "Reels",
-  x: "X",
-};
 
 type IdeaCardProps = {
   idea: Idea;
   onGenerateScript?: (idea: Idea) => void;
   onAdvance?: (idea: Idea) => void;
+  onShoot?: (idea: Idea) => void;
   onDuplicate?: (idea: Idea) => void;
   isGenerating?: boolean;
   dragOverlay?: boolean;
@@ -28,6 +23,7 @@ export function IdeaCard({
   idea,
   onGenerateScript,
   onAdvance,
+  onShoot,
   onDuplicate,
   isGenerating,
   dragOverlay,
@@ -37,6 +33,7 @@ export function IdeaCard({
   const canGenerate =
     onGenerateScript && (idea.status === "idea" || idea.status === "script");
   const canAdvance = onAdvance && canAdvanceStatus(idea.status);
+  const canShoot = Boolean(onShoot && idea.status === "production");
   const canCopy = Boolean(idea.script?.trim());
   const canDuplicate = Boolean(onDuplicate);
 
@@ -62,7 +59,7 @@ export function IdeaCard({
         />
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
-          {platformLabel[idea.platform] ?? idea.platform}
+          {labelForPlatform(idea.platform)}
         </span>
       </div>
       <div className="p-3">
@@ -70,8 +67,19 @@ export function IdeaCard({
         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           {idea.description}
         </p>
-        {(canGenerate || canAdvance || canCopy || canDuplicate) && (
+        {(canGenerate || canAdvance || canShoot || canCopy || canDuplicate) && (
           <div className="mt-2.5 flex flex-col gap-2">
+            {canShoot && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-9 w-full text-xs"
+                onClick={() => onShoot?.(idea)}
+              >
+                <Clapperboard className="size-3.5" />
+                {tr("pipeline.shoot")}
+              </Button>
+            )}
             <div className="flex gap-2">
               {canGenerate && (
                 <Button

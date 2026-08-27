@@ -56,6 +56,10 @@ const platformGuidance: Record<Platform, { fr: string; en: string }> = {
     fr: "Format Reels/Instagram : vertical, 30–90 s, hook immédiat, rythme rapide, CTA discret (suivre, partager).",
     en: "Reels/Instagram format: vertical, 30–90 s, immediate hook, fast pace, subtle CTA (follow, share).",
   },
+  instagram: {
+    fr: "Format Instagram/Reels : vertical, 30–90 s, hook immédiat, rythme rapide, CTA discret (suivre, partager).",
+    en: "Instagram/Reels format: vertical, 30–90 s, immediate hook, fast pace, subtle CTA (follow, share).",
+  },
   x: {
     fr: "Format X (Twitter) : thread 6–12 posts, hook très fort sur le premier post, ton conversationnel thought-leadership, CTA clair en fin de thread. Alternative : post unique fort. Inclure 3–5 variantes de hooks et une version post unique condensée.",
     en: "X (Twitter) format: 6–12 post thread, very strong hook on the first post, conversational thought-leadership tone, clear CTA at the end. Alternative: strong single post. Include 3–5 hook variants and a condensed single-post version.",
@@ -349,7 +353,7 @@ export function buildScriptPrompt(input: PromptInput): {
     return buildTikTokFrPrompt(input);
   }
 
-  if (input.platform === "reels" && input.language === "fr") {
+  if ((input.platform === "reels" || input.platform === "instagram") && input.language === "fr") {
     return buildReelsFrPrompt(input);
   }
 
@@ -422,7 +426,7 @@ export function buildMockScript(input: PromptInput): string {
     ].join("\n");
   }
 
-  if (input.platform === "reels" && input.language === "fr") {
+  if ((input.platform === "reels" || input.platform === "instagram") && input.language === "fr") {
     return [
       `HOOK VISUEL + TEXTE (0–3s): [Plan: gros texte « ${input.title} »] + « ${input.title} »`,
       "",

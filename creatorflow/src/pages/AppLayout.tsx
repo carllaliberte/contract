@@ -16,6 +16,7 @@ import { LanguageSelector } from "../components/LanguageSelector";
 import { Logo } from "../components/ui";
 import { useI18n } from "../i18n/context";
 import { useAuth } from "../hooks/useAuth";
+import { useCloudQueueStatus } from "../hooks/useCloudQueueStatus";
 import { applyAppRobots, applyLandingRobots } from "../lib/seo";
 
 const navItems = [
@@ -38,6 +39,7 @@ export function AppLayout() {
   const { tr } = useI18n();
   const navigate = useNavigate();
   const { signOut, isAuthenticated } = useAuth();
+  const { pendingCount, online } = useCloudQueueStatus();
 
   useEffect(() => {
     applyAppRobots();
@@ -58,6 +60,16 @@ export function AppLayout() {
             {isAuthenticated ? tr("session.badge.apple") : tr("demo.badge")}
           </span>
           <div className="flex items-center gap-2">
+            {!online && (
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                {tr("cloud.offline")}
+              </span>
+            )}
+            {pendingCount > 0 && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
+                {tr("cloud.pending", { count: String(pendingCount) })}
+              </span>
+            )}
             <LanguageSelector />
             <button
               type="button"

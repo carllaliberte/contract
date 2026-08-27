@@ -25,6 +25,9 @@ const AppleAuthCallbackPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
+const ShootModePage = lazy(() =>
+  import("./pages/ShootModePage").then((m) => ({ default: m.ShootModePage })),
+);
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const { isAppAllowed, isLoading } = useAuth();
@@ -94,6 +97,14 @@ export default function App() {
               element={
                 <Suspense fallback={<AppRouteFallback />}>
                   <CalendarPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="shoot/:ideaId"
+              element={
+                <Suspense fallback={<AppRouteFallback />}>
+                  <ShootModePage />
                 </Suspense>
               }
             />
