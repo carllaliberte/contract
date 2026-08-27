@@ -49,7 +49,7 @@ export function LandingPage() {
           <div className="flex min-h-[100dvh] flex-col justify-center lg:min-h-0">
             <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
               <span className="rec-dot" />
-              {tr("app.kicker")}
+              {locale === "fr" ? "Le booth" : "The booth"}
             </p>
             <h1 className="font-display text-[2.75rem] font-medium italic leading-[1.04] tracking-tight sm:text-6xl sm:leading-[1.02] lg:text-7xl">
               {tr("app.heroTitle")}
