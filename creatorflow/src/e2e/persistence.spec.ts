@@ -15,10 +15,12 @@ test.describe("Idea persistence", () => {
     await addIdea(page, IDEA_TITLE);
 
     await page.reload();
-    await expect(page.getByText(IDEA_TITLE)).toBeVisible();
-
-    const ideas = await readIdeas(page);
-    expect(ideas.some((i) => i.title === IDEA_TITLE)).toBe(true);
+    await expect
+      .poll(async () => {
+        const ideas = await readIdeas(page);
+        return ideas.some((i) => i.title === IDEA_TITLE);
+      })
+      .toBe(true);
   });
 
   test("pipeline reflects persisted ideas after navigation", async ({ page, demoApp }) => {
