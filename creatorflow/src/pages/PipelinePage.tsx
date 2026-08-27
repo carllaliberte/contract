@@ -66,7 +66,7 @@ function DroppableColumn({
 
 export function PipelinePage() {
   const { tr } = useI18n();
-  const { ideas, moveIdea, generateScript } = useIdeas();
+  const { ideas, moveIdea, generateScript, duplicateIdea } = useIdeas();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
@@ -166,6 +166,10 @@ export function PipelinePage() {
     if (next) moveIdea(idea.id, next);
   }
 
+  function handleDuplicate(idea: Idea) {
+    duplicateIdea(idea.id);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -216,6 +220,7 @@ export function PipelinePage() {
                       idea={idea}
                       onGenerateScript={openGenerateDialog}
                       onAdvance={handleAdvance}
+                      onDuplicate={handleDuplicate}
                       isGenerating={generatingId === idea.id}
                     />
                   ))

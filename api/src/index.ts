@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { env } from "./env.js";
 import { createAiRoutes } from "./routes/ai.js";
 import { createAuthRoutes } from "./routes/auth.js";
+import { createIdeasRoutes } from "./routes/ideas.js";
 
 const app = new Hono();
 
@@ -12,7 +13,7 @@ app.use(
   cors({
     origin: env.corsOrigins,
     allowHeaders: ["Content-Type", "Authorization", "x-demo-id"],
-    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "OPTIONS"],
   }),
 );
 
@@ -26,6 +27,7 @@ app.get("/health", (c) =>
 );
 
 app.route("/auth", createAuthRoutes());
+app.route("/ideas", createIdeasRoutes());
 app.route("/ai", createAiRoutes());
 
 serve(
