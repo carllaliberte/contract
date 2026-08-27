@@ -1,14 +1,6 @@
 name: Build Android release (Google Play)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'google-app/**'
-      - '.github/workflows/android-play-release.yml'
-      - 'scripts/load-meta-play-config.cjs'
-      - 'scripts/upload-play-aab.sh'
-      - 'google-app/play-store/github-wif.json'
   workflow_dispatch:
 
 permissions:
