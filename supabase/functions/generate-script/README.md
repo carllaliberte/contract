@@ -33,5 +33,8 @@ Contract: `POST` with JSON body matching `GenerateScriptRequest`, response `Gene
 Auth: `Authorization: Bearer <supabase_jwt>` or `x-demo-id` for demo mode.
 
 Optional body: `sourceUrl` (public http/https) and/or `sourceText` — Grok grounds the script in that open source.
+YouTube URLs use oEmbed (title + author). Wikipedia URLs use the REST summary. Other pages stay HTML→text.
+
+Response pack: `script`, `titles` (3), `description`, `hashtags`, `hooks` (3). If Grok is not configured, `message` is `GROK_NOT_CONFIGURED` (not `OPENAI_API_KEY`).
 
 Limits: free = 8/month, pro = 200/month (from `profiles.plan`).

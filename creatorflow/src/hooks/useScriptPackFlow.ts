@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useIdeas, isGenerateScriptError } from "../context/IdeasContext";
+import { isGrokNotConfiguredError } from "../lib/api/generateScript";
 import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import type { ScriptFormat } from "../lib/plans";
@@ -50,7 +51,11 @@ export function useScriptPackFlow() {
         throw error;
       }
       if (isGenerateScriptError(error)) {
-        setNotice(error.message);
+        setNotice(
+          isGrokNotConfiguredError(error)
+            ? tr("script.grokNotConfigured")
+            : error.message,
+        );
       } else {
         setNotice(tr("script.apiError"));
       }

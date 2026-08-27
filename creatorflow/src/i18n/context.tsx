@@ -44,8 +44,8 @@ function syncDocumentLocale(locale: Locale) {
 
 function syncLangQueryParam(locale: Locale) {
   const url = new URL(window.location.href);
-  if (locale === "en") {
-    url.searchParams.set("lang", "en");
+  if (locale === "fr") {
+    url.searchParams.set("lang", "fr");
   } else {
     url.searchParams.delete("lang");
   }

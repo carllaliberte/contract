@@ -3,7 +3,13 @@ import type { Idea, IdeaStatus } from "../data/demo";
 
 export type ApplyPackPatch = Pick<
   Idea,
-  "script" | "description" | "packTitles" | "packHashtags" | "packCaption" | "status"
+  | "script"
+  | "description"
+  | "packTitles"
+  | "packHashtags"
+  | "packCaption"
+  | "packHooks"
+  | "status"
 > & {
   updatedAt: string;
 };
@@ -27,6 +33,7 @@ export function buildApplyPackPatch(
     packTitles: pack.titles?.length ? pack.titles : idea.packTitles,
     packHashtags: pack.hashtags?.length ? pack.hashtags : idea.packHashtags,
     packCaption: pack.description?.trim() ?? idea.packCaption,
+    packHooks: pack.hooks?.length ? pack.hooks : idea.packHooks,
     status: nextStatus,
     updatedAt: new Date().toISOString(),
   };

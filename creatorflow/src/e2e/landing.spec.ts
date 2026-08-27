@@ -3,7 +3,9 @@ import { expect, test } from "./fixtures";
 test.describe("Landing page", () => {
   test("shows brand, hero, and OAuth providers", async ({ page, landing }) => {
     await expect(page.getByText("CreatorFlow").first()).toBeVisible();
-    await expect(page.locator("h1")).toContainText(/publiez|publish|friction/i);
+    await expect(page.locator("h1")).toContainText(
+      /4 ideas|4 idées|booth|friction|publiez|publish/i,
+    );
 
     await expect(
       page.getByRole("button", { name: /continuer avec google|continue with google/i }),

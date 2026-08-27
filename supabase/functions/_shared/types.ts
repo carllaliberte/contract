@@ -46,6 +46,10 @@ export type GenerateScriptRequest = {
 
 export type GenerateScriptResponse = {
   script: string;
+  titles?: string[];
+  description?: string;
+  hashtags?: string[];
+  hooks?: string[];
   usage: AiUsageSnapshot;
   model: string;
 };

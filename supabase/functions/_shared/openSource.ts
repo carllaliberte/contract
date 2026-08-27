@@ -68,7 +68,44 @@ function clip(text: string): string {
   return `${text.slice(0, MAX_SOURCE_CHARS)}…`;
 }
 
-async function fetchPublicPage(url: URL): Promise<string> {
+export function isYouTubeHost(host: string): boolean {
+  const h = host.toLowerCase();
+  return (
+    h === "youtu.be" ||
+    h === "youtube.com" ||
+    h.endsWith(".youtube.com") ||
+    h === "youtube-nocookie.com" ||
+    h.endsWith(".youtube-nocookie.com")
+  );
+}
+
+export function youtubeOEmbedEndpoint(url: URL): URL | null {
+  if (!isYouTubeHost(url.hostname)) return null;
+  return new URL(
+    `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url.toString())}`,
+  );
+}
+
+export function wikipediaSummaryEndpoint(url: URL): URL | null {
+  const host = url.hostname.toLowerCase();
+  const match = host.match(/^([a-z]{2,3}(?:-[a-z]{2})?)\.(?:m\.)?wikipedia\.org$/);
+  if (!match) return null;
+  const lang = match[1];
+  const titleMatch = url.pathname.match(/^\/wiki\/([^/]+)/);
+  if (!titleMatch?.[1] || titleMatch[1] === "Special:Search") return null;
+  let title: string;
+  try {
+    title = decodeURIComponent(titleMatch[1]);
+  } catch {
+    title = titleMatch[1];
+  }
+  if (!title.trim()) return null;
+  return new URL(
+    `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+  );
+}
+
+async function fetchLimited(url: URL, accept: string): Promise<string> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_MS);
   try {
@@ -77,23 +114,95 @@ async function fetchPublicPage(url: URL): Promise<string> {
       redirect: "follow",
       signal: ctrl.signal,
       headers: {
-        Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
+        Accept: accept,
         "User-Agent": "CreatorFlow/1.0 (open-source script fetch)",
       },
     });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buf = new Uint8Array(await res.arrayBuffer());
     const slice = buf.byteLength > MAX_BYTES ? buf.slice(0, MAX_BYTES) : buf;
-    const raw = new TextDecoder("utf-8", { fatal: false }).decode(slice);
-    const type = res.headers.get("content-type") ?? "";
-    const text = type.includes("html") || /<html/i.test(raw) ? htmlToText(raw) : raw.trim();
-    if (!text) throw new Error("empty");
-    return clip(text);
+    return new TextDecoder("utf-8", { fatal: false }).decode(slice);
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchYouTube(url: URL): Promise<string> {
+  const endpoint = youtubeOEmbedEndpoint(url);
+  if (!endpoint) throw new Error("not youtube");
+  const raw = await fetchLimited(endpoint, "application/json");
+  const data = JSON.parse(raw) as {
+    title?: unknown;
+    author_name?: unknown;
+    author_url?: unknown;
+  };
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  if (!title) throw new Error("empty");
+  const author = typeof data.author_name === "string" ? data.author_name.trim() : "";
+  const lines = [`YouTube: ${title}`];
+  if (author) lines.push(`Author: ${author}`);
+  lines.push(`URL: ${url.toString()}`);
+  return clip(lines.join("\n"));
+}
+
+async function fetchWikipedia(url: URL): Promise<string> {
+  const endpoint = wikipediaSummaryEndpoint(url);
+  if (!endpoint) throw new Error("not wikipedia");
+  const raw = await fetchLimited(endpoint, "application/json");
+  const data = JSON.parse(raw) as {
+    title?: unknown;
+    description?: unknown;
+    extract?: unknown;
+    type?: unknown;
+  };
+  if (data.type === "disambiguation") {
+    const extract =
+      typeof data.extract === "string" ? data.extract.trim() : "";
+    const title = typeof data.title === "string" ? data.title.trim() : url.pathname;
+    return clip(
+      [`Wikipedia: ${title}`, extract, `URL: ${url.toString()}`]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  const extract = typeof data.extract === "string" ? data.extract.trim() : "";
+  if (!extract) throw new Error("empty");
+  const description =
+    typeof data.description === "string" ? data.description.trim() : "";
+  const lines = [`Wikipedia: ${title || "article"}`];
+  if (description) lines.push(description);
+  lines.push(extract);
+  lines.push(`URL: ${url.toString()}`);
+  return clip(lines.join("\n"));
+}
+
+async function fetchPublicPage(url: URL): Promise<string> {
+  const raw = await fetchLimited(
+    url,
+    "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
+  );
+  const text = /<html/i.test(raw) ? htmlToText(raw) : raw.trim();
+  if (!text) throw new Error("empty");
+  return clip(text);
+}
+
+async function extractUrl(url: URL): Promise<string> {
+  if (youtubeOEmbedEndpoint(url)) {
+    try {
+      return await fetchYouTube(url);
+    } catch {
+      return fetchPublicPage(url);
+    }
+  }
+  if (wikipediaSummaryEndpoint(url)) {
+    try {
+      return await fetchWikipedia(url);
+    } catch {
+      return fetchPublicPage(url);
+    }
+  }
+  return fetchPublicPage(url);
 }
 
 export async function resolveOpenSource(
@@ -111,7 +220,7 @@ export async function resolveOpenSource(
       return { error: "URL invalide ou non publique (http/https uniquement)" };
     }
     try {
-      const page = await fetchPublicPage(url);
+      const page = await extractUrl(url);
       parts.push(`URL: ${url.toString()}\n${page}`);
     } catch {
       return {

@@ -81,3 +81,8 @@ export function isGenerateScriptError(
     typeof (error as GenerateScriptErrorBody).error === "string"
   );
 }
+
+export function isGrokNotConfiguredError(error: unknown): boolean {
+  if (!isGenerateScriptError(error)) return false;
+  return /GROK_NOT_CONFIGURED|XAI_API_KEY|OPENAI_API_KEY/i.test(error.message);
+}

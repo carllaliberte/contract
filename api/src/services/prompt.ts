@@ -319,9 +319,35 @@ export function buildScriptPrompt(input: PromptInput): {
 } {
   const prompt = buildScriptPromptCore(input);
   return {
-    system: appendStyleContext(prompt.system, input.styleContext),
+    system: appendPackInstruction(
+      appendStyleContext(prompt.system, input.styleContext),
+      input.language,
+    ),
     user: appendOpenSource(prompt.user, input.sourceContext, input.language),
   };
+}
+
+function appendPackInstruction(system: string, language: Language): string {
+  if (language === "en") {
+    return `${system}
+
+PACK OUTPUT — reply with a single JSON object only (no markdown fences, no extra text):
+{"script":"<full spoken script with the requested structure>","titles":["title 1","title 2","title 3"],"description":"<social caption 1-2 sentences>","hashtags":["#tag1","#tag2","#tag3"],"hooks":["hook 1","hook 2","hook 3"]}
+- script: the complete shoot-ready script (the only spoken content)
+- titles: exactly 3 title variants
+- description: caption for the post
+- hashtags: 3 to 8 relevant tags
+- hooks: exactly 3 alternate opening lines (not the full script)`;
+  }
+  return `${system}
+
+SORTIE PACK — réponds UNIQUEMENT avec un objet JSON (pas de fences markdown, pas de texte autour) :
+{"script":"<script oral complet avec la structure demandée>","titles":["titre 1","titre 2","titre 3"],"description":"<légende 1-2 phrases>","hashtags":["#tag1","#tag2","#tag3"],"hooks":["accroche 1","accroche 2","accroche 3"]}
+- script : le script tourné complet (seul contenu oral)
+- titles : exactement 3 variantes de titre
+- description : légende du post
+- hashtags : 3 à 8 tags pertinents
+- hooks : exactement 3 accroches d'ouverture alternatives (pas le script entier)`;
 }
 
 function buildScriptPromptCore(input: PromptInput): {
@@ -531,4 +557,29 @@ export function buildMockScript(input: PromptInput): string {
       ? "[CTA] Like, commentaire, abonnement — merci !"
       : "[CTA] Like, comment, subscribe — thanks!";
   return `${input.title}\n\n${hook}\n\n${body}\n\n${cta}`;
+}
+
+export function buildMockPack(input: PromptInput): {
+  script: string;
+  titles: string[];
+  description: string;
+  hashtags: string[];
+  hooks: string[];
+} {
+  const script = buildMockScript(input);
+  return {
+    script,
+    titles: [
+      input.title,
+      `${input.title} — ce que personne ne dit`,
+      `Stop. ${input.title}`,
+    ],
+    description: input.description,
+    hashtags: ["#creatorflow", `#${input.platform}`, "#script"],
+    hooks: [
+      `${input.title} — arrête tout.`,
+      `Personne ne te dit ça sur ${input.title}.`,
+      `En 3 secondes : ${input.title}.`,
+    ],
+  };
 }
