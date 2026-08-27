@@ -8,10 +8,11 @@ import { createAuthRoutes } from "./routes/auth.js";
 const app = new Hono();
 
 app.use(
-  "/health",
+  "*",
   cors({
     origin: env.corsOrigins,
-    allowMethods: ["GET", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "x-demo-id"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
   }),
 );
 
@@ -27,6 +28,15 @@ app.get("/health", (c) =>
 app.route("/auth", createAuthRoutes());
 app.route("/ai", createAiRoutes());
 
-serve({ fetch: app.fetch, port: env.port }, (info) => {
-  console.log(`CreatorFlow API listening on http://localhost:${info.port}`);
-});
+serve(
+  {
+    fetch: app.fetch,
+    port: env.port,
+    hostname: process.env.HOST ?? "0.0.0.0",
+  },
+  (info) => {
+    console.log(
+      `CreatorFlow API listening on http://${info.address}:${info.port}`,
+    );
+  },
+);

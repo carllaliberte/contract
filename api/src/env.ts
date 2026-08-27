@@ -28,8 +28,7 @@ export const env = {
   mockLlm: process.env.MOCK_LLM === "true" || !process.env.OPENAI_API_KEY,
   appleClientId:
     process.env.APPLE_CLIENT_ID ?? "com.carllaliberte.creatorflow",
-  appleAuthStub:
-    process.env.APPLE_AUTH_STUB === "true" || process.env.MEMORY_STORE === "true",
+  appleAuthStub: process.env.APPLE_AUTH_STUB === "true",
 };
 
 export function currentMonth(): string {
