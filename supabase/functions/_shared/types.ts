@@ -13,6 +13,7 @@ export type PromptInput = {
   existingScript?: string;
   format?: ScriptFormat;
   durationMinutes?: 8 | 12 | 20 | 30;
+  styleContext?: string;
 };
 
 export type FormatQuota = {
@@ -37,6 +38,7 @@ export type GenerateScriptRequest = {
   existingScript?: string;
   format?: ScriptFormat;
   durationMinutes?: 8 | 12 | 20 | 30;
+  styleContext?: string;
 };
 
 export type GenerateScriptResponse = {

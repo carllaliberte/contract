@@ -20,6 +20,12 @@ export type Idea = {
   /** Planned publish date (YYYY-MM-DD). Falls back to updatedAt in calendar views. */
   scheduledAt?: string;
   script?: string;
+  /** Variant titles from an applied content pack. */
+  packTitles?: string[];
+  /** Hashtags from an applied content pack. */
+  packHashtags?: string[];
+  /** Social caption / description from pack apply. */
+  packCaption?: string;
   thumbnail: string;
   videoUrl?: string;
 };

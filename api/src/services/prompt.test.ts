@@ -196,6 +196,18 @@ describe("buildScriptPrompt", () => {
     expect(user).toContain("Thread existant");
     expect(user).not.toContain("THREAD PRINCIPAL");
   });
+
+  it("appends styleContext to the system prompt", () => {
+    const { system } = buildScriptPrompt({
+      title: "T",
+      description: "D",
+      platform: "youtube",
+      language: "fr",
+      mode: "generate",
+      styleContext: "Ton direct, tutoiement, CTA en fin.",
+    });
+    expect(system).toContain("Ton direct, tutoiement, CTA en fin.");
+  });
 });
 
 describe("buildMockScript", () => {

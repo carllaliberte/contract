@@ -21,7 +21,7 @@ import {
   isApiConfigured,
   syncIdeasToApi,
 } from "../lib/api/ideas";
-import { isGenerateScriptError, postGenerateScript } from "../lib/api/generateScript";
+import { isGenerateScriptError } from "../lib/api/generateScript";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import { buildDuplicateIdea } from "../lib/ideaActions";
 import { getAppleProfile, resolveSessionKind } from "../lib/auth/session";
@@ -42,7 +42,9 @@ import {
   type PersistenceMode,
 } from "../lib/persistence";
 import { isSupabaseConfigured } from "../lib/supabase/client";
-import { aiContext } from "../services/aiContext";
+import { quantumBus } from "../services/quantumBus";
+import type { ScriptPreviewResult } from "../types/quantumBus";
+import type { ContentPackage } from "../types/aiContext";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
 
 type IdeasContextValue = {
@@ -52,7 +54,13 @@ type IdeasContextValue = {
   moveIdea: (id: string, status: IdeaStatus) => void;
   deleteIdea: (id: string) => void;
   duplicateIdea: (id: string) => void;
-  generateScript: (id: string, options?: ScriptGenerateOptions) => Promise<void>;
+  /** Generate script preview via QuantumBus → AgentBus (does not persist). */
+  previewScript: (
+    id: string,
+    options?: ScriptGenerateOptions,
+  ) => Promise<ScriptPreviewResult | undefined>;
+  /** Persist an accepted content pack (« J'applique »). */
+  applyPack: (id: string, pack: ContentPackage) => Promise<void>;
   isCloudBacked: boolean;
 };
 
@@ -87,7 +95,37 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     persistenceModeRef.current = persistenceMode;
   }, [persistenceMode]);
 
-  const runGenerateScript = useCallback(
+  const persistIdeaRef = useRef<(idea: Idea) => Promise<void>>(async () => {});
+
+  const quantumHandlers = useMemo(
+    () => ({
+      getIdea: (id: string) => ideasRef.current.find((i) => i.id === id),
+      patchIdea: (id: string, patch: Partial<Idea>) => {
+        setIdeas((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+        );
+        queueMicrotask(() => {
+          const updated = ideasRef.current.find((i) => i.id === id);
+          if (updated) void persistIdeaRef.current(updated);
+        });
+      },
+      syncIdeas: async (queuedIdeas: Idea[]) => {
+        const mode = persistenceModeRef.current;
+        if (mode === "supabase") {
+          const userId = supabaseUserIdRef.current;
+          if (!userId) return;
+          await upsertIdeasInSupabase(queuedIdeas, userId);
+        } else if (mode === "api") {
+          await syncIdeasToApi(queuedIdeas.map(ideaToApi));
+        }
+        setIdeas(queuedIdeas);
+      },
+      isOnline: () => online,
+    }),
+    [online],
+  );
+
+  const runGenerateScriptAutoApply = useCallback(
     async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
       const idea = ideasRef.current.find((i) => i.id === id);
       if (!idea) return;
@@ -96,73 +134,22 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
         throw new Error("LIMIT_REACHED");
       }
 
-      const language = readLanguage();
-      const mode = idea.script ? "improve" : "generate";
-      const context = aiContext.getContext({
-        platform: idea.platform,
-        language,
-        format: options.format,
-      });
+      const preview = await quantumBus.previewScript(id, options, quantumHandlers);
+      if (!preview) return;
 
-      const data = await postGenerateScript({
-        ideaId: idea.id,
-        title: idea.title,
-        description: idea.description,
-        platform: idea.platform,
-        language,
-        mode,
-        existingScript: idea.script,
-        format: options.format,
-        durationMinutes: options.durationMinutes,
-        styleContext: context.stylePrompt,
-      });
-
-      if (data.usage) syncAiUsage(data.usage);
-
-      setIdeas((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                script: data.script,
-                status: item.status === "idea" ? "script" : item.status,
-                updatedAt: new Date().toISOString(),
-              }
-            : item,
-        ),
-      );
-
-      aiContext.updateStyleFromPackage({
-        ideaId: idea.id,
-        platform: idea.platform,
-        language,
-        format: options.format,
-        script: data.script,
-        source: "generated",
-      });
+      if (preview.usage) syncAiUsage(preview.usage);
+      await quantumBus.applyContentPack(id, preview.pack, quantumHandlers);
     },
-    [],
+    [quantumHandlers],
   );
 
   useEffect(() => {
     if (!online || !hydratedRef.current) return;
     void drainCloudQueue({
-      onGenerateScript: runGenerateScript,
-      onIdeasSync: async (queuedIdeas) => {
-        const mode = persistenceModeRef.current;
-        if (mode === "supabase") {
-          const userId = supabaseUserIdRef.current;
-          if (!userId) return;
-          await upsertIdeasInSupabase(queuedIdeas, userId);
-        } else if (mode === "api") {
-          await syncIdeasToApi(queuedIdeas.map(ideaToApi));
-        } else {
-          return;
-        }
-        setIdeas(queuedIdeas);
-      },
+      onGenerateScript: runGenerateScriptAutoApply,
+      onIdeasSync: quantumHandlers.syncIdeas,
     });
-  }, [online, persistenceMode, runGenerateScript]);
+  }, [online, persistenceMode, runGenerateScriptAutoApply, quantumHandlers]);
 
   useEffect(() => {
     let cancelled = false;
@@ -290,6 +277,10 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     [persistenceMode, online],
   );
 
+  useEffect(() => {
+    persistIdeaRef.current = persistIdea;
+  }, [persistIdea]);
+
   const addIdea = useCallback(
     (partial: Omit<Idea, "id" | "updatedAt">) => {
       const idea: Idea = {
@@ -346,15 +337,27 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
     [ideas, addIdea],
   );
 
-  const generateScript = useCallback(
+  const previewScript = useCallback(
     async (id: string, options: ScriptGenerateOptions = { format: "short" }) => {
+      if (!canUseAiGeneration(options.format)) {
+        throw new Error("LIMIT_REACHED");
+      }
       if (!online) {
         enqueueCloudOp({ type: "generate-script", ideaId: id, options });
-        return;
+        return undefined;
       }
-      await runGenerateScript(id, options);
+      const result = await quantumBus.previewScript(id, options, quantumHandlers);
+      if (result?.usage) syncAiUsage(result.usage);
+      return result;
     },
-    [online, runGenerateScript],
+    [online, quantumHandlers],
+  );
+
+  const applyPack = useCallback(
+    async (id: string, pack: ContentPackage) => {
+      await quantumBus.applyContentPack(id, pack, quantumHandlers);
+    },
+    [quantumHandlers],
   );
 
   const value = useMemo(
@@ -365,7 +368,8 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       moveIdea,
       deleteIdea,
       duplicateIdea,
-      generateScript,
+      previewScript,
+      applyPack,
       isCloudBacked: persistenceMode !== "local",
     }),
     [
@@ -375,7 +379,8 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
       moveIdea,
       deleteIdea,
       duplicateIdea,
-      generateScript,
+      previewScript,
+      applyPack,
       persistenceMode,
     ],
   );

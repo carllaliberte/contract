@@ -1,5 +1,11 @@
 import type { Language, Platform, GenerateMode, PromptInput, ScriptFormat } from "./types.ts";
 
+function appendStyleContext(base: string, styleContext?: string): string {
+  const trimmed = styleContext?.trim();
+  if (!trimmed) return base;
+  return `${base}\n\n${trimmed}`;
+}
+
 function buildLongChapteredStructure(
   durationMinutes: number,
   language: Language,
@@ -294,6 +300,17 @@ function buildXPrompt(input: PromptInput): { system: string; user: string } {
 }
 
 export function buildScriptPrompt(input: PromptInput): {
+  system: string;
+  user: string;
+} {
+  const prompt = buildScriptPromptCore(input);
+  return {
+    system: appendStyleContext(prompt.system, input.styleContext),
+    user: prompt.user,
+  };
+}
+
+function buildScriptPromptCore(input: PromptInput): {
   system: string;
   user: string;
 } {
