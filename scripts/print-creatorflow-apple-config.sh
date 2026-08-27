@@ -39,4 +39,4 @@ console.log(JSON.stringify({
 
 echo ""
 echo "Copy ALL JSON above → GitHub secret Name: CREATORFLOW_APPLE_CONFIG"
-echo "Then: bash scripts/launch-virtual-mac-ios.sh ios-release/1.0.0"
+echo "Then tag: git tag ios-release-v1.0.0 && git push origin ios-release-v1.0.0"

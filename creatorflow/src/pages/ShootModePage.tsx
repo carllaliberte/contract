@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, WifiOff } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { SharePackRow } from "../components/SharePackRow";
 import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
@@ -30,6 +31,7 @@ export function ShootModePage() {
   const shootIdea = idea;
   const scriptText = shootIdea.script?.trim() ?? shootIdea.description;
   const canMarkReady = shootIdea.status === "production" || shootIdea.status === "script";
+  const canPack = shootIdea.status === "ready";
 
   function handleMarkReady() {
     moveIdea(shootIdea.id, "ready");
@@ -76,6 +78,16 @@ export function ShootModePage() {
           <Check className="size-4" />
           {tr("shoot.markReady")}
         </Button>
+      )}
+
+      {canPack && (
+        <SharePackRow
+          idea={shootIdea}
+          onShared={() => {
+            moveIdea(shootIdea.id, "published");
+            navigate("/app");
+          }}
+        />
       )}
     </div>
   );

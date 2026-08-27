@@ -1,9 +1,10 @@
 import { expect, test } from "./fixtures";
 
 test.describe("Landing page", () => {
-  test("shows brand, hero, and OAuth providers", async ({ page, landing }) => {
+  test("shows brand, hero above the fold, and OAuth below it", async ({ page, landing }) => {
     await expect(page.getByText("CreatorFlow").first()).toBeVisible();
-    await expect(page.locator("h1")).toContainText(/publiez|publish|friction/i);
+    await expect(page.locator("h1")).toContainText(/4 idées|4 ideas/i);
+    await expect(page.getByRole("button", { name: /on commence|let's go/i }).first()).toBeVisible();
 
     await expect(
       page.getByRole("button", { name: /continuer avec google|continue with google/i }),
@@ -18,7 +19,9 @@ test.describe("Landing page", () => {
 
   test("enters demo mode from primary CTA", async ({ page, demoApp }) => {
     await expect(page.locator("span.rounded-full", { hasText: /mode démo|demo mode/i })).toBeVisible();
-    await expect(page.locator("h1")).toContainText(/Bonjour|Hello/, { timeout: 15_000 });
+    await expect(page.locator("h1")).toContainText(/script|filmer|film|pack|idée|idea|prêt|ready|tournage|shoot/i, {
+      timeout: 15_000,
+    });
   });
 
   test("OAuth buttons route to demo (mock auth)", async ({ page, landing }) => {
@@ -26,6 +29,6 @@ test.describe("Landing page", () => {
       .getByRole("button", { name: /continuer avec google|continue with google/i })
       .click();
     await page.waitForURL(/\/app/);
-    await expect(page.locator("h1")).toContainText(/Bonjour|Hello/);
+    await expect(page.locator("h1")).toContainText(/script|filmer|film|pack|idée|idea|prêt|ready|tournage|shoot/i);
   });
 });

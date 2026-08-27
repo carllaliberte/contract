@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
   push:
     tags:
+      - "ios-release-v*"
       - "ios-release/*"
       - "deliverable/app-store-*"
 

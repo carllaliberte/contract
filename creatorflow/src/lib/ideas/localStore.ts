@@ -2,6 +2,7 @@ import type { Idea } from "../../data/demo";
 import { demoIdeas } from "../../data/demo";
 
 const STORAGE_KEY = "cf-ideas";
+const MIGRATED_KEY = "cf-ideas-cloud-migrated";
 
 export function loadLocalIdeas(): Idea[] {
   try {
@@ -27,4 +28,21 @@ export function saveLocalIdeas(ideas: Idea[]) {
 
 export function clearLocalIdeas() {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+/** First Apple login migrates local → cloud once. Never repeat. */
+export function hasCloudMigrated(): boolean {
+  try {
+    return localStorage.getItem(MIGRATED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markCloudMigrated() {
+  try {
+    localStorage.setItem(MIGRATED_KEY, "1");
+  } catch {
+    // ignore quota errors
+  }
 }

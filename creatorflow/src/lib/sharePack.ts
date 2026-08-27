@@ -2,9 +2,14 @@ import { Capacitor } from "@capacitor/core";
 import { Share } from "@capacitor/share";
 import type { Idea } from "../data/demo";
 
-export type ShareDestination = "x" | "instagram" | "tiktok";
+export type ShareDestination = "x" | "instagram" | "tiktok" | "copy";
 
-export const SHARE_DESTINATIONS: ShareDestination[] = ["x", "instagram", "tiktok"];
+export const SHARE_DESTINATIONS: ShareDestination[] = [
+  "x",
+  "instagram",
+  "tiktok",
+  "copy",
+];
 
 export function buildSharePackText(idea: Idea): string {
   const parts = [idea.title.trim()];
@@ -51,6 +56,10 @@ export async function shareViaSystemShare(title: string, text: string): Promise<
 export async function sharePack(idea: Idea, destination: ShareDestination): Promise<boolean> {
   const text = buildSharePackText(idea);
   if (!text) return false;
+
+  if (destination === "copy") {
+    return copyToClipboard(text);
+  }
 
   if (destination === "x") {
     return shareToX(text);

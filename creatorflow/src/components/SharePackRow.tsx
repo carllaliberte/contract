@@ -12,9 +12,10 @@ import { Button } from "./ui";
 type SharePackRowProps = {
   idea: Idea;
   className?: string;
+  onShared?: () => void;
 };
 
-export function SharePackRow({ idea, className }: SharePackRowProps) {
+export function SharePackRow({ idea, className, onShared }: SharePackRowProps) {
   const { tr } = useI18n();
   const [loadingDest, setLoadingDest] = useState<ShareDestination | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -27,19 +28,20 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     const ok = await sharePack(idea, destination);
     setLoadingDest(null);
     setNotice(ok ? tr("share.success") : tr("share.failed"));
+    if (ok) onShared?.();
     window.setTimeout(() => setNotice(null), 2500);
   }
 
   return (
     <div className={className}>
       <p className="mb-2 text-xs font-medium text-muted-foreground">{tr("share.pack")}</p>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {SHARE_DESTINATIONS.map((destination) => (
           <Button
             key={destination}
             type="button"
-            variant="outline"
-            className="h-8 flex-1 text-xs"
+            variant={destination === "copy" ? "outline" : "primary"}
+            className="h-11 min-w-[4.5rem] flex-1 text-xs"
             disabled={loadingDest !== null}
             onClick={() => void handleShare(destination)}
           >

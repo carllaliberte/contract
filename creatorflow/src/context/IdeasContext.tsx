@@ -27,7 +27,9 @@ import { buildDuplicateIdea } from "../lib/ideaActions";
 import { getAppleProfile, resolveSessionKind } from "../lib/auth/session";
 import {
   clearLocalIdeas,
+  hasCloudMigrated,
   loadLocalIdeas,
+  markCloudMigrated,
   saveLocalIdeas,
 } from "../lib/ideas/localStore";
 import {
@@ -192,15 +194,17 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
           if (cancelled) return;
 
           if (remote && remote.length > 0) {
+            markCloudMigrated();
             setIdeas(remote);
             hydratedRef.current = true;
             return;
           }
 
           const localIdeas = loadLocalIdeas();
-          if (hasCustomLocalIdeas(localIdeas)) {
+          if (hasCustomLocalIdeas(localIdeas) && !hasCloudMigrated()) {
             await upsertIdeasInSupabase(localIdeas, userId);
             if (!cancelled) {
+              markCloudMigrated();
               clearLocalIdeas();
               setIdeas(localIdeas);
             }
@@ -222,15 +226,19 @@ export function IdeasProvider({ children }: { children: ReactNode }) {
           if (cancelled) return;
 
           if (remote.length > 0) {
+            markCloudMigrated();
             setIdeas(remote);
             hydratedRef.current = true;
             return;
           }
 
           const localIdeas = loadLocalIdeas();
-          if (hasCustomLocalIdeas(localIdeas)) {
+          if (hasCustomLocalIdeas(localIdeas) && !hasCloudMigrated()) {
             await syncIdeasToApi(localIdeas.map(ideaToApi));
-            if (!cancelled) setIdeas(localIdeas);
+            if (!cancelled) {
+              markCloudMigrated();
+              setIdeas(localIdeas);
+            }
           } else {
             setIdeas([]);
           }

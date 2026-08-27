@@ -30,7 +30,7 @@ async function clearCreatorFlowStorage(page: Page) {
 
 async function enterDemoFromLanding(page: Page) {
   await page
-    .getByRole("button", { name: /explorer sans compte|explore without account/i })
+    .getByRole("button", { name: /on commence|let's go|explorer sans compte|explore without account/i })
     .first()
     .click();
   await page.waitForURL(/\/app/);
@@ -43,7 +43,11 @@ export async function addIdea(page: Page, title: string, description?: string) {
     await page.getByLabel(/description/i).fill(description);
   }
   await page.getByRole("button", { name: /^Ajouter$|^Add$/i }).click();
-  await expect(page.getByText(title)).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect.poll(async () => {
+    const ideas = await readIdeas(page);
+    return ideas.some((i) => i.title === title);
+  }).toBe(true);
 }
 
 export async function readIdeas(page: Page): Promise<IdeaRecord[]> {

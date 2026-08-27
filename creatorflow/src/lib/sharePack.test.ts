@@ -28,7 +28,7 @@ describe("buildSharePackText", () => {
 });
 
 describe("SHARE_DESTINATIONS", () => {
-  it("exposes X, Instagram, and TikTok only", () => {
-    expect(SHARE_DESTINATIONS).toEqual(["x", "instagram", "tiktok"]);
+  it("exposes X, Instagram, TikTok, and copy", () => {
+    expect(SHARE_DESTINATIONS).toEqual(["x", "instagram", "tiktok", "copy"]);
   });
 });

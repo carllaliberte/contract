@@ -15,6 +15,7 @@ test.describe("Idea persistence", () => {
     await addIdea(page, IDEA_TITLE);
 
     await page.reload();
+    await page.getByRole("link", { name: /^Pipeline$/i }).click();
     await expect(page.getByText(IDEA_TITLE)).toBeVisible();
 
     const ideas = await readIdeas(page);

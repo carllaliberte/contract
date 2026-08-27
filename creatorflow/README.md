@@ -14,6 +14,19 @@ npm run dev
 
 Ouvrir http://localhost:5173
 
+## Supabase (idées cloud)
+
+`VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` vides = démo (localStorage).
+Session Apple : idées → `public.ideas` (RLS). Offline d'abord, sync après.
+Premier login : migrate local → cloud une fois.
+
+```bash
+supabase db push
+```
+
+GitHub Actions : renseigner les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`.
+JAMAIS commit de clés. JAMAIS `VITE_AUTH_STUB=true`.
+
 ## Secrets & API
 
 Le client CreatorFlow **ne contient aucune clé LLM**. Seule la variable publique `VITE_API_URL` configure l’endpoint HTTP des scripts IA.
