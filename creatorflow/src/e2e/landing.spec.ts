@@ -7,7 +7,7 @@ test.describe("Landing page", () => {
     await expect(page.locator("h1")).not.toContainText(/friction|synergy|credit card|publish more content/i);
 
     await expect(
-      page.getByRole("button", { name: /on commence|let['’]s go/i }).first(),
+      page.getByRole("button", { name: /explorez les scripts clapshot|explore clapshot scripts/i }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /explorer sans compte|explore without account/i }),
