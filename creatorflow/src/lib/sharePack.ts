@@ -10,12 +10,22 @@ const IG_CAPTION_MAX = 2200;
 const X_TEXT_MAX = 280;
 
 function formatHashtags(tags: string[] | undefined): string {
-  if (!tags?.length) return "";
-  return tags
-    .map((raw) => raw.trim())
-    .filter(Boolean)
-    .map((tag) => (tag.startsWith("#") ? tag : `#${tag.replace(/\s+/g, "")}`))
-    .join(" ");
+  const raw = tags?.length ? tags : ["#Clapshot"];
+  const unique = new Set<
+    string
+  >();
+  for (const tag of raw) {
+    const trimmed = tag.trim();
+    if (!trimmed) continue;
+    const withHash = trimmed.startsWith("#")
+      ? trimmed
+      : `#${trimmed.replace(/\s+/g, "")}`;
+    unique.add(withHash);
+  }
+  if (![...unique].some((tag) => tag.toLowerCase() === "#clapshot")) {
+    unique.add("#Clapshot");
+  }
+  return [...unique].join(" ");
 }
 
 function clip(text: string, max: number): string {
@@ -41,26 +51,17 @@ export function buildSharePackText(
     return clip(parts.join("\n\n").trim(), IG_CAPTION_MAX);
   }
 
-  if (destination === "x") {
-    const hook = idea.packHooks?.[0]?.trim();
-    const caption = idea.packCaption?.trim();
-    const body = hook || caption || idea.title.trim();
-    const hashtags = formatHashtags(idea.packHashtags);
-    return clip([body, hashtags].filter(Boolean).join("\n\n").trim(), X_TEXT_MAX);
-  }
-
-  const parts = [idea.title.trim()];
-  if (idea.script?.trim()) {
-    parts.push("", idea.script.trim());
-  } else if (idea.description.trim()) {
-    parts.push("", idea.description.trim());
-  }
-  return parts.join("\n").trim();
+  const hook = idea.packHooks?.[0]?.trim();
+  const caption = idea.packCaption?.trim();
+  const body = hook || caption || idea.title.trim();
+  const hashtags = formatHashtags(idea.packHashtags);
+  return clip([body, hashtags].filter(Boolean).join("\n\n").trim(), X_TEXT_MAX);
 }
 
 export function sharePackHasContent(idea: Idea): boolean {
   return Boolean(
-    idea.script?.trim() ||
+    idea.title.trim() ||
+      idea.script?.trim() ||
       idea.description.trim() ||
       idea.packCaption?.trim() ||
       idea.packHooks?.some((h) => h.trim()) ||
@@ -78,7 +79,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 export async function shareToX(text: string): Promise<boolean> {
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, Capacitor.isNativePlatform() ? "_system" : "_blank", "noopener,noreferrer");
   return true;
 }
@@ -109,9 +110,5 @@ export async function sharePack(idea: Idea, destination: ShareDestination): Prom
     return shareViaSystemShare("Clapshot", text);
   }
 
-  if (destination === "x") {
-    return shareToX(text);
-  }
-
-  return shareViaSystemShare("Clapshot", text);
+  return shareToX(text);
 }
