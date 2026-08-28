@@ -1,9 +1,7 @@
-import { ArrowRight } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
-import { AppleSignInButton } from "../components/AppleSignInButton";
-import { Button, Logo } from "../components/ui";
+import { Button } from "../components/ui";
 import { useI18n } from "../i18n/context";
 import { useAuth } from "../hooks/useAuth";
 import { applyLandingRobots, setFaqJsonLd } from "../lib/seo";
@@ -39,61 +37,42 @@ export function LandingPage() {
     locale === "fr" ? "Explorez les scripts Clapshot" : "Explore Clapshot scripts";
 
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="min-h-dvh bg-black text-white">
       <div className="pointer-events-none fixed inset-0 login-wash" />
+      <div
+        className="pointer-events-none fixed inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 80% 50% at 70% 10%, rgba(80,140,255,0.18), transparent 55%), radial-gradient(circle at 20% 80%, rgba(255,59,48,0.12), transparent 40%)",
+        }}
+      />
 
       <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 safe-top safe-x sm:px-6">
-        <Logo />
+        <span className="text-lg font-semibold tracking-tight">clapshot</span>
         <LanguageSelector />
       </header>
 
-      <main className="relative z-10">
-        <section className="mx-auto grid max-w-6xl items-center px-5 sm:px-6 lg:grid-cols-[minmax(0,1.35fr)_380px] lg:gap-16 lg:pb-20 lg:pt-6">
-          <div className="flex min-h-[100dvh] flex-col justify-center lg:min-h-0">
-            <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              <span className="rec-dot" />
-              {locale === "fr" ? "Le booth" : "The booth"}
-            </p>
-            <h1 className="font-display text-[2.75rem] font-medium italic leading-[1.04] tracking-tight sm:text-6xl sm:leading-[1.02] lg:text-7xl">
-              {tr("app.heroTitle")}
-            </h1>
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-              {exploreLabel}. {locale === "fr" ? "Une idée, un tap, tu tournes." : "One idea, one tap, you film."}
-            </p>
-            <div className="mt-10">
-              <Button
-                className="h-14 px-8 text-base sm:h-16 sm:px-10 sm:text-lg"
-                onClick={() => void handleEnterDemo()}
-              >
-                {exploreLabel}
-                <ArrowRight className="size-5" />
-              </Button>
-            </div>
-          </div>
-
-          <div id="login" className="flex justify-center pb-16 lg:justify-end lg:pb-0">
-            <div className="w-full max-w-[380px] rounded-2xl border border-border bg-card/80 p-6 shadow-card backdrop-blur-sm sm:p-7">
-              <p className="text-sm font-medium">{tr("login.welcomeBack")}</p>
-              <p className="mt-1 mb-4 text-sm text-muted-foreground">
-                {tr("login.providersHintIos")}
-              </p>
-              <div className="flex flex-col gap-2">
-                <AppleSignInButton onSuccess={() => navigate("/app")} />
-                <Button variant="outline" type="button" className="h-11" onClick={() => void handleEnterDemo()}>
-                  {tr("login.tryDemo")}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="relative z-10 border-t border-border py-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 text-sm text-muted-foreground sm:px-6">
-          <Logo size="sm" />
-          <span>{tr("footer.rights")}</span>
+      <main className="relative z-10 flex min-h-[calc(100dvh-5.5rem)] flex-col justify-center px-5 pb-16 safe-x sm:px-6">
+        <div className="mx-auto w-full max-w-5xl text-center">
+          <h1 className="font-sans text-[18vw] font-semibold leading-[0.82] tracking-[-0.06em] text-white sm:text-[9rem]">
+            clapshot
+          </h1>
+          <p className="mt-6 text-xl font-medium tracking-tight text-white/80 sm:text-3xl">
+            {locale === "fr"
+              ? "là où les idées deviennent des Reels."
+              : "where ideas become Reels."}
+          </p>
+          <p className="mx-auto mt-4 max-w-md text-sm text-white/50">
+            {exploreLabel}. {locale === "fr" ? "Un tap. Tu tournes." : "One tap. You film."}
+          </p>
+          <Button
+            className="mt-10 h-14 w-full max-w-sm rounded-full bg-white px-8 text-base font-semibold text-black hover:bg-white/90 sm:h-16"
+            onClick={() => void handleEnterDemo()}
+          >
+            {exploreLabel}
+          </Button>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }
