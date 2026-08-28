@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 4321;
-const basePath = "/contract/creatorflow/";
+const basePath = "/contract/clapshot/";
 
 export default defineConfig({
   testDir: "./src/e2e",
