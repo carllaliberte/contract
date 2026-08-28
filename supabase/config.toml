@@ -4,6 +4,9 @@ verify_jwt = false
 [functions.generate-poster]
 verify_jwt = false
 
+[functions.generate-clip]
+verify_jwt = false
+
 [functions.auth-apple]
 verify_jwt = false
 

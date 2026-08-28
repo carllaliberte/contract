@@ -11,12 +11,14 @@ Or manually (from repo root, after `supabase login` or `SUPABASE_ACCESS_TOKEN`):
 ```bash
 supabase functions deploy generate-script --no-verify-jwt
 supabase functions deploy generate-poster --no-verify-jwt
+supabase functions deploy generate-clip --no-verify-jwt
 supabase functions deploy auth-apple --no-verify-jwt
 supabase functions deploy health --no-verify-jwt
 supabase secrets set \
   XAI_API_KEY=<your-xai-api-key> \
   XAI_MODEL=grok-4.5 \
   XAI_IMAGE_MODEL=grok-imagine-image-2.0 \
+  XAI_VIDEO_MODEL=grok-imagine-video-1.5 \
   APPLE_CLIENT_ID=com.carllaliberte.creatorflow
 ```
 
@@ -26,6 +28,7 @@ supabase secrets set \
 |----------|-----|
 | `generate-script` | `https://YOUR_PROJECT.supabase.co/functions/v1/generate-script` |
 | `generate-poster` | `https://YOUR_PROJECT.supabase.co/functions/v1/generate-poster` |
+| `generate-clip` | `https://YOUR_PROJECT.supabase.co/functions/v1/generate-clip` |
 | `auth-apple` | `https://YOUR_PROJECT.supabase.co/functions/v1/auth-apple` |
 | `health` | `https://YOUR_PROJECT.supabase.co/functions/v1/health` |
 
