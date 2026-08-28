@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: deploy-creatorflow
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy-github-pages:
@@ -95,4 +95,3 @@ jobs:
         run: |
           echo "App: https://carllaliberte.github.io/contract/clapshot/"
           echo "Privacy: https://carllaliberte.github.io/contract/clapshot/privacy.html"
-          echo "Legacy /creatorflow/ redirects to Clapshot"
