@@ -75,12 +75,12 @@ export const demoIdeas: Idea[] = [
     updatedAt: "2026-08-22T09:15:00Z",
     scheduledAt: "2026-08-30",
     thumbnail:
-      "https://images.unsplash.com/photo-1598488035135-bdbb2231bb80?w=800&q=80",
+      "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80",
   },
   {
     id: "4",
     title: "Comment j’organise 30 idées par semaine",
-    description: "Long format YouTube — démonstration complète du pipeline CreatorFlow.",
+    description: "Long format YouTube — démonstration complète du pipeline Clapshot.",
     status: "ready",
     priority: "high",
     platform: "youtube",
