@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
 import { SharePackRow } from "../components/SharePackRow";
@@ -7,6 +7,7 @@ import type { Idea } from "../data/demo";
 import { getNextUp } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { useScriptPackFlow } from "../hooks/useScriptPackFlow";
+import { prefetchPoster } from "../lib/api/generatePoster";
 import { buildBoothPack } from "../lib/boothPack";
 import type { ContentPackage } from "../types/aiContext";
 
@@ -59,6 +60,10 @@ export function DashboardPage() {
   const hook = pack?.hooks?.find((item) => item.trim()) ?? featured?.title;
   const script = pack?.script?.trim();
   const shareIdea = ready ?? (featured && pack ? ideaWithPack(featured, pack) : null);
+
+  useEffect(() => {
+    if (hook) prefetchPoster(hook);
+  }, [hook]);
 
   async function sealPack() {
     if (!featured || !pack) return;
