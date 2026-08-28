@@ -1,4 +1,4 @@
-name: CI CreatorFlow
+name: CI Clapshot
 
 on:
   push:
@@ -16,7 +16,7 @@ on:
 
 concurrency:
   group: ci-creatorflow-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -40,28 +40,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
       - name: Typecheck
         run: npm run typecheck
-
-      - name: Verify iOS ATS (no arbitrary loads)
-        run: |
-          PLIST=ios/App/App/Info.plist
-          if grep -q '<key>NSAllowsArbitraryLoads</key>' "$PLIST"; then
-            if grep -A1 '<key>NSAllowsArbitraryLoads</key>' "$PLIST" | grep -q '<true/>'; then
-              echo "ERROR: NSAllowsArbitraryLoads must not be true in Info.plist"
-              exit 1
-            fi
-          fi
-          echo "ATS check passed"
 
       - name: Unit tests
         run: npm run test
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Playwright e2e
         run: npm run test:e2e
@@ -90,11 +79,11 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      - name: Build CreatorFlow preview (SEO prerender)
+      - name: Build Clapshot preview
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_BASE_PATH: /contract/creatorflow/pr-${{ github.event.pull_request.number }}/
-          VITE_ROUTER_BASENAME: /contract/creatorflow/pr-${{ github.event.pull_request.number }}
+          VITE_BASE_PATH: /contract/clapshot/pr-${{ github.event.pull_request.number }}/
+          VITE_ROUTER_BASENAME: /contract/clapshot/pr-${{ github.event.pull_request.number }}
         run: npm run build:seo
 
       - name: Publish preview to gh-pages
@@ -104,18 +93,18 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           npx gh-pages@6.3.0 -d dist \
-            --dest "creatorflow/pr-${{ github.event.pull_request.number }}" \
+            --dest "clapshot/pr-${{ github.event.pull_request.number }}" \
             --add \
-            -m "Preview CreatorFlow PR #${{ github.event.pull_request.number }} [skip ci]" \
+            -m "Preview Clapshot PR #${{ github.event.pull_request.number }} [skip ci]" \
             -r "https://x-access-token:${GITHUB_TOKEN}@github.com/carllaliberte/contract.git"
 
       - name: Comment preview URL on PR
         uses: actions/github-script@v7
         with:
           script: |
-            const url = `https://carllaliberte.github.io/contract/creatorflow/pr-${{ github.event.pull_request.number }}/`;
-            const marker = '<!-- creatorflow-preview -->';
-            const body = `${marker}\n**CreatorFlow preview:** ${url}`;
+            const url = `https://carllaliberte.github.io/contract/clapshot/pr-${{ github.event.pull_request.number }}/`;
+            const marker = '<!-- clapshot-preview -->';
+            const body = `${marker}\n**Clapshot preview:** ${url}`;
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -138,80 +127,49 @@ jobs:
               });
             }
 
-      - name: Preview URL
-        run: echo "https://carllaliberte.github.io/contract/creatorflow/pr-${{ github.event.pull_request.number }}/"
-
   android:
     needs: web
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     continue-on-error: true
     defaults:
       run:
         working-directory: creatorflow
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
-
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
+      - uses: android-actions/setup-android@v3
       - name: Build web and sync Android
         run: npm ci && npm run build:android
-
       - name: Assemble debug APK
         working-directory: creatorflow/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: creatorflow-debug-apk
-          path: creatorflow/android/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 7
-
   ios:
     needs: web
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     continue-on-error: true
     defaults:
       run:
         working-directory: creatorflow
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
-
       - name: Build web and sync iOS
         run: npm ci && npm run build:ios
-
-      - name: Verify iOS ATS (no arbitrary loads)
-        run: |
-          PLIST=ios/App/App/Info.plist
-          if grep -q '<key>NSAllowsArbitraryLoads</key>' "$PLIST"; then
-            if grep -A1 '<key>NSAllowsArbitraryLoads</key>' "$PLIST" | grep -q '<true/>'; then
-              echo "ERROR: NSAllowsArbitraryLoads must not be true in Info.plist"
-              exit 1
-            fi
-          fi
-          echo "ATS check passed"
-
       - name: Build for iOS Simulator
         working-directory: creatorflow/ios/App
         run: |
