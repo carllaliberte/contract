@@ -4,11 +4,7 @@ import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { fetchGeneratedClip } from "../lib/api/generateClip";
-import {
-  sharePack,
-  sharePackHasContent,
-  type ShareDestination,
-} from "../lib/sharePack";
+import { sharePack, sharePackHasContent, type ShareDestination } from "../lib/sharePack";
 import { Button } from "./ui";
 
 type SharePackRowProps = {
@@ -56,25 +52,24 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     setCanMarkPublished(false);
   }
 
-  const publishX = locale === "fr" ? "Publier sur X" : "Publish on X";
   const busy = loadingDest !== null || clipBusy !== null;
 
   return (
     <div className={className}>
       <Button
         type="button"
-        className="h-14 w-full rounded-full bg-white text-base font-semibold text-black hover:bg-white/90"
+        className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
         disabled={busy}
         onClick={() => void handleShare("x")}
       >
         {loadingDest === "x" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-        {publishX}
+        {tr("share.publishX")}
       </Button>
       <div className="mt-2 flex gap-2">
         <Button
           type="button"
           variant="outline"
-          className="h-10 flex-1 text-xs"
+          className="h-11 flex-1 text-sm"
           disabled={busy}
           onClick={() => void handleClip(6)}
         >
@@ -84,7 +79,7 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
         <Button
           type="button"
           variant="outline"
-          className="h-10 flex-1 text-xs"
+          className="h-11 flex-1 text-sm"
           disabled={busy}
           onClick={() => void handleClip(15)}
         >
@@ -96,20 +91,26 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
         <Button
           type="button"
           variant="outline"
-          className="h-10 flex-1 text-xs"
+          className="h-11 flex-1 text-sm"
           disabled={busy}
           onClick={() => void handleShare("instagram")}
         >
-          Instagram
+          {loadingDest === "instagram" ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          ) : null}
+          {tr("share.instagram")}
         </Button>
         <Button
           type="button"
           variant="outline"
-          className="h-10 flex-1 text-xs"
+          className="h-11 flex-1 text-sm"
           disabled={busy}
           onClick={() => void handleShare("tiktok")}
         >
-          TikTok
+          {loadingDest === "tiktok" ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          ) : null}
+          {tr("share.tiktok")}
         </Button>
       </div>
       {canMarkPublished && idea.status !== "published" ? (
@@ -122,7 +123,7 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
         </button>
       ) : null}
       {notice && (
-        <p className="mt-2 text-[11px] text-muted-foreground" role="status">
+        <p className="mt-2 text-xs text-muted-foreground" role="status">
           {notice}
         </p>
       )}

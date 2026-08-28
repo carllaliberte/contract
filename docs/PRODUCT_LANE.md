@@ -32,7 +32,7 @@ Brand canon: [`docs/BRAND.md`](BRAND.md).
 ## Allowed work
 
 1. Keep Clapshot web CI green.
-2. Deploy Clapshot to Pages (`/contract/creatorflow/`).
+2. Deploy Clapshot to Pages (`/contract/clapshot/`).
 3. Pages **root** must redirect to Clapshot — never serve META as the homepage.
 4. iOS / Android for **Clapshot only** (`com.carllaliberte.creatorflow`).
 5. API / Supabase only when they serve idée → pack → tourner.

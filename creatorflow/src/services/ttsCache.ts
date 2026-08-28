@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * CreatorFlow - TTS Cache Service
+ * Clapshot - TTS Cache Service
  * =============================================================================
  *
  * Service de cache local pour les voix-off IA (Text-to-Speech).

@@ -5,7 +5,7 @@ export type PersistenceMode = "local" | "supabase" | "api";
 /**
  * Cloud path for signed-in users:
  * 1. Direct Supabase when the client is configured (granular upserts).
- * 2. CreatorFlow API `/ideas` when only `VITE_API_URL` is set (typical Pages go-live).
+ * 2. Clapshot API `/ideas` when only `VITE_API_URL` is set (typical Pages go-live).
  * Demo / unsigned sessions stay on localStorage.
  */
 export function resolvePersistenceMode(input: {
