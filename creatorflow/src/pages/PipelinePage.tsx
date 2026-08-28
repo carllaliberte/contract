@@ -134,7 +134,6 @@ export function PipelinePage() {
   }
 
   function handlePaywall(format: ScriptFormat) {
-    setDialogIdea(null);
     setAiNotice(
       tr(
         format === "long" ? "script.limitReachedLong" : "script.limitReachedShort",
@@ -149,9 +148,14 @@ export function PipelinePage() {
   }
 
   async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
-    setDialogIdea(null);
     try {
-      await runScriptPreviewWithPaywall(idea, options, submitPreview, handlePaywall);
+      const ok = await runScriptPreviewWithPaywall(
+        idea,
+        options,
+        submitPreview,
+        handlePaywall,
+      );
+      if (ok) setDialogIdea(null);
     } catch (error) {
       if (isGenerateScriptError(error) && error.error === "LIMIT_REACHED") {
         if (error.usage) syncAiUsage(error.usage);
@@ -182,7 +186,7 @@ export function PipelinePage() {
         </div>
       </header>
 
-      {aiNotice && (
+      {aiNotice && !dialogIdea && (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {aiNotice}
         </p>
@@ -244,6 +248,7 @@ export function PipelinePage() {
         onSubmit={handleGenerateSubmit}
         isGenerating={generatingId === dialogIdea?.id}
         onPaywall={handlePaywall}
+        errorMessage={aiNotice}
       />
 
       <PackApplyDialog
