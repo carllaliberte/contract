@@ -101,19 +101,19 @@ async function clipFor(idea: Idea): Promise<File | null> {
 }
 
 export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
+  if (!idea) return false;
+  const clip = await clipFor(idea);
+  if (!clip) return false;
   try {
-    const clip = idea ? await clipFor(idea) : null;
-    const blob = clip ?? (idea ? await posterFor(idea) : await renderHookCard(text));
-    const name = clip ? "clapshot.mp4" : "clapshot.png";
-    const file = clip ?? new File([blob], name, { type: blob.type || "image/png" });
-    const payload = { text, files: [file], title: "Clapshot" };
+    const payload = { text, files: [clip], title: "Clapshot" };
     if (typeof navigator !== "undefined" && navigator.canShare?.(payload)) {
       await navigator.share(payload);
       return true;
     }
-    downloadBlob(blob, name);
-  } catch {
-    // Text-only fallback still opens X.
+    downloadBlob(clip, "clapshot.mp4");
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") return true;
+    downloadBlob(clip, "clapshot.mp4");
   }
   const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, Capacitor.isNativePlatform() ? "_system" : "_blank", "noopener,noreferrer");

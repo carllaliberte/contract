@@ -9,6 +9,11 @@ function clipUrl(): string {
 
 async function requestHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  if (anon) {
+    headers.apikey = anon;
+    headers.Authorization = `Bearer ${anon}`;
+  }
   const token = peekAuthToken() ?? (await getAuthToken());
   if (token) headers.Authorization = `Bearer ${token}`;
   else {
