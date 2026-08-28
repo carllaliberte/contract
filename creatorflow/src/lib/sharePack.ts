@@ -78,7 +78,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 export async function shareToX(text: string): Promise<boolean> {
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, Capacitor.isNativePlatform() ? "_system" : "_blank", "noopener,noreferrer");
   return true;
 }

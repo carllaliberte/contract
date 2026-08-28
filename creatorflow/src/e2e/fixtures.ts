@@ -7,7 +7,7 @@ export type IdeaRecord = {
   description?: string;
 };
 
-type CreatorFlowFixtures = {
+type ClapshotFixtures = {
   /** Clears demo flags and persisted ideas before the test. */
   cleanStorage: void;
   /** Opens the marketing landing page. */
@@ -18,7 +18,7 @@ type CreatorFlowFixtures = {
   pipeline: void;
 };
 
-async function clearCreatorFlowStorage(page: Page) {
+async function clearClapshotStorage(page: Page) {
   await page.evaluate(() => {
     localStorage.removeItem("cf-demo");
     localStorage.removeItem("cf-ideas");
@@ -85,10 +85,10 @@ export async function dragIdeaToColumn(
   await page.mouse.up();
 }
 
-export const test = base.extend<CreatorFlowFixtures>({
+export const test = base.extend<ClapshotFixtures>({
   cleanStorage: async ({ page }, use) => {
     await page.goto("./");
-    await clearCreatorFlowStorage(page);
+    await clearClapshotStorage(page);
     await use();
   },
 

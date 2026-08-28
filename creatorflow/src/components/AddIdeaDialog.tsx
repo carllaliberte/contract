@@ -20,7 +20,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
   const { tr } = useI18n();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [platform, setPlatform] = useState<Idea["platform"]>("youtube");
+  const [platform, setPlatform] = useState<Idea["platform"]>("x");
   const [priority, setPriority] = useState<Priority>("medium");
   const [scheduledAt, setScheduledAt] = useState("");
 
@@ -53,7 +53,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
     });
     setTitle("");
     setDescription("");
-    setPlatform("youtube");
+    setPlatform("x");
     setPriority("medium");
     setScheduledAt("");
     onClose();
@@ -100,10 +100,10 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
                 onChange={(e) => setPlatform(e.target.value as Idea["platform"])}
                 className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
               >
+                <option value="x">X</option>
                 <option value="youtube">YouTube</option>
                 <option value="tiktok">TikTok</option>
                 <option value="instagram">Instagram</option>
-                <option value="x">X</option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">

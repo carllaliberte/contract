@@ -1,13 +1,4 @@
-import {
-  ArrowRight,
-  Clapperboard,
-  FileText,
-  Lightbulb,
-  LogOut,
-  Radio,
-  Settings,
-  Sparkles,
-} from "lucide-react";
+import { Clapperboard, LogOut, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LanguageSelector } from "../components/LanguageSelector";
@@ -16,16 +7,8 @@ import { useI18n } from "../i18n/context";
 import { useAuth } from "../hooks/useAuth";
 import { applyAppRobots, applyLandingRobots } from "../lib/seo";
 
-const statusIcons = {
-  idea: Lightbulb,
-  script: FileText,
-  production: Clapperboard,
-  ready: Sparkles,
-  published: Radio,
-};
-
 export function AppLayout() {
-  const { tr, locale } = useI18n();
+  const { tr } = useI18n();
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
@@ -33,13 +16,13 @@ export function AppLayout() {
     {
       to: "/app",
       icon: Clapperboard,
-      label: locale === "fr" ? "Le booth" : "Booth",
+      label: tr("nav.dashboard"),
       end: true,
     },
     {
       to: "/app/parametres",
       icon: Settings,
-      label: locale === "fr" ? "Réglages" : "Settings",
+      label: tr("nav.settings"),
       end: false,
     },
   ];
@@ -97,7 +80,7 @@ export function AppLayout() {
         </aside>
 
         <main className="min-w-0 flex-1 pb-[calc(6rem+var(--safe-bottom))] lg:pb-8">
-          <Outlet context={{ statusIcons }} />
+          <Outlet />
         </main>
       </div>
 
@@ -123,5 +106,3 @@ export function AppLayout() {
     </div>
   );
 }
-
-export { ArrowRight };

@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, WifiOff } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { SharePackRow } from "../components/SharePackRow";
 import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
@@ -71,8 +72,10 @@ export function ShootModePage() {
         </pre>
       </section>
 
+      <SharePackRow idea={shootIdea} />
+
       {canMarkReady && (
-        <Button type="button" className="h-12 w-full" onClick={handleMarkReady}>
+        <Button type="button" variant="outline" className="h-12 w-full" onClick={handleMarkReady}>
           <Check className="size-4" />
           {tr("shoot.markReady")}
         </Button>

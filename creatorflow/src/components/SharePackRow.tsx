@@ -16,6 +16,10 @@ type SharePackRowProps = {
   className?: string;
 };
 
+const SECONDARY_DESTINATIONS = SHARE_DESTINATIONS.filter(
+  (destination): destination is Exclude<ShareDestination, "x"> => destination !== "x",
+);
+
 export function SharePackRow({ idea, className }: SharePackRowProps) {
   const { tr } = useI18n();
   const { moveIdea } = useIdeas();
@@ -45,14 +49,24 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
 
   return (
     <div className={className}>
-      <p className="mb-2 text-xs font-medium text-muted-foreground">{tr("share.pack")}</p>
-      <div className="flex gap-2">
-        {SHARE_DESTINATIONS.map((destination) => (
+      <Button
+        type="button"
+        className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
+        disabled={loadingDest !== null}
+        onClick={() => void handleShare("x")}
+      >
+        {loadingDest === "x" ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+        ) : null}
+        {tr("share.publishX")}
+      </Button>
+      <div className="mt-2 flex gap-2">
+        {SECONDARY_DESTINATIONS.map((destination) => (
           <Button
             key={destination}
             type="button"
             variant="outline"
-            className="h-8 flex-1 text-xs"
+            className="h-11 flex-1 text-sm"
             disabled={loadingDest !== null}
             onClick={() => void handleShare(destination)}
           >
@@ -67,14 +81,14 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
         <Button
           type="button"
           variant="secondary"
-          className="mt-2 h-8 w-full text-xs"
+          className="mt-2 h-11 w-full text-sm"
           onClick={handleMarkPublished}
         >
           {tr("dashboard.nextAction.publish")}
         </Button>
       ) : null}
       {notice && (
-        <p className="mt-2 text-[11px] text-muted-foreground" role="status">
+        <p className="mt-2 text-xs text-muted-foreground" role="status">
           {notice}
         </p>
       )}

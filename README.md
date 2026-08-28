@@ -4,13 +4,13 @@
 [![Secret scan](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**The booth. Not another dashboard.**
+**Un script. Publier sur X.**
 
 Clapshot is the only public product in this repository.
 
-Live: [carllaliberte.github.io/contract/creatorflow/](https://carllaliberte.github.io/contract/creatorflow/)
+Live: [carllaliberte.github.io/contract/clapshot/](https://carllaliberte.github.io/contract/clapshot/)
 
-The loop: **idée → pack → tourner**.
+The loop: **idée → script/hook → Publier sur X**.
 
 The repo is still named `contract` for history. That is not the product name.
 

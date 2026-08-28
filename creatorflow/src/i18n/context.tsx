@@ -35,7 +35,7 @@ function readInitialLocale(): Locale {
 
 function syncDocumentLocale(locale: Locale) {
   document.documentElement.lang = locale;
-  document.title = `${t(locale, "app.name")} — ${t(locale, "app.heroTitle")}`;
+  document.title = t(locale, "app.name");
   const description = document.querySelector('meta[name="description"]');
   if (description) {
     description.setAttribute("content", t(locale, "app.lead"));

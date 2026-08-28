@@ -8,13 +8,13 @@ function warnIfAuthStubOnNative(): void {
   if (!Capacitor.isNativePlatform()) return;
   if (import.meta.env.VITE_AUTH_STUB === "true") {
     console.error(
-      "[CreatorFlow FATAL] VITE_AUTH_STUB=true in a native build — forbidden for App Store. Rebuild with npm run build:ios without stub.",
+      "[Clapshot FATAL] VITE_AUTH_STUB=true in a native build — forbidden for App Store. Rebuild with npm run build:ios without stub.",
     );
   }
   const token = peekAuthToken();
   if (token?.startsWith("stub.")) {
     console.error(
-      "[CreatorFlow FATAL] Stub auth token detected on native platform. Sign out and rebuild without VITE_AUTH_STUB.",
+      "[Clapshot FATAL] Stub auth token detected on native platform. Sign out and rebuild without VITE_AUTH_STUB.",
     );
   }
 }

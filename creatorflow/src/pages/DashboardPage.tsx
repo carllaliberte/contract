@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
-import { Button } from "../components/ui";
+import { SharePackRow } from "../components/SharePackRow";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { getNextUp } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { useScriptPackFlow } from "../hooks/useScriptPackFlow";
 import { buildBoothPack } from "../lib/boothPack";
 import type { ContentPackage } from "../types/aiContext";
 
@@ -30,9 +28,7 @@ function packFromIdea(idea: Idea): ContentPackage {
 
 export function DashboardPage() {
   const { tr } = useI18n();
-  const navigate = useNavigate();
   const { ideas } = useIdeas();
-  const { isApplying, confirmApply } = useScriptPackFlow();
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -46,13 +42,16 @@ export function DashboardPage() {
   const pack = featured ? packFromIdea(featured) : null;
   const hook = pack?.hooks?.find((item) => item.trim()) ?? featured?.title;
   const script = pack?.script?.trim();
-
-  async function handleFilm() {
-    if (!featured || !pack) return;
-    const ideaId = featured.id;
-    await confirmApply(featured, pack);
-    navigate(`/app/shoot/${ideaId}`);
-  }
+  const shareIdea = featured && pack
+    ? {
+        ...featured,
+        script: pack.script,
+        packTitles: pack.titles,
+        packCaption: pack.description,
+        packHashtags: pack.hashtags,
+        packHooks: pack.hooks,
+      }
+    : null;
 
   function skip() {
     if (!featured || waiting.length < 2) return;
@@ -75,7 +74,7 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {featured ? (
+      {featured && shareIdea ? (
         <>
           <p className="text-sm text-muted-foreground">{featured.title}</p>
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{hook}</h1>
@@ -85,14 +84,7 @@ export function DashboardPage() {
             </pre>
           ) : null}
 
-          <Button
-            type="button"
-            className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
-            disabled={isApplying}
-            onClick={() => void handleFilm()}
-          >
-            {tr("booth.film")}
-          </Button>
+          <SharePackRow idea={shareIdea} />
           {waiting.length > 1 ? (
             <button
               type="button"

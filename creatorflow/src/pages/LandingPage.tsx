@@ -43,20 +43,11 @@ export function LandingPage() {
 
       <main className="relative z-10 flex min-h-[calc(100dvh-5.5rem)] flex-col justify-center px-5 pb-24 safe-x sm:px-6">
         <div className="mx-auto w-full max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-            {tr("booth.kicker")}
-          </p>
-          <h1 className="mt-5 font-sans text-6xl font-extrabold leading-[0.9] tracking-[-0.06em] text-balance sm:text-8xl">
+          <h1 className="font-sans text-6xl font-extrabold leading-[0.9] tracking-[-0.06em] text-balance sm:text-8xl">
             {tr("app.name")}
           </h1>
-          <p className="mx-auto mt-6 max-w-lg text-xl font-semibold tracking-tight text-pretty sm:text-3xl">
-            {tr("app.heroTitle")}
-          </p>
-          <p className="mx-auto mt-4 max-w-md text-base font-medium leading-relaxed text-muted-foreground text-pretty sm:text-lg">
-            {tr("app.lead")}
-          </p>
           <Button
-            className="mt-10 h-14 w-full max-w-sm rounded-full bg-foreground px-6 text-base font-semibold text-background hover:bg-foreground/90"
+            className="mx-auto mt-10 h-14 w-full max-w-sm rounded-full bg-foreground px-6 text-base font-semibold text-background hover:bg-foreground/90"
             onClick={() => void handleEnterDemo()}
           >
             {tr("login.start")}
