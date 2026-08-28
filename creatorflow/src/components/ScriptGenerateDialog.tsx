@@ -58,7 +58,6 @@ export function ScriptGenerateDialog({
   const usage = useAiUsage();
   const [format, setFormat] = useState<ScriptFormat>("short");
   const [duration, setDuration] = useState<LongDuration>(() => defaultLongDuration(plan));
-  const [sourceRaw, setSourceRaw] = useState("");
 
   const durations = allowedLongDurations(plan);
   const isXPlatform = idea?.platform === "x";
@@ -70,7 +69,6 @@ export function ScriptGenerateDialog({
     if (!open) return;
     setFormat("short");
     setDuration(defaultLongDuration(plan));
-    setSourceRaw("");
   }, [open, idea?.id, plan]);
 
   useEffect(() => {
@@ -103,7 +101,6 @@ export function ScriptGenerateDialog({
     await onSubmit(idea!, {
       format,
       durationMinutes: format === "long" ? duration : undefined,
-      ...parseUserSource(sourceRaw),
     });
   }
 
@@ -134,30 +131,30 @@ export function ScriptGenerateDialog({
 
         <div className="space-y-4">
           {!isXPlatform && (
-          <div>
-            <p className="mb-2 text-sm font-medium">{tr("script.formatLabel")}</n>
-            <div className="grid grid-cols-2 gap-2">
-              {(["short", "long"] as const).map((value) => {
-                const disabled = value === "short" ? shortAtQuota : longAtQuota;
-                return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => selectFormat(value)}
-                  className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
-                    format === value
-                      ? "border-primary bg-primary/15 text-primary"
-                      : disabled
-                        ? "cursor-not-allowed border-border/60 bg-secondary/20 text-muted-foreground/60"
-                        : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {tr(value === "short" ? "script.formatShort" : "script.formatLong")}
-                </button>
-              );
-              })}
+            <div>
+              <p className="mb-2 text-sm font-medium">{tr("script.formatLabel")}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(["short", "long"] as const).map((value) => {
+                  const disabled = value === "short" ? shortAtQuota : longAtQuota;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => selectFormat(value)}
+                      className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+                        format === value
+                          ? "border-primary bg-primary/15 text-primary"
+                          : disabled
+                            ? "cursor-not-allowed border-border/60 bg-secondary/20 text-muted-foreground/60"
+                            : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {tr(value === "short" ? "script.formatShort" : "script.formatLong")}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
           )}
 
           {isXPlatform && (
@@ -202,7 +199,10 @@ export function ScriptGenerateDialog({
           </p>
 
           {errorMessage ? (
-            <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+            <p
+              className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              role="alert"
+            >
               {errorMessage}
             </p>
           ) : null}
