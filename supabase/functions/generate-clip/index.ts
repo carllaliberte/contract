@@ -51,7 +51,13 @@ Deno.serve(async (req) => {
     return json({ error: "GROK_NOT_CONFIGURED", message: "XAI_API_KEY is not configured" }, 500);
   }
 
-  let body: { hook?: string; duration?: number; imageUrl?: string; imageB64?: string };
+  let body: {
+    hook?: string;
+    duration?: number;
+    script?: string;
+    imageUrl?: string;
+    imageB64?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -59,16 +65,28 @@ Deno.serve(async (req) => {
   }
 
   const hook = (body.hook ?? "").trim();
+  const script = (body.script ?? "").trim();
   const duration = clampDuration(body.duration);
   const imageUrl = body.imageUrl?.trim();
   const imageB64 = body.imageB64?.trim();
-  if (!hook && !imageUrl && !imageB64) {
+  if (!hook && !script && !imageUrl && !imageB64) {
     return json({ error: "BAD_REQUEST", message: "hook or image required" }, 400);
   }
 
-  const prompt =
-    `Slow cinematic motion, vertical 9:16. Hold the composition. Soft camera drift. ` +
-    `No new text. No logos. Scene: ${hook || "Clapshot still"}.`;
+  const scene = hook || "A creator hits publish on X";
+  const action = script
+    ? `Follow this action, spoken beats as pictures, no readable text: ${script.slice(0, 500)}`
+    : `Show the idea in motion: ${scene}`;
+  const prompt = [
+    `Photoreal cinematic VIDEO, vertical 9:16, ${duration} seconds.`,
+    `This is a moving shot, not a still photo, not a Ken Burns pan on a poster.`,
+    `0-2s: hook action, camera already moving.`,
+    `Middle: one clear gesture that proves the idea.`,
+    `Last second: pull back and hold.`,
+    `No on-screen text, no logos, no captions, no watermark, no UI with readable words.`,
+    action,
+    `Subject: ${scene}.`,
+  ].join(" ");
 
   const payload: Record<string, unknown> = {
     model: Deno.env.get("XAI_VIDEO_MODEL") ?? "grok-imagine-video-1.5",

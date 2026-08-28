@@ -36,9 +36,11 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
 
   async function handleClip(seconds: 6 | 15) {
     const hook = idea.packHooks?.[0]?.trim() || idea.title;
+    const script =
+      idea.script?.trim() || idea.packCaption?.trim() || idea.description.trim();
     setClipBusy(seconds);
     setNotice(null);
-    const url = await fetchGeneratedClip(hook, seconds);
+    const url = await fetchGeneratedClip(hook, seconds, script);
     setClipBusy(null);
     if (!url) {
       setNotice(locale === "fr" ? "Clip pas encore branché." : "Clip is not wired yet.");
