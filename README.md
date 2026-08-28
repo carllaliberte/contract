@@ -1,16 +1,16 @@
-# Clapshot
+# ClapShot
 
 [![CI Clapshot](https://github.com/carllaliberte/contract/actions/workflows/ci-creatorflow.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/ci-creatorflow.yml)
 [![Secret scan](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/carllaliberte/contract/actions/workflows/secret-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Un script. Publier sur X.**
+**Un script. Une image. Publier sur X.**
 
-Clapshot is the only public product in this repository.
+ClapShot is the only public product in this repository.
 
 Live: [carllaliberte.github.io/contract/clapshot/](https://carllaliberte.github.io/contract/clapshot/)
 
-The loop: **idée → script/hook → Publier sur X**.
+The loop: **idée → script/hook → image → Publier sur X**. Instagram and TikTok stay secondary. Vertical clip 6–15s is optional.
 
 The repo is still named `contract` for history. That is not the product name.
 
@@ -20,10 +20,10 @@ Brand canon: [`docs/BRAND.md`](docs/BRAND.md).
 
 Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) before opening a PR.
 
-- One face (frozen in `#82`)
+- One public face: ClapShot
 - Quantum **OFF**
 - Do not merge `#74`, `#75`, or Dependabot into this lane
-- ClapShot / META (`google-app/`, `meta.sol`) is an archived surface, not a co-equal app
+- `google-app/` and `meta.sol` are archived META surfaces, not a second app
 
 ## Quick start
 
@@ -36,7 +36,7 @@ npm run dev
 
 Docs: [`creatorflow/README.md`](creatorflow/README.md) · Mobile: [`creatorflow/README-MOBILE.md`](creatorflow/README-MOBILE.md)
 
-CI: `.github/workflows/ci-creatorflow.yml` (web + Android debug APK + iOS simulator)
+CI: `.github/workflows/ci-creatorflow.yml` (web on every push; Android / iOS on `workflow_dispatch`)
 
 Deploy Pages: `.github/workflows/deploy-creatorflow.yml`
 
@@ -44,20 +44,21 @@ Deploy Pages: `.github/workflows/deploy-creatorflow.yml`
 gh workflow run deploy-creatorflow.yml --ref main
 ```
 
-- App: https://carllaliberte.github.io/contract/creatorflow/
-- Privacy: https://carllaliberte.github.io/contract/creatorflow/privacy.html
-- Repo root URL (`/contract/`) redirects to Clapshot
+- App: https://carllaliberte.github.io/contract/clapshot/
+- Privacy: https://carllaliberte.github.io/contract/clapshot/privacy.html
+- Legacy `/contract/creatorflow/` redirects to ClapShot
+- Repo root URL (`/contract/`) redirects to ClapShot
 
 ## Layout
 
 ```
 .
-├── creatorflow/    # THE product — web + Capacitor iOS/Android
-├── api/            # Scripts / auth helpers for Clapshot
+├── creatorflow/    # THE product (folder name frozen) — web + Capacitor
+├── api/            # Scripts / auth helpers for ClapShot
 ├── shared/         # Shared plans / constants
-├── supabase/       # Edge functions (generate-script, auth-apple)
+├── supabase/       # Edge functions (generate-script, generate-poster, generate-clip, auth-apple)
 ├── docs/           # Ops + the product lane
-├── google-app/     # ARCHIVED — ClapShot dashboard (on-chain ticker META)
+├── google-app/     # ARCHIVED — META dashboard
 └── meta.sol        # ARCHIVED — read-only ERC-20, not sold to creators
 ```
 
@@ -65,34 +66,32 @@ gh workflow run deploy-creatorflow.yml --ref main
 
 | Doc | Topic |
 | --- | --- |
-| [`docs/BRAND.md`](docs/BRAND.md) | Clapshot vs ClapShot vs infra ids |
+| [`docs/BRAND.md`](docs/BRAND.md) | ClapShot vs frozen infra ids |
 | [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) | One product, what is off |
+| [`docs/CLAPSHOT_SWEEP.md`](docs/CLAPSHOT_SWEEP.md) | One-pass sweep, what stays frozen |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute |
 | [`docs/GITHUB_COMMANDS.md`](docs/GITHUB_COMMANDS.md) | Merge canon, deploy Pages |
 | [`SECURITY.md`](SECURITY.md) | Vulnerability reporting |
 | [`docs/SECRETS.md`](docs/SECRETS.md) | Public `VITE_*` vs secrets |
-| [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | Clapshot CI → deploy |
+| [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | ClapShot CI → deploy |
 
-## Environment (Clapshot)
+## Environment (ClapShot)
 
 | Variable | Notes |
 | --- | --- |
-| `VITE_API_URL` | Public API base (empty = demo / relative) |
-| `VITE_BASE_PATH` / `VITE_ROUTER_BASENAME` | Pages vs native `/` |
+| `VITE_API_URL` | Public API base (empty = local pack / relative) |
+| `VITE_BASE_PATH` / `VITE_ROUTER_BASENAME` | Pages `/contract/clapshot/` vs native `/` |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Client-side only when set |
 
-Full matrix: [`docs/SECRETS.md`](docs/SECRETS.md). Never put LLM keys in client `VITE_*`.
+Full matrix: [`docs/SECRETS.md`](docs/SECRETS.md). Never put LLM or Imagine keys in client `VITE_*`.
 
-## Archived: ClapShot (ticker META)
+## Archived: META
 
-`google-app/` and `meta.sol` stay in the tree so history is not rewritten. They are **not** the product.
+`google-app/` and `meta.sol` stay in the tree so history is not rewritten. They are **not** ClapShot.
 
 - Pages no longer serves META at the site root
-- ClapShot / META deploy is **manual** (`workflow_dispatch` only) and publishes under `/contract/meta/`
-- Dependabot no longer watches `google-app/`
-- A creator does not buy a token. The App Store does not want a mixed identity
-
-Do not add META features, Play uploads, or WalletConnect work in parallel with Clapshot.
+- META deploy is **manual** and publishes under `/contract/meta/`
+- A creator does not buy a token
 
 ## Contributing & license
 
