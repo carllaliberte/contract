@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Share } from "@capacitor/share";
 import type { Idea } from "../data/demo";
+import { renderHookCard } from "./hookCard";
 
 export type ShareDestination = "x" | "instagram" | "tiktok";
 
@@ -11,9 +12,7 @@ const X_TEXT_MAX = 280;
 
 function formatHashtags(tags: string[] | undefined): string {
   const raw = tags?.length ? tags : ["#Clapshot"];
-  const unique = new Set<
-    string
-  >();
+  const unique = new Set<string>();
   for (const tag of raw) {
     const trimmed = tag.trim();
     if (!trimmed) continue;
@@ -78,7 +77,29 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-export async function shareToX(text: string): Promise<boolean> {
+function downloadBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
+  const hook = idea?.packHooks?.[0]?.trim() || idea?.title || text;
+  try {
+    const image = await renderHookCard(hook);
+    const file = new File([image], "clapshot.png", { type: "image/png" });
+    const payload = { text, files: [file], title: "Clapshot" };
+    if (typeof navigator !== "undefined" && navigator.canShare?.(payload)) {
+      await navigator.share(payload);
+      return true;
+    }
+    downloadBlob(image, "clapshot.png");
+  } catch {
+    // Text-only fallback still opens X.
+  }
   const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, Capacitor.isNativePlatform() ? "_system" : "_blank", "noopener,noreferrer");
   return true;
@@ -107,8 +128,14 @@ export async function sharePack(idea: Idea, destination: ShareDestination): Prom
 
   if (destination === "instagram" || destination === "tiktok") {
     await copyToClipboard(text);
+    try {
+      const image = await renderHookCard(idea.packHooks?.[0]?.trim() || idea.title);
+      downloadBlob(image, "clapshot.png");
+    } catch {
+      // Caption still copies.
+    }
     return shareViaSystemShare("Clapshot", text);
   }
 
-  return shareToX(text);
+  return shareToX(text, idea);
 }
