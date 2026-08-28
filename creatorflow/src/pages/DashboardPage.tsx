@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
@@ -14,7 +13,7 @@ function packFromIdea(idea: Idea): ContentPackage {
     return {
       ideaId: idea.id,
       platform: idea.platform,
-      language: idea.platform === "x" ? "en" : "fr",
+      language: "fr",
       format: "short",
       script: idea.script,
       titles: idea.packTitles?.length ? idea.packTitles : [idea.title],
@@ -27,6 +26,13 @@ function packFromIdea(idea: Idea): ContentPackage {
   return buildBoothPack(idea);
 }
 
+const platformLabel: Record<string, string> = {
+  reels: "Reels",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  x: "X",
+};
+
 export function DashboardPage() {
   const { locale } = useI18n();
   const navigate = useNavigate();
@@ -35,7 +41,7 @@ export function DashboardPage() {
   const [open, setOpen] = useState<Idea | null>(null);
 
   const wall = useMemo(
-    () => ideas.filter((idea) => idea.status !== "published").slice(0, 6),
+    () => ideas.filter((idea) => idea.status !== "published").slice(0, 8),
     [ideas],
   );
 
@@ -52,65 +58,68 @@ export function DashboardPage() {
 
   if (open && pack) {
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-xl flex-col justify-center gap-6">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          <span className="rec-dot" />
-          REC
-        </p>
-        <h1 className="font-display text-3xl font-medium italic tracking-tight sm:text-4xl">
+      <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col justify-end gap-6 pb-4">
+        <p className="text-sm text-muted-foreground">{open.title}</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-white">
           {hook || open.title}
         </h1>
         {script ? (
-          <pre className="w-full whitespace-pre-wrap rounded-2xl border border-border bg-card/80 p-5 text-sm leading-relaxed">
+          <pre className="whitespace-pre-wrap text-[15px] leading-relaxed text-white/80">
             {script}
           </pre>
         ) : null}
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            type="button"
-            className="h-14 flex-1 text-base"
-            disabled={isApplying}
-            onClick={() => void handleFilm()}
-          >
-            {locale === "fr" ? "Tourner" : "Film"}
-            <ArrowRight className="size-5" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-14 flex-1 text-base"
-            disabled={isApplying}
-            onClick={() => setOpen(null)}
-          >
-            {locale === "fr" ? "Autre script" : "Another script"}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          className="h-14 w-full rounded-full bg-white text-base font-semibold text-black hover:bg-white/90"
+          disabled={isApplying}
+          onClick={() => void handleFilm()}
+        >
+          {locale === "fr" ? "Tourner" : "Film"}
+        </Button>
+        <button
+          type="button"
+          className="text-sm text-white/50"
+          onClick={() => setOpen(null)}
+        >
+          {locale === "fr" ? "Autre script" : "Another script"}
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        <span className="rec-dot" />
-        REC
-      </p>
-      <h1 className="mt-4 font-display text-3xl font-medium italic tracking-tight sm:text-4xl">
-        {locale === "fr" ? "Explorez les scripts Clapshot" : "Explore Clapshot scripts"}
+    <div className="mx-auto max-w-lg">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {locale === "fr" ? "Scripts" : "Scripts"}
       </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         {locale === "fr" ? "Un tap. Tu lis. Tu tournes." : "One tap. You read. You film."}
       </p>
-      <ul className="mt-8 flex flex-col gap-3">
+      <ul className="mt-6 divide-y divide-white/10">
         {wall.map((idea) => (
           <li key={idea.id}>
             <button
               type="button"
               onClick={() => setOpen(idea)}
-              className="w-full rounded-2xl border border-border bg-card/80 p-4 text-left transition-colors hover:border-primary/50 hover:bg-card"
+              className="flex w-full items-center gap-3 py-4 text-left"
             >
-              <p className="font-medium leading-snug">{idea.title}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{idea.description}</p>
+              <img
+                src={idea.thumbnail}
+                alt=""
+                className="size-11 shrink-0 rounded-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate font-medium">{idea.title}</p>
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                    {platformLabel[idea.platform] ?? idea.platform}
+                  </span>
+                </div>
+                <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{idea.description}</p>
+              </div>
             </button>
           </li>
         ))}
