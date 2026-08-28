@@ -9,4 +9,4 @@ const configuredBasename = import.meta.env.VITE_ROUTER_BASENAME;
 export const ROUTER_BASENAME =
   configuredBasename !== undefined && configuredBasename !== ""
     ? normalizeBasename(configuredBasename)
-    : "/contract/creatorflow";
+    : "/contract/clapshot";
