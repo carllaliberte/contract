@@ -18,10 +18,9 @@ test.describe("Landing page", () => {
   });
 
   test("enters demo mode from primary CTA", async ({ page, demoApp }) => {
-    await expect(page.locator("h1")).toContainText(
-      /4 ideas|4 idées|Publie|Publish|Tourne|Film|Écris|Write|Fais avancer|Move/,
-      { timeout: 15_000 },
-    );
+    await expect(page.locator("h1")).toContainText(/scripts clapshot|clapshot scripts/i, {
+      timeout: 15_000,
+    });
   });
 
   test("explore without account opens demo", async ({ page, landing }) => {
