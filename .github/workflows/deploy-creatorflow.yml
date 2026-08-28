@@ -1,4 +1,4 @@
-name: Deploy CreatorFlow
+name: Deploy Clapshot
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
       - "creatorflow/**"
       - "shared/**"
       - "pages-root/**"
+      - "pages-legacy-creatorflow/**"
       - ".github/workflows/deploy-creatorflow.yml"
   workflow_dispatch:
 
@@ -31,11 +32,11 @@ jobs:
           cache: npm
           cache-dependency-path: creatorflow/package-lock.json
 
-      - name: Build CreatorFlow
+      - name: Build Clapshot
         working-directory: creatorflow
         env:
-          VITE_BASE_PATH: /contract/creatorflow/
-          VITE_ROUTER_BASENAME: /contract/creatorflow
+          VITE_BASE_PATH: /contract/clapshot/
+          VITE_ROUTER_BASENAME: /contract/clapshot
           VITE_API_URL: ${{ vars.VITE_API_URL || 'https://ralxriqcpvuxzetnfsim.supabase.co/functions/v1/generate-script' }}
           VITE_AUTH_APPLE_URL: ${{ vars.VITE_AUTH_APPLE_URL || 'https://ralxriqcpvuxzetnfsim.supabase.co/functions/v1/auth-apple' }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ralxriqcpvuxzetnfsim.supabase.co' }}
@@ -52,35 +53,46 @@ jobs:
         working-directory: creatorflow
         continue-on-error: true
         env:
-          VITE_BASE_PATH: /contract/creatorflow/
+          VITE_BASE_PATH: /contract/clapshot/
           PRERENDER_TIMEOUT_MS: "45000"
           NODE_OPTIONS: --max-old-space-size=192
           UV_THREADPOOL_SIZE: "2"
         run: node scripts/prerender.mjs
 
-      - name: Publish to gh-pages/creatorflow
+      - name: Publish to gh-pages/clapshot
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: creatorflow/dist
-          destination_dir: creatorflow
+          destination_dir: clapshot
           keep_files: true
-          commit_message: Deploy CreatorFlow [skip ci]
+          commit_message: Deploy Clapshot [skip ci]
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
 
-      - name: Publish Pages root redirect → CreatorFlow
+      - name: Redirect old /creatorflow/ URLs
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pages-legacy-creatorflow
+          destination_dir: creatorflow
+          keep_files: false
+          commit_message: Redirect CreatorFlow path to Clapshot [skip ci]
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+
+      - name: Publish Pages root redirect → Clapshot
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: pages-root
           keep_files: true
-          commit_message: Point Pages root at CreatorFlow [skip ci]
+          commit_message: Point Pages root at Clapshot [skip ci]
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
 
       - name: Live URLs
         run: |
-          echo "Root redirects to CreatorFlow: https://carllaliberte.github.io/contract/"
-          echo "App: https://carllaliberte.github.io/contract/creatorflow/"
-          echo "Privacy: https://carllaliberte.github.io/contract/creatorflow/privacy.html"
+          echo "App: https://carllaliberte.github.io/contract/clapshot/"
+          echo "Privacy: https://carllaliberte.github.io/contract/clapshot/privacy.html"
+          echo "Legacy /creatorflow/ redirects to Clapshot"
