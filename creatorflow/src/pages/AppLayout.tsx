@@ -54,12 +54,12 @@ export function AppLayout() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md safe-top safe-x">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
           <Logo size="sm" />
-          <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+          <span className="hidden rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary xs:inline-flex sm:inline-flex">
             {isAuthenticated ? tr("session.badge.apple") : tr("demo.badge")}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1.5">
             {!online && (
               <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 {tr("cloud.offline")}
@@ -74,10 +74,10 @@ export function AppLayout() {
             <button
               type="button"
               onClick={() => void exitApp()}
-              className="inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+              aria-label={tr("demo.exit")}
             >
               <LogOut className="size-4" />
-              <span className="hidden sm:inline">{tr("demo.exit")}</span>
             </button>
           </div>
         </div>
