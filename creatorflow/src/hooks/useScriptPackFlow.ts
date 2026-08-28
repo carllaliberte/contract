@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useIdeas, isGenerateScriptError } from "../context/IdeasContext";
 import { isGrokNotConfiguredError } from "../lib/api/generateScript";
+import { buildBoothPack } from "../lib/boothPack";
 import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import type { ScriptFormat } from "../lib/plans";
@@ -41,8 +42,8 @@ export function useScriptPackFlow() {
         setPackPreview({ idea, pack: result.pack, provider: result.provider });
         return true;
       }
-      setNotice(tr("pack.queuedOffline"));
-      return false;
+      setPackPreview({ idea, pack: buildBoothPack(idea) });
+      return true;
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
         throw error;
@@ -51,16 +52,8 @@ export function useScriptPackFlow() {
         if (error.usage) syncAiUsage(error.usage);
         throw error;
       }
-      if (isGenerateScriptError(error)) {
-        setNotice(
-          isGrokNotConfiguredError(error)
-            ? tr("script.grokNotConfigured")
-            : error.message,
-        );
-      } else {
-        setNotice(tr("script.apiError"));
-      }
-      return false;
+      setPackPreview({ idea, pack: buildBoothPack(idea) });
+      return true;
     } finally {
       setGeneratingId(null);
     }
