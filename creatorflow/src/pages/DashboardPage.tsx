@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
-import { Button } from "../components/ui";
+import { SharePackRow } from "../components/SharePackRow";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { getNextUp } from "../data/demo";
@@ -28,6 +28,17 @@ function packFromIdea(idea: Idea): ContentPackage {
   return buildBoothPack(idea);
 }
 
+function ideaWithPack(idea: Idea, pack: ContentPackage): Idea {
+  return {
+    ...idea,
+    script: pack.script,
+    packTitles: pack.titles,
+    packHashtags: pack.hashtags,
+    packCaption: pack.description,
+    packHooks: pack.hooks,
+  };
+}
+
 export function DashboardPage() {
   const { tr } = useI18n();
   const navigate = useNavigate();
@@ -35,6 +46,7 @@ export function DashboardPage() {
   const { isApplying, confirmApply } = useScriptPackFlow();
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [ready, setReady] = useState<Idea | null>(null);
 
   const waiting = useMemo(
     () => ideas.filter((idea) => idea.status !== "published"),
@@ -46,12 +58,12 @@ export function DashboardPage() {
   const pack = featured ? packFromIdea(featured) : null;
   const hook = pack?.hooks?.find((item) => item.trim()) ?? featured?.title;
   const script = pack?.script?.trim();
+  const shareIdea = ready ?? (featured && pack ? ideaWithPack(featured, pack) : null);
 
-  async function handleFilm() {
+  async function sealPack() {
     if (!featured || !pack) return;
-    const ideaId = featured.id;
     await confirmApply(featured, pack);
-    navigate(`/app/shoot/${ideaId}`);
+    setReady(ideaWithPack(featured, pack));
   }
 
   function skip() {
@@ -59,6 +71,7 @@ export function DashboardPage() {
     const index = waiting.findIndex((idea) => idea.id === featured.id);
     const next = waiting[(index + 1) % waiting.length];
     setPickedId(next?.id ?? null);
+    setReady(null);
   }
 
   return (
@@ -75,7 +88,7 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {featured ? (
+      {featured && pack && shareIdea ? (
         <>
           <p className="text-sm text-muted-foreground">{featured.title}</p>
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{hook}</h1>
@@ -85,14 +98,18 @@ export function DashboardPage() {
             </pre>
           ) : null}
 
-          <Button
+          <SharePackRow idea={shareIdea} />
+
+          <button
             type="button"
-            className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
+            className="h-11 text-sm text-muted-foreground hover:text-foreground"
             disabled={isApplying}
-            onClick={() => void handleFilm()}
+            onClick={() => {
+              void sealPack().then(() => navigate(`/app/shoot/${featured.id}`));
+            }}
           >
             {tr("booth.film")}
-          </Button>
+          </button>
           {waiting.length > 1 ? (
             <button
               type="button"
