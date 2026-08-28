@@ -12,22 +12,15 @@ const sampleIdea: Idea = {
   description: "Fallback description",
   status: "ready",
   priority: "medium",
-  platform: "instagram",
+  platform: "reels",
   updatedAt: "2026-08-26T00:00:00Z",
   script: "HOOK: Hello\nCTA: Follow",
   thumbnail: "https://example.com/thumb.jpg",
 };
 
 describe("buildSharePackText", () => {
-  it("includes title and script", () => {
-    expect(buildSharePackText(sampleIdea)).toBe(
-      "Test title\n\nHOOK: Hello\nCTA: Follow",
-    );
-  });
-
-  it("falls back to description when script is missing", () => {
-    const idea = { ...sampleIdea, script: undefined };
-    expect(buildSharePackText(idea)).toBe("Test title\n\nFallback description");
+  it("defaults to an X post with #Clapshot", () => {
+    expect(buildSharePackText(sampleIdea)).toBe("Test title\n\n#Clapshot");
   });
 
   it("builds an Instagram caption from hook, caption, and hashtags", () => {
@@ -38,7 +31,7 @@ describe("buildSharePackText", () => {
       packHashtags: ["reels", "#editing"],
     };
     expect(buildSharePackText(idea, "instagram")).toBe(
-      "Stop scrolling.\n\nFive cuts that kill retention.\n\n#reels #editing",
+      "Stop scrolling.\n\nFive cuts that kill retention.\n\n#reels #editing #Clapshot",
     );
   });
 
