@@ -33,7 +33,7 @@ export function AppLayout() {
     {
       to: "/app",
       icon: Clapperboard,
-      label: locale === "fr" ? "Scripts" : "Scripts",
+      label: locale === "fr" ? "Le booth" : "Booth",
       end: true,
     },
     {
