@@ -1,9 +1,7 @@
 import { useState } from "react";
 import type { Idea } from "../data/demo";
 import { useIdeas, isGenerateScriptError } from "../context/IdeasContext";
-import { isGrokNotConfiguredError } from "../lib/api/generateScript";
 import { buildBoothPack } from "../lib/boothPack";
-import { useI18n } from "../i18n/context";
 import { canUseAiGeneration, syncAiUsage } from "../lib/aiUsage";
 import type { ScriptFormat } from "../lib/plans";
 import type { ScriptGenerateOptions } from "../components/ScriptGenerateDialog";
@@ -18,7 +16,6 @@ type PackPreviewState = {
 };
 
 export function useScriptPackFlow() {
-  const { tr } = useI18n();
   const { previewScript, applyPack } = useIdeas();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
