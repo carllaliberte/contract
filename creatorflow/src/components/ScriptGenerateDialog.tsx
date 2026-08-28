@@ -41,6 +41,7 @@ type ScriptGenerateDialogProps = {
   onSubmit: (idea: Idea, options: ScriptGenerateOptions) => Promise<void>;
   isGenerating?: boolean;
   onPaywall?: (format: ScriptFormat) => void;
+  errorMessage?: string | null;
 };
 
 export function ScriptGenerateDialog({
@@ -50,6 +51,7 @@ export function ScriptGenerateDialog({
   onSubmit,
   isGenerating,
   onPaywall,
+  errorMessage,
 }: ScriptGenerateDialogProps) {
   const { tr } = useI18n();
   const plan = usePlan();
@@ -133,7 +135,7 @@ export function ScriptGenerateDialog({
         <div className="space-y-4">
           {!isXPlatform && (
           <div>
-            <p className="mb-2 text-sm font-medium">{tr("script.formatLabel")}</p>
+            <p className="mb-2 text-sm font-medium">{tr("script.formatLabel")}</n>
             <div className="grid grid-cols-2 gap-2">
               {(["short", "long"] as const).map((value) => {
                 const disabled = value === "short" ? shortAtQuota : longAtQuota;
@@ -199,20 +201,11 @@ export function ScriptGenerateDialog({
                 })}
           </p>
 
-          <div>
-            <label htmlFor="script-source" className="mb-2 block text-sm font-medium">
-              {tr("script.sourceLabel")}
-            </label>
-            <textarea
-              id="script-source"
-              value={sourceRaw}
-              onChange={(e) => setSourceRaw(e.target.value)}
-              rows={3}
-              placeholder={tr("script.sourcePlaceholder")}
-              className="w-full resize-y rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground">{tr("script.sourceHint")}</p>
-          </div>
+          {errorMessage ? (
+            <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-5 flex gap-2">
