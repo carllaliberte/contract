@@ -31,6 +31,15 @@ export async function fetchGeneratedClip(
   duration = 6,
   script = "",
 ): Promise<string | null> {
+  const clip = await fetchGeneratedClipFile(hook, duration, script);
+  return clip ? URL.createObjectURL(clip) : null;
+}
+
+export async function fetchGeneratedClipFile(
+  hook: string,
+  duration = 6,
+  script = "",
+): Promise<File | null> {
   try {
     const res = await fetch(clipUrl(), {
       method: "POST",
@@ -42,8 +51,20 @@ export async function fetchGeneratedClip(
       }),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { url?: string };
-    return data.url ?? null;
+    const data = (await res.json()) as { url?: string; b64?: string; mime?: string };
+    if (data.b64) {
+      const binary = atob(data.b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return new File([bytes], "clapshot.mp4", { type: data.mime || "video/mp4" });
+    }
+    if (data.url) {
+      const video = await fetch(data.url);
+      if (!video.ok) return null;
+      const blob = await video.blob();
+      return new File([blob], "clapshot.mp4", { type: blob.type || "video/mp4" });
+    }
+    return null;
   } catch {
     return null;
   }

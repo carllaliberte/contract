@@ -38,6 +38,33 @@ async function pollVideo(apiKey: string, requestId: string): Promise<string> {
   throw new Error("clip timeout");
 }
 
+function bytesToB64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+async function attachClipBytes(
+  url: string,
+  duration: number,
+  hook: string,
+): Promise<Record<string, unknown>> {
+  const body: Record<string, unknown> = { url, duration, hook };
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return body;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.byteLength === 0 || bytes.byteLength > 4_500_000) return body;
+    body.b64 = bytesToB64(bytes);
+    body.mime = res.headers.get("content-type")?.split(";")[0] || "video/mp4";
+  } catch {
+    // URL still returned; client may fetch it.
+  }
+  return body;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -75,15 +102,16 @@ Deno.serve(async (req) => {
 
   const scene = hook || "A creator hits publish on X";
   const action = script
-    ? `Follow this action, spoken beats as pictures, no readable text: ${script.slice(0, 500)}`
-    : `Show the idea in motion: ${scene}`;
+    ? `Picture this action, no readable text: ${script.slice(0, 500)}`
+    : `Show this idea in motion: ${scene}`;
+  const tail = Math.max(1, duration - 1);
   const prompt = [
-    `Photoreal cinematic VIDEO, vertical 9:16, ${duration} seconds.`,
-    `This is a moving shot, not a still photo, not a Ken Burns pan on a poster.`,
-    `0-2s: hook action, camera already moving.`,
-    `Middle: one clear gesture that proves the idea.`,
-    `Last second: pull back and hold.`,
-    `No on-screen text, no logos, no captions, no watermark, no UI with readable words.`,
+    `Photoreal cinematic VIDEO, vertical 9:16, ${duration} seconds, 24fps, shallow depth of field.`,
+    `The camera is NEVER locked off. This is not a still, not a poster, not Ken Burns.`,
+    `0.0-1.2s: crash-in (dolly forward + micro handheld) onto the first action. Movement already started on frame 1.`,
+    `1.2-${tail.toFixed(1)}s: orbit right about 20 degrees, parallax in the background, one clear gesture.`,
+    `Last 1.0s: ease-out pull-back to a medium shot, settle only on the final frames.`,
+    `Forbidden: freeze-frame, slideshow, zooming a graphic, on-screen text, logos, captions, watermarks, UI type.`,
     action,
     `Subject: ${scene}.`,
   ].join(" ");
@@ -126,7 +154,7 @@ Deno.serve(async (req) => {
   const direct =
     startData?.video?.url ?? startData?.url ?? startData?.data?.[0]?.url;
   if (typeof direct === "string" && direct) {
-    return json({ url: direct, duration, hook });
+    return json(await attachClipBytes(direct, duration, hook));
   }
 
   const requestId = startData?.request_id ?? startData?.id;
@@ -136,7 +164,7 @@ Deno.serve(async (req) => {
 
   try {
     const url = await pollVideo(apiKey, String(requestId));
-    return json({ url, duration, hook });
+    return json(await attachClipBytes(url, duration, hook));
   } catch (error) {
     return json(
       {
