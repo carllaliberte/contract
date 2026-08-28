@@ -19,6 +19,27 @@ type IdeaCardProps = {
   dragOverlay?: boolean;
 };
 
+function Cover({ src }: { src: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[#161311]">
+        <span className="rec-dot" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
 export function IdeaCard({
   idea,
   onGenerateScript,
@@ -51,12 +72,7 @@ export function IdeaCard({
       }`}
     >
       <div className="relative aspect-[16/10] overflow-hidden">
-        <img
-          src={idea.thumbnail}
-          alt=""
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          loading="lazy"
-        />
+        <Cover src={idea.thumbnail} />
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
           {labelForPlatform(idea.platform)}
