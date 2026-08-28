@@ -18,10 +18,10 @@ export function ShootModePage() {
       <div className="mx-auto max-w-2xl py-12 text-center">
         <p className="text-sm text-muted-foreground">{tr("shoot.notFound")}</p>
         <Link
-          to="/app/pipeline"
+          to="/app"
           className="mt-4 inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold hover:bg-secondary/80"
         >
-          {tr("shoot.backPipeline")}
+          {tr("nav.dashboard")}
         </Link>
       </div>
     );
@@ -40,11 +40,11 @@ export function ShootModePage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <Link
-          to="/app/pipeline"
+          to="/app"
           className="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-medium hover:bg-secondary"
         >
           <ArrowLeft className="size-4" />
-          {tr("shoot.backPipeline")}
+          {tr("nav.dashboard")}
         </Link>
         {!online && (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700">
