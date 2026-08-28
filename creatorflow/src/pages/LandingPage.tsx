@@ -35,6 +35,9 @@ export function LandingPage() {
     navigate("/app");
   }
 
+  const exploreLabel =
+    locale === "fr" ? "Explorez les scripts Clapshot" : "Explore Clapshot scripts";
+
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 login-wash" />
@@ -55,14 +58,14 @@ export function LandingPage() {
               {tr("app.heroTitle")}
             </h1>
             <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-              {tr("app.lead")}
+              {exploreLabel}. {locale === "fr" ? "Une idée, un tap, tu tournes." : "One idea, one tap, you film."}
             </p>
             <div className="mt-10">
               <Button
                 className="h-14 px-8 text-base sm:h-16 sm:px-10 sm:text-lg"
                 onClick={() => void handleEnterDemo()}
               >
-                {tr("login.start")}
+                {exploreLabel}
                 <ArrowRight className="size-5" />
               </Button>
             </div>
