@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Share } from "@capacitor/share";
 import type { Idea } from "../data/demo";
+import { fetchGeneratedPoster } from "./api/generatePoster";
 import { renderHookCard } from "./hookCard";
 
 export type ShareDestination = "x" | "instagram" | "tiktok";
@@ -86,11 +87,15 @@ function downloadBlob(blob: Blob, name: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+async function posterFor(idea: Idea): Promise<Blob> {
+  const hook = idea.packHooks?.[0]?.trim() || idea.title;
+  return (await fetchGeneratedPoster(hook)) ?? renderHookCard(hook);
+}
+
 export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
-  const hook = idea?.packHooks?.[0]?.trim() || idea?.title || text;
   try {
-    const image = await renderHookCard(hook);
-    const file = new File([image], "clapshot.png", { type: "image/png" });
+    const image = idea ? await posterFor(idea) : await renderHookCard(text);
+    const file = new File([image], "clapshot.png", { type: image.type || "image/png" });
     const payload = { text, files: [file], title: "Clapshot" };
     if (typeof navigator !== "undefined" && navigator.canShare?.(payload)) {
       await navigator.share(payload);
@@ -129,8 +134,7 @@ export async function sharePack(idea: Idea, destination: ShareDestination): Prom
   if (destination === "instagram" || destination === "tiktok") {
     await copyToClipboard(text);
     try {
-      const image = await renderHookCard(idea.packHooks?.[0]?.trim() || idea.title);
-      downloadBlob(image, "clapshot.png");
+      downloadBlob(await posterFor(idea), "clapshot.png");
     } catch {
       // Caption still copies.
     }
