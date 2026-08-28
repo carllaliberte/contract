@@ -8,7 +8,7 @@ export const translations: Record<Locale, Translations> = {
     "app.heroTitle": "4 idées. 0 plan tourné.",
     "app.tagline": "Clapshot — le booth.",
     "app.lead":
-      "Le booth. Pas un dashboard de plus. Structure tes idées, écris tes scripts, et filme.",
+      "Pas un dashboard. Un plan. Tu tournes.",
     "app.heroBadge": "Le booth · Démo gratuite",
     "nav.demo": "Voir la démo",
     "nav.viewPipeline": "Voir le parcours",
@@ -47,6 +47,11 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet4": "Essai immédiat, sans carte bancaire",
     "login.tryDemo": "Explorer sans compte",
     "login.start": "On commence.",
+    "booth.kicker": "Le booth",
+    "booth.film": "Filme",
+    "booth.skip": "Autre plan",
+    "booth.empty": "Rien à tourner. Ajoute une idée.",
+    "booth.tally": "{waiting} en attente · {filmed} filmés",
     "showcase.title": "Voyez Clapshot en action",
     "showcase.subtitle":
       "Aperçus du parcours de création, du tableau de bord et des contenus prêts à publier.",
@@ -305,7 +310,7 @@ export const translations: Record<Locale, Translations> = {
     "app.heroTitle": "4 ideas. 0 shots filmed.",
     "app.tagline": "Clapshot — the booth.",
     "app.lead":
-      "The booth. Not another dashboard. Structure your ideas, write scripts, and film.",
+      "Not another dashboard. One shot. You film.",
     "app.heroBadge": "The booth · Free demo",
     "nav.demo": "View demo",
     "nav.viewPipeline": "See the workflow",
@@ -344,6 +349,11 @@ export const translations: Record<Locale, Translations> = {
     "login.bullet4": "Try it now, no credit card required",
     "login.tryDemo": "Explore without account",
     "login.start": "Let’s go.",
+    "booth.kicker": "The booth",
+    "booth.film": "Film",
+    "booth.skip": "Next shot",
+    "booth.empty": "Nothing to film. Add an idea.",
+    "booth.tally": "{waiting} waiting · {filmed} filmed",
     "showcase.title": "See Clapshot in action",
     "showcase.subtitle":
       "Previews of your creation workflow, dashboard, and publish-ready content.",

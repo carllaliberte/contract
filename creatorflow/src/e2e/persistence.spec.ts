@@ -26,7 +26,7 @@ test.describe("Idea persistence", () => {
   test("pipeline reflects persisted ideas after navigation", async ({ page, demoApp }) => {
     await addIdea(page, IDEA_TITLE);
 
-    await page.getByRole("link", { name: /^Pipeline$/i }).click();
+    await page.goto("./app/pipeline");
     await expect(page.getByText(IDEA_TITLE)).toBeVisible();
   });
 });

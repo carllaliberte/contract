@@ -31,7 +31,7 @@ async function clearCreatorFlowStorage(page: Page) {
 async function enterDemoFromLanding(page: Page) {
   await page
     .getByRole("button", {
-      name: /explorez les scripts clapshot|explore clapshot scripts|on commence|let['’]s go/i,
+      name: /on commence|let['’]s go|explorez les scripts clapshot|explore clapshot scripts/i,
     })
     .first()
     .click();

@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AddIdeaDialog } from "../components/AddIdeaDialog";
 import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
+import { getNextUp } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { useScriptPackFlow } from "../hooks/useScriptPackFlow";
 import { buildBoothPack } from "../lib/boothPack";
@@ -26,104 +28,94 @@ function packFromIdea(idea: Idea): ContentPackage {
   return buildBoothPack(idea);
 }
 
-const platformLabel: Record<string, string> = {
-  reels: "Reels",
-  tiktok: "TikTok",
-  youtube: "YouTube",
-  x: "X",
-};
-
 export function DashboardPage() {
-  const { locale } = useI18n();
+  const { tr } = useI18n();
   const navigate = useNavigate();
   const { ideas } = useIdeas();
   const { isApplying, confirmApply } = useScriptPackFlow();
-  const [open, setOpen] = useState<Idea | null>(null);
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
-  const wall = useMemo(
-    () => ideas.filter((idea) => idea.status !== "published").slice(0, 8),
+  const waiting = useMemo(
+    () => ideas.filter((idea) => idea.status !== "published"),
     [ideas],
   );
-
-  const pack = open ? packFromIdea(open) : null;
-  const hook = pack?.hooks?.find((item) => item.trim());
+  const filmed = ideas.length - waiting.length;
+  const featured =
+    waiting.find((idea) => idea.id === pickedId) ?? getNextUp(ideas) ?? waiting[0] ?? null;
+  const pack = featured ? packFromIdea(featured) : null;
+  const hook = pack?.hooks?.find((item) => item.trim()) ?? featured?.title;
   const script = pack?.script?.trim();
 
   async function handleFilm() {
-    if (!open || !pack) return;
-    const ideaId = open.id;
-    await confirmApply(open, pack);
+    if (!featured || !pack) return;
+    const ideaId = featured.id;
+    await confirmApply(featured, pack);
     navigate(`/app/shoot/${ideaId}`);
   }
 
-  if (open && pack) {
-    return (
-      <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col justify-end gap-6 pb-4">
-        <p className="text-sm text-muted-foreground">{open.title}</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white">
-          {hook || open.title}
-        </h1>
-        {script ? (
-          <pre className="whitespace-pre-wrap text-[15px] leading-relaxed text-white/80">
-            {script}
-          </pre>
-        ) : null}
-        <Button
-          type="button"
-          className="h-14 w-full rounded-full bg-white text-base font-semibold text-black hover:bg-white/90"
-          disabled={isApplying}
-          onClick={() => void handleFilm()}
-        >
-          {locale === "fr" ? "Tourner" : "Film"}
-        </Button>
-        <button
-          type="button"
-          className="text-sm text-white/50"
-          onClick={() => setOpen(null)}
-        >
-          {locale === "fr" ? "Autre script" : "Another script"}
-        </button>
-      </div>
-    );
+  function skip() {
+    if (!featured || waiting.length < 2) return;
+    const index = waiting.findIndex((idea) => idea.id === featured.id);
+    const next = waiting[(index + 1) % waiting.length];
+    setPickedId(next?.id ?? null);
   }
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {locale === "fr" ? "Scripts" : "Scripts"}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {locale === "fr" ? "Un tap. Tu lis. Tu tournes." : "One tap. You read. You film."}
-      </p>
-      <ul className="mt-6 divide-y divide-white/10">
-        {wall.map((idea) => (
-          <li key={idea.id}>
+    <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col justify-end gap-6 pb-4">
+      <div className="flex items-end justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+          {tr("booth.kicker")}
+        </p>
+        <p className="text-xs tabular-nums text-muted-foreground">
+          {tr("booth.tally", {
+            waiting: String(waiting.length),
+            filmed: String(filmed),
+          })}
+        </p>
+      </div>
+
+      {featured ? (
+        <>
+          <p className="text-sm text-muted-foreground">{featured.title}</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{hook}</h1>
+          {script ? (
+            <pre className="max-h-48 overflow-auto whitespace-pre-wrap text-[15px] leading-relaxed text-muted-foreground">
+              {script}
+            </pre>
+          ) : null}
+
+          <Button
+            type="button"
+            className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
+            disabled={isApplying}
+            onClick={() => void handleFilm()}
+          >
+            {tr("booth.film")}
+          </Button>
+          {waiting.length > 1 ? (
             <button
               type="button"
-              onClick={() => setOpen(idea)}
-              className="flex w-full items-center gap-3 py-4 text-left"
+              className="h-11 text-sm text-muted-foreground hover:text-foreground"
+              onClick={skip}
             >
-              <img
-                src={idea.thumbnail}
-                alt=""
-                className="size-11 shrink-0 rounded-full object-cover"
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-medium">{idea.title}</p>
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/70">
-                    {platformLabel[idea.platform] ?? idea.platform}
-                  </span>
-                </div>
-                <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{idea.description}</p>
-              </div>
+              {tr("booth.skip")}
             </button>
-          </li>
-        ))}
-      </ul>
+          ) : null}
+        </>
+      ) : (
+        <h1 className="text-3xl font-semibold tracking-tight text-balance">{tr("booth.empty")}</h1>
+      )}
+
+      <button
+        type="button"
+        className="h-11 text-sm text-muted-foreground hover:text-foreground"
+        onClick={() => setAddOpen(true)}
+      >
+        {tr("dashboard.newIdea")}
+      </button>
+
+      <AddIdeaDialog open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }
