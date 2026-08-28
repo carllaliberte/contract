@@ -19,8 +19,15 @@ const sampleIdea: Idea = {
 };
 
 describe("buildSharePackText", () => {
-  it("defaults to an X post with #Clapshot", () => {
-    expect(buildSharePackText(sampleIdea)).toBe("Test title\n\n#Clapshot");
+  it("publishes the X caption as the tweet", () => {
+    const idea: Idea = {
+      ...sampleIdea,
+      platform: "x",
+      packCaption: "One idea. One post.",
+      packHooks: ["Ignore the hook."],
+      packHashtags: ["#Clapshot"],
+    };
+    expect(buildSharePackText(idea, "x")).toBe("One idea. One post.\n\n#Clapshot");
   });
 
   it("builds an Instagram caption from hook, caption, and hashtags", () => {

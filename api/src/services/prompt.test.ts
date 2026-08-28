@@ -160,39 +160,37 @@ describe("buildScriptPrompt", () => {
     );
   });
 
-  it("builds X FR structured prompt with thread and hook variants", () => {
+  it("builds X FR as one post, not a thread", () => {
     const { system, user } = buildScriptPrompt({
-      title: "Thread viral",
-      description: "Une idée thought-leadership",
+      title: "4 idées. 0 post.",
+      description: "Un script, un bouton Publier sur X",
       platform: "x",
       language: "fr",
       mode: "generate",
     });
-    expect(system).toContain("expert en contenu X (Twitter)");
-    expect(system).toContain("thought-leadership");
-    expect(user).toContain("Titre: Thread viral");
-    expect(user).toContain("THREAD PRINCIPAL (6–12 posts)");
-    expect(user).toContain("POST 1 — HOOK");
-    expect(user).toContain("VARIANTES DE HOOKS");
-    expect(user).toContain("VERSION POST UNIQUE CONDENSÉE");
-    expect(user).toContain("280 caractères");
-    expect(user).toContain("CTA explicite");
+    expect(system).toContain("Tu écris des posts X");
+    expect(system).toContain("UN post X prêt à coller");
+    expect(user).toContain("Titre: 4 idées. 0 post.");
+    expect(user).toContain("Produis UN post X. Pas de thread.");
+    expect(user).toContain("≤280 caractères");
+    expect(user).toContain("HOOKS — 3 variantes");
+    expect(user).not.toContain("THREAD PRINCIPAL");
   });
 
-  it("builds X EN structured prompt with thread and hook variants", () => {
+  it("builds X EN as one post, not a thread", () => {
     const { system, user } = buildScriptPrompt({
-      title: "Viral thread",
-      description: "A thought-leadership idea",
+      title: "4 ideas. 0 posts.",
+      description: "One script, then Publish on X",
       platform: "x",
       language: "en",
       mode: "generate",
     });
-    expect(system).toContain("X (Twitter) content and thought-leadership expert");
-    expect(user).toContain("Title: Viral thread");
-    expect(user).toContain("MAIN THREAD (6–12 posts)");
-    expect(user).toContain("HOOK VARIANTS");
-    expect(user).toContain("CONDENSED SINGLE-POST VERSION");
-    expect(user).toContain("280 characters");
+    expect(system).toContain("You write X posts");
+    expect(system).toContain("ONE X post, ready to paste");
+    expect(user).toContain("Title: 4 ideas. 0 posts.");
+    expect(user).toContain("Write ONE X post. No thread.");
+    expect(user).toContain("≤280 characters");
+    expect(user).not.toContain("MAIN THREAD");
   });
 
   it("uses X prompt even when format is long", () => {
@@ -205,7 +203,7 @@ describe("buildScriptPrompt", () => {
       format: "long",
       durationMinutes: 20,
     });
-    expect(user).toContain("THREAD PRINCIPAL");
+    expect(user).toContain("Produis UN post X");
     expect(user).not.toContain("CHAPITRE");
   });
 
@@ -218,7 +216,7 @@ describe("buildScriptPrompt", () => {
       mode: "improve",
       existingScript: "Thread existant",
     });
-    expect(user).toContain("Améliore ce script pour x.");
+    expect(user).toContain("Réécris ce post X");
     expect(user).toContain("Thread existant");
     expect(user).not.toContain("THREAD PRINCIPAL");
   });
@@ -282,7 +280,7 @@ describe("buildMockScript", () => {
     expect(script).toContain("CTA:");
   });
 
-  it("returns thread structure for X FR", () => {
+  it("returns a single X post for X FR", () => {
     const script = buildMockScript({
       title: "Thread test",
       description: "Idée principale",
@@ -290,14 +288,14 @@ describe("buildMockScript", () => {
       language: "fr",
       mode: "generate",
     });
-    expect(script).toContain("THREAD PRINCIPAL");
-    expect(script).toContain("POST 1/8 — HOOK");
-    expect(script).toContain("VARIANTES DE HOOKS");
-    expect(script).toContain("VERSION POST UNIQUE CONDENSÉE");
     expect(script).toContain("Thread test");
+    expect(script).toContain("Idée principale");
+    expect(script).toContain("Réponds.");
+    expect(script).not.toContain("THREAD PRINCIPAL");
+    expect(script.length).toBeLessThanOrEqual(280);
   });
 
-  it("returns thread structure for X EN", () => {
+  it("returns a single X post for X EN", () => {
     const script = buildMockScript({
       title: "Test thread",
       description: "Main idea",
@@ -305,9 +303,10 @@ describe("buildMockScript", () => {
       language: "en",
       mode: "generate",
     });
-    expect(script).toContain("MAIN THREAD");
-    expect(script).toContain("POST 1/8 — HOOK");
-    expect(script).toContain("HOOK VARIANTS");
-    expect(script).toContain("CONDENSED SINGLE-POST VERSION");
+    expect(script).toContain("Test thread");
+    expect(script).toContain("Main idea");
+    expect(script).toContain("Reply.");
+    expect(script).not.toContain("MAIN THREAD");
+    expect(script.length).toBeLessThanOrEqual(280);
   });
 });

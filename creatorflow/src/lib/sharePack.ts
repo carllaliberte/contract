@@ -53,7 +53,7 @@ export function buildSharePackText(
 
   const hook = idea.packHooks?.[0]?.trim();
   const caption = idea.packCaption?.trim();
-  const body = hook || caption || idea.title.trim();
+  const body = caption || hook || idea.title.trim();
   const hashtags = formatHashtags(idea.packHashtags);
   return clip([body, hashtags].filter(Boolean).join("\n\n").trim(), X_TEXT_MAX);
 }

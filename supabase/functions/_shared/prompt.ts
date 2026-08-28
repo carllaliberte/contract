@@ -68,8 +68,8 @@ const platformGuidance: Record<Platform, { fr: string; en: string }> = {
     en: "Instagram/Reels format: vertical, 30–90 s, immediate hook, fast pace, subtle CTA (follow, share).",
   },
   x: {
-    fr: "Format X (Twitter) : thread 6–12 posts, hook très fort sur le premier post, ton conversationnel thought-leadership, CTA clair en fin de thread. Alternative : post unique fort. Inclure 3–5 variantes de hooks et une version post unique condensée.",
-    en: "X (Twitter) format: 6–12 post thread, very strong hook on the first post, conversational thought-leadership tone, clear CTA at the end. Alternative: strong single post. Include 3–5 hook variants and a condensed single-post version.",
+    fr: "Format X : un post unique ≤280 car., hook en première ligne, une idée, CTA répondre. Pas de thread. #Clapshot.",
+    en: "X format: one post ≤280 chars, hook on line 1, one idea, reply CTA. No thread. #Clapshot.",
   },
 };
 
@@ -117,59 +117,39 @@ const REELS_FR_STRUCTURE = [
 ].join("\n");
 
 const X_FR_STRUCTURE = [
-  "Produis un contenu X (Twitter) multi-format :",
+  "Produis UN post X. Pas de thread.",
   "",
-  "=== THREAD PRINCIPAL (6–12 posts) ===",
-  "POST 1 — HOOK : accroche très forte qui stoppe le scroll (max 280 car.)",
-  "POSTS 2–N — CORPS : 1 idée par post, ton conversationnel thought-leadership, transitions fluides entre posts",
-  "POST FINAL — CTA : appel à l'action clair (follow, répondre, RT, lien)",
+  "POST (≤280 caractères, prêt à coller dans X) :",
+  "Ligne 1 — HOOK : arrête le scroll.",
+  "Ligne 2 — IDÉE : une seule, concrète.",
+  "Ligne 3 — CTA : « Réponds » ou « Bookmark ». Pas « like and subscribe ».",
   "",
-  "=== ALTERNATIVE — POST UNIQUE FORT ===",
-  "(Un post autonome percutant, max 280 caractères)",
-  "",
-  "=== VARIANTES DE HOOKS (3–5 options) ===",
-  "1. ...",
-  "2. ...",
-  "3. ...",
-  "",
-  "=== VERSION POST UNIQUE CONDENSÉE ===",
-  "(Résumé du thread en un seul post optimisé, max 280 car.)",
+  "HOOKS — 3 variantes de la ligne 1",
   "",
   "Contraintes :",
-  "- Ton conversationnel, thought-leadership, zéro corporate",
-  "- Chaque post ≤ 280 caractères (indique le nombre de caractères entre parenthèses)",
-  "- Premier post = hook irrésistible, pattern interrupt",
-  "- CTA explicite en fin de thread",
-  "- Pas de hashtags forcés (1–2 max si pertinent)",
-  "- Numérote chaque post du thread (1/N, 2/N, etc.)",
+  "- Oral FR-CA, zéro corporate, zéro emoji",
+  "- 1 idée. Point.",
+  "- script = le post. description = le même post.",
+  "- Hashtags : #Clapshot + 1 max, pas dans le script",
+  "- Thread seulement si l’utilisateur le demande",
 ].join("\n");
 
 const X_EN_STRUCTURE = [
-  "Produce multi-format X (Twitter) content:",
+  "Write ONE X post. No thread.",
   "",
-  "=== MAIN THREAD (6–12 posts) ===",
-  "POST 1 — HOOK: very strong scroll-stopping hook (max 280 chars)",
-  "POSTS 2–N — BODY: one idea per post, conversational thought-leadership tone, smooth transitions",
-  "FINAL POST — CTA: clear call to action (follow, reply, RT, link)",
+  "POST (≤280 characters, ready to paste on X):",
+  "Line 1 — HOOK: stop the scroll.",
+  "Line 2 — IDEA: one concrete point.",
+  "Line 3 — CTA: “Reply” or “Bookmark”. Not “like and subscribe”.",
   "",
-  "=== ALTERNATIVE — STRONG SINGLE POST ===",
-  "(One punchy standalone post, max 280 characters)",
-  "",
-  "=== HOOK VARIANTS (3–5 options) ===",
-  "1. ...",
-  "2. ...",
-  "3. ...",
-  "",
-  "=== CONDENSED SINGLE-POST VERSION ===",
-  "(Thread summary as one optimized post, max 280 chars)",
+  "HOOKS — 3 variants of line 1",
   "",
   "Constraints:",
-  "- Conversational, thought-leadership tone, zero corporate speak",
-  "- Each post ≤ 280 characters (show character count in parentheses)",
-  "- First post = irresistible hook, pattern interrupt",
-  "- Explicit CTA at end of thread",
-  "- No forced hashtags (1–2 max if relevant)",
-  "- Number each thread post (1/N, 2/N, etc.)",
+  "- Spoken, direct, zero corporate, zero emoji",
+  "- One idea. Period.",
+  "- script = the post. description = the same post.",
+  "- Hashtags: #Clapshot + 1 max, not inside the script",
+  "- Thread only if the user asks",
 ].join("\n");
 
 function buildImproveUserPrompt(
@@ -272,17 +252,23 @@ function buildReelsFrPrompt(input: PromptInput): { system: string; user: string 
 function buildXPrompt(input: PromptInput): { system: string; user: string } {
   const isFr = input.language === "fr";
   const system = isFr
-    ? "Tu es expert en contenu X (Twitter) et thought-leadership. Tu maîtrises les threads viraux, les hooks percutants et le ton conversationnel. Réponds uniquement avec le contenu structuré, sans méta-commentaire."
-    : "You are an X (Twitter) content and thought-leadership expert. You master viral threads, punchy hooks, and conversational tone. Reply with only the structured content, no meta commentary.";
+    ? "Tu écris des posts X. Un post, 280 caractères max, hook en première ligne. Pas de thread. Ton parlé FR-CA, zéro corporate. Réponds uniquement avec le contenu demandé."
+    : "You write X posts. One post, 280 characters max, hook on line 1. No thread. Spoken, direct, zero corporate. Reply with only the requested content.";
 
   if (input.mode === "improve" && input.existingScript?.trim()) {
     return {
       system,
-      user: buildImproveUserPrompt(
-        input.platform,
-        input.existingScript,
-        input.language,
-      ),
+      user: isFr
+        ? [
+            "Réécris ce post X. Un seul post, ≤280 caractères, hook plus fort, CTA clair.",
+            "Post actuel:",
+            input.existingScript,
+          ].join("\n")
+        : [
+            "Rewrite this X post. One post, ≤280 characters, stronger hook, clear CTA.",
+            "Current post:",
+            input.existingScript,
+          ].join("\n"),
     };
   }
 
@@ -300,7 +286,33 @@ function buildXPrompt(input: PromptInput): { system: string; user: string } {
   return { system, user };
 }
 
-function appendPackInstruction(system: string, language: Language): string {
+function appendPackInstruction(
+  system: string,
+  language: Language,
+  platform: Platform,
+): string {
+  if (platform === "x") {
+    if (language === "en") {
+      return `${system}
+
+PACK OUTPUT — reply with a single JSON object only (no markdown fences, no extra text):
+{"script":"<the X post, max 280 chars>","titles":["hook 1","hook 2","hook 3"],"description":"<same post, ready to tweet>","hashtags":["#Clapshot"],"hooks":["hook 1","hook 2","hook 3"]}
+- script: ONE X post, ready to paste, ≤280 characters, no thread
+- titles: exactly 3 first-line hooks
+- description: identical to script
+- hashtags: #Clapshot plus at most one topical tag
+- hooks: exactly 3 opening lines (not the full post)`;
+    }
+    return `${system}
+
+SORTIE PACK — réponds UNIQUEMENT avec un objet JSON (pas de fences markdown, pas de texte autour) :
+{"script":"<le post X, max 280 car.>","titles":["hook 1","hook 2","hook 3"],"description":"<le même post, prêt à tweeter>","hashtags":["#Clapshot"],"hooks":["accroche 1","accroche 2","accroche 3"]}
+- script : UN post X prêt à coller, ≤280 caractères, pas de thread
+- titles : exactement 3 variantes de la première ligne
+- description : identique au script
+- hashtags : #Clapshot et au plus un tag
+- hooks : exactement 3 premières lignes (pas le post entier)`;
+  }
   if (language === "en") {
     return `${system}
 
@@ -332,6 +344,7 @@ export function buildScriptPrompt(input: PromptInput): {
     system: appendPackInstruction(
       appendStyleContext(prompt.system, input.styleContext),
       input.language,
+      input.platform,
     ),
     user: appendOpenSource(prompt.user, input.sourceContext, input.language),
   };
