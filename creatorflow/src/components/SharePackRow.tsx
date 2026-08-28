@@ -35,7 +35,13 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     );
     const ok = await sharePack(idea, destination);
     setLoadingDest(null);
-    setNotice(ok ? tr("share.success") : tr("share.failed"));
+    setNotice(
+      ok
+        ? tr("share.success")
+        : destination === "x"
+          ? tr("share.clipMissing")
+          : tr("share.failed"),
+    );
     if (ok && idea.status !== "published") setCanMarkPublished(true);
     window.setTimeout(() => setNotice(null), 4000);
   }
