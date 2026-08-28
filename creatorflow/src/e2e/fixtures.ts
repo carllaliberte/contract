@@ -102,7 +102,7 @@ export const test = base.extend<CreatorFlowFixtures>({
   },
 
   pipeline: async ({ page, demoApp }, use) => {
-    await page.getByRole("link", { name: /^Pipeline$/i }).click();
+    await page.goto("./app/pipeline");
     await page.waitForURL(/\/app\/pipeline/);
     await use();
   },
