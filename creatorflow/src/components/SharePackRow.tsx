@@ -3,12 +3,8 @@ import { useState } from "react";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import {
-  SHARE_DESTINATIONS,
-  sharePack,
-  sharePackHasContent,
-  type ShareDestination,
-} from "../lib/sharePack";
+import { fetchGeneratedClip } from "../lib/api/generateClip";
+import { sharePack, sharePackHasContent, type ShareDestination } from "../lib/sharePack";
 import { Button } from "./ui";
 
 type SharePackRowProps = {
@@ -16,14 +12,11 @@ type SharePackRowProps = {
   className?: string;
 };
 
-const SECONDARY_DESTINATIONS = SHARE_DESTINATIONS.filter(
-  (destination): destination is Exclude<ShareDestination, "x"> => destination !== "x",
-);
-
 export function SharePackRow({ idea, className }: SharePackRowProps) {
-  const { tr } = useI18n();
+  const { tr, locale } = useI18n();
   const { moveIdea } = useIdeas();
   const [loadingDest, setLoadingDest] = useState<ShareDestination | null>(null);
+  const [clipBusy, setClipBusy] = useState<6 | 15 | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [canMarkPublished, setCanMarkPublished] = useState(
     idea.status !== "published",
@@ -41,51 +34,93 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     window.setTimeout(() => setNotice(null), 4000);
   }
 
+  async function handleClip(seconds: 6 | 15) {
+    const hook = idea.packHooks?.[0]?.trim() || idea.title;
+    setClipBusy(seconds);
+    setNotice(null);
+    const url = await fetchGeneratedClip(hook, seconds);
+    setClipBusy(null);
+    if (!url) {
+      setNotice(locale === "fr" ? "Clip pas encore branché." : "Clip is not wired yet.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   function handleMarkPublished() {
     moveIdea(idea.id, "published");
     setCanMarkPublished(false);
-    setNotice(tr("dashboard.nextAction.publish"));
   }
+
+  const busy = loadingDest !== null || clipBusy !== null;
 
   return (
     <div className={className}>
       <Button
         type="button"
         className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
-        disabled={loadingDest !== null}
+        disabled={busy}
         onClick={() => void handleShare("x")}
       >
-        {loadingDest === "x" ? (
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-        ) : null}
+        {loadingDest === "x" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
         {tr("share.publishX")}
       </Button>
       <div className="mt-2 flex gap-2">
-        {SECONDARY_DESTINATIONS.map((destination) => (
-          <Button
-            key={destination}
-            type="button"
-            variant="outline"
-            className="h-11 flex-1 text-sm"
-            disabled={loadingDest !== null}
-            onClick={() => void handleShare(destination)}
-          >
-            {loadingDest === destination ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden />
-            ) : null}
-            {tr(`share.${destination}`)}
-          </Button>
-        ))}
-      </div>
-      {canMarkPublished && idea.status !== "published" ? (
         <Button
           type="button"
-          variant="secondary"
-          className="mt-2 h-11 w-full text-sm"
+          variant="outline"
+          className="h-11 flex-1 text-sm"
+          disabled={busy}
+          onClick={() => void handleClip(6)}
+        >
+          {clipBusy === 6 ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null}
+          Clip 6s
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 flex-1 text-sm"
+          disabled={busy}
+          onClick={() => void handleClip(15)}
+        >
+          {clipBusy === 15 ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null}
+          Clip 15s
+        </Button>
+      </div>
+      <div className="mt-2 flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 flex-1 text-sm"
+          disabled={busy}
+          onClick={() => void handleShare("instagram")}
+        >
+          {loadingDest === "instagram" ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          ) : null}
+          {tr("share.instagram")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 flex-1 text-sm"
+          disabled={busy}
+          onClick={() => void handleShare("tiktok")}
+        >
+          {loadingDest === "tiktok" ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          ) : null}
+          {tr("share.tiktok")}
+        </Button>
+      </div>
+      {canMarkPublished && idea.status !== "published" ? (
+        <button
+          type="button"
+          className="mt-3 w-full text-center text-xs text-muted-foreground"
           onClick={handleMarkPublished}
         >
           {tr("dashboard.nextAction.publish")}
-        </Button>
+        </button>
       ) : null}
       {notice && (
         <p className="mt-2 text-xs text-muted-foreground" role="status">

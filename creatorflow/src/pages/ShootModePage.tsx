@@ -1,16 +1,14 @@
-import { ArrowLeft, Check, WifiOff } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, WifiOff } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 import { SharePackRow } from "../components/SharePackRow";
-import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
 import { useI18n } from "../i18n/context";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 export function ShootModePage() {
   const { ideaId } = useParams<{ ideaId: string }>();
-  const { ideas, moveIdea } = useIdeas();
+  const { ideas } = useIdeas();
   const { tr } = useI18n();
-  const navigate = useNavigate();
   const online = useNetworkStatus();
   const idea = ideas.find((item) => item.id === ideaId);
 
@@ -28,17 +26,10 @@ export function ShootModePage() {
     );
   }
 
-  const shootIdea = idea;
-  const scriptText = shootIdea.script?.trim() ?? shootIdea.description;
-  const canMarkReady = shootIdea.status === "production" || shootIdea.status === "script";
-
-  function handleMarkReady() {
-    moveIdea(shootIdea.id, "ready");
-    navigate("/app");
-  }
+  const scriptText = idea.script?.trim() ?? idea.description;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <div className="mx-auto flex max-w-lg flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <Link
           to="/app"
@@ -55,31 +46,11 @@ export function ShootModePage() {
         )}
       </div>
 
-      <header className="rounded-2xl border border-border bg-card p-4 shadow-card">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {tr("shoot.mode")}
-        </p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">{idea.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{idea.description}</p>
-      </header>
-
-      <section
-        className="min-h-[50vh] rounded-2xl border border-border bg-zinc-950 p-6 text-zinc-50 shadow-card"
-        aria-label={tr("shoot.script")}
-      >
-        <pre className="whitespace-pre-wrap text-base leading-relaxed sm:text-lg">
-          {scriptText}
-        </pre>
+      <h1 className="text-2xl font-semibold tracking-tight">{idea.title}</h1>
+      <section className="min-h-[40vh] rounded-2xl border border-border bg-zinc-950 p-5 text-zinc-50">
+        <pre className="whitespace-pre-wrap text-[15px] leading-relaxed">{scriptText}</pre>
       </section>
-
-      <SharePackRow idea={shootIdea} />
-
-      {canMarkReady && (
-        <Button type="button" variant="outline" className="h-12 w-full" onClick={handleMarkReady}>
-          <Check className="size-4" />
-          {tr("shoot.markReady")}
-        </Button>
-      )}
+      <SharePackRow idea={idea} />
     </div>
   );
 }

@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
 import { SharePackRow } from "../components/SharePackRow";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { getNextUp } from "../data/demo";
 import { useI18n } from "../i18n/context";
+import { prefetchPoster } from "../lib/api/generatePoster";
 import { buildBoothPack } from "../lib/boothPack";
 import type { ContentPackage } from "../types/aiContext";
 
@@ -26,6 +27,17 @@ function packFromIdea(idea: Idea): ContentPackage {
   return buildBoothPack(idea);
 }
 
+function ideaWithPack(idea: Idea, pack: ContentPackage): Idea {
+  return {
+    ...idea,
+    script: pack.script,
+    packTitles: pack.titles,
+    packHashtags: pack.hashtags,
+    packCaption: pack.description,
+    packHooks: pack.hooks,
+  };
+}
+
 export function DashboardPage() {
   const { tr } = useI18n();
   const { ideas } = useIdeas();
@@ -42,16 +54,11 @@ export function DashboardPage() {
   const pack = featured ? packFromIdea(featured) : null;
   const hook = pack?.hooks?.find((item) => item.trim()) ?? featured?.title;
   const script = pack?.script?.trim();
-  const shareIdea = featured && pack
-    ? {
-        ...featured,
-        script: pack.script,
-        packTitles: pack.titles,
-        packCaption: pack.description,
-        packHashtags: pack.hashtags,
-        packHooks: pack.hooks,
-      }
-    : null;
+  const shareIdea = featured && pack ? ideaWithPack(featured, pack) : null;
+
+  useEffect(() => {
+    if (hook) prefetchPoster(hook);
+  }, [hook]);
 
   function skip() {
     if (!featured || waiting.length < 2) return;
@@ -74,7 +81,7 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {featured && shareIdea ? (
+      {featured && pack && shareIdea ? (
         <>
           <p className="text-sm text-muted-foreground">{featured.title}</p>
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{hook}</h1>
