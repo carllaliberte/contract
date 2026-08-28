@@ -29,12 +29,17 @@ export function clampClipDuration(seconds: number): number {
 export async function fetchGeneratedClip(
   hook: string,
   duration = 6,
+  script = "",
 ): Promise<string | null> {
   try {
     const res = await fetch(clipUrl(), {
       method: "POST",
       headers: await requestHeaders(),
-      body: JSON.stringify({ hook, duration: clampClipDuration(duration) }),
+      body: JSON.stringify({
+        hook,
+        duration: clampClipDuration(duration),
+        script: script.trim() || undefined,
+      }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { url?: string };
