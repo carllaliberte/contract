@@ -1,15 +1,11 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AddIdeaDialog } from "../components/AddIdeaDialog";
 import { PackApplyDialog } from "../components/PackApplyDialog";
-import {
-  ScriptGenerateDialog,
-  type ScriptGenerateOptions,
-} from "../components/ScriptGenerateDialog";
 import { Button } from "../components/ui";
 import { useIdeas } from "../context/IdeasContext";
-import { getNextUp, type Idea } from "../data/demo";
+import { getNextUp } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import { useScriptPackFlow } from "../hooks/useScriptPackFlow";
 import { deriveNextAction } from "../lib/nextAction";
@@ -30,23 +26,18 @@ export function DashboardPage() {
     discardPreview,
   } = useScriptPackFlow();
   const [addOpen, setAddOpen] = useState(false);
-  const [dialogIdea, setDialogIdea] = useState<Idea | null>(null);
 
   const nextUp = getNextUp(ideas);
   const nextAction = nextUp ? deriveNextAction(nextUp) : null;
+  const busy = Boolean(generatingId);
 
-  async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
-    const ok = await submitPreview(idea, options);
-    if (ok) setDialogIdea(null);
-  }
-
-  function handleNextAction() {
+  async function handleNextAction() {
     if (!nextUp || !nextAction) {
       setAddOpen(true);
       return;
     }
     if (nextAction.kind === "generate") {
-      setDialogIdea(nextUp);
+      await submitPreview(nextUp, { format: "short" });
       return;
     }
     if (nextAction.kind === "shoot" && nextAction.route) {
@@ -79,12 +70,22 @@ export function DashboardPage() {
           <Button
             type="button"
             className="h-14 px-8 text-base sm:h-16 sm:px-10 sm:text-lg"
-            onClick={handleNextAction}
+            disabled={busy}
+            onClick={() => void handleNextAction()}
           >
-            {nextAction
-              ? tr(`dashboard.nextAction.${nextAction.kind}`)
-              : tr("login.start")}
-            <ArrowRight className="size-5" />
+            {busy ? (
+              <>
+                <Loader2 className="size-5 animate-spin" aria-hidden />
+                {tr("script.generating")}
+              </>
+            ) : (
+              <>
+                {nextAction
+                  ? tr(`dashboard.nextAction.${nextAction.kind}`)
+                  : tr("login.start")}
+                <ArrowRight className="size-5" />
+              </>
+            )}
           </Button>
 
           {notice ? (
@@ -95,14 +96,6 @@ export function DashboardPage() {
         </section>
       </div>
 
-      <ScriptGenerateDialog
-        idea={dialogIdea}
-        open={dialogIdea !== null}
-        onClose={() => setDialogIdea(null)}
-        onSubmit={handleGenerateSubmit}
-        isGenerating={generatingId === dialogIdea?.id}
-        errorMessage={notice}
-      />
       <PackApplyDialog
         idea={packPreview?.idea ?? null}
         pack={packPreview?.pack ?? null}
