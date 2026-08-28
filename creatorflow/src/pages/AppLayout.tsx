@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  CalendarDays,
   Clapperboard,
   FileText,
   LayoutDashboard,
@@ -22,8 +21,6 @@ import { applyAppRobots, applyLandingRobots } from "../lib/seo";
 const navItems = [
   { to: "/app", icon: LayoutDashboard, label: "nav.dashboard", end: true },
   { to: "/app/pipeline", icon: Clapperboard, label: "nav.pipeline" },
-  { to: "/app/calendrier", icon: CalendarDays, label: "nav.calendar" },
-  { to: "/app/contenus", icon: FileText, label: "nav.contents" },
   { to: "/app/parametres", icon: Settings, label: "nav.settings" },
 ];
 
@@ -56,7 +53,7 @@ export function AppLayout() {
       <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md safe-top safe-x">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
           <Logo size="sm" />
-          <span className="hidden rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary xs:inline-flex sm:inline-flex">
+          <span className="hidden rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary sm:inline-flex">
             {isAuthenticated ? tr("session.badge.apple") : tr("demo.badge")}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
@@ -112,7 +109,7 @@ export function AppLayout() {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md safe-x lg:hidden">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-3">
           {navItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
