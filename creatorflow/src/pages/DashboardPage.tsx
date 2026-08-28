@@ -21,6 +21,7 @@ export function DashboardPage() {
   const { ideas, moveIdea } = useIdeas();
   const {
     generatingId,
+    notice,
     packPreview,
     isApplying,
     providerLabel,
@@ -35,8 +36,8 @@ export function DashboardPage() {
   const nextAction = nextUp ? deriveNextAction(nextUp) : null;
 
   async function handleGenerateSubmit(idea: Idea, options: ScriptGenerateOptions) {
-    setDialogIdea(null);
-    await submitPreview(idea, options);
+    const ok = await submitPreview(idea, options);
+    if (ok) setDialogIdea(null);
   }
 
   function handleNextAction() {
@@ -85,6 +86,12 @@ export function DashboardPage() {
               : tr("login.start")}
             <ArrowRight className="size-5" />
           </Button>
+
+          {notice ? (
+            <p className="max-w-md text-sm text-destructive" role="status">
+              {notice}
+            </p>
+          ) : null}
         </section>
       </div>
 
@@ -94,6 +101,7 @@ export function DashboardPage() {
         onClose={() => setDialogIdea(null)}
         onSubmit={handleGenerateSubmit}
         isGenerating={generatingId === dialogIdea?.id}
+        errorMessage={notice}
       />
       <PackApplyDialog
         idea={packPreview?.idea ?? null}
