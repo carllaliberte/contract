@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     return json({ error: "GROK_NOT_CONFIGURED", message: "XAI_API_KEY is not configured" }, 500);
   }
 
-  let body: { hook?: string; title?: string; language?: string };
+  let body: { hook?: string; title?: string };
   try {
     body = await req.json();
   } catch {
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
       prompt,
       aspect_ratio: "2:3",
       n: 1,
+      response_format: "b64_json",
     }),
   });
 
