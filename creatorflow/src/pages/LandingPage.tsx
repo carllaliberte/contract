@@ -37,36 +37,25 @@ export function LandingPage() {
     locale === "fr" ? "Explorez les scripts Clapshot" : "Explore Clapshot scripts";
 
   return (
-    <div className="min-h-dvh bg-black text-white">
+    <div className="min-h-dvh overflow-x-hidden bg-black text-white">
       <div className="pointer-events-none fixed inset-0 login-wash" />
-      <div
-        className="pointer-events-none fixed inset-0 opacity-40"
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 80% 50% at 70% 10%, rgba(80,140,255,0.18), transparent 55%), radial-gradient(circle at 20% 80%, rgba(255,59,48,0.12), transparent 40%)",
-        }}
-      />
-
       <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 safe-top safe-x sm:px-6">
         <span className="text-lg font-semibold tracking-tight">clapshot</span>
         <LanguageSelector />
       </header>
 
-      <main className="relative z-10 flex min-h-[calc(100dvh-5.5rem)] flex-col justify-center px-5 pb-16 safe-x sm:px-6">
-        <div className="mx-auto w-full max-w-5xl text-center">
-          <h1 className="font-sans text-[18vw] font-semibold leading-[0.82] tracking-[-0.06em] text-white sm:text-[9rem]">
+      <main className="relative z-10 flex min-h-[calc(100dvh-5.5rem)] flex-col justify-center px-5 pb-24 safe-x sm:px-6">
+        <div className="mx-auto w-full max-w-3xl text-center">
+          <h1 className="font-sans text-6xl font-semibold leading-[0.9] tracking-[-0.06em] text-white sm:text-8xl">
             clapshot
           </h1>
-          <p className="mt-6 text-xl font-medium tracking-tight text-white/80 sm:text-3xl">
+          <p className="mt-6 text-lg font-medium tracking-tight text-white/80 sm:text-2xl">
             {locale === "fr"
               ? "là où les idées deviennent des Reels."
               : "where ideas become Reels."}
           </p>
-          <p className="mx-auto mt-4 max-w-md text-sm text-white/50">
-            {exploreLabel}. {locale === "fr" ? "Un tap. Tu tournes." : "One tap. You film."}
-          </p>
           <Button
-            className="mt-10 h-14 w-full max-w-sm rounded-full bg-white px-8 text-base font-semibold text-black hover:bg-white/90 sm:h-16"
+            className="mt-10 h-14 w-full max-w-sm rounded-full bg-white px-6 text-base font-semibold text-black hover:bg-white/90"
             onClick={() => void handleEnterDemo()}
           >
             {exploreLabel}
