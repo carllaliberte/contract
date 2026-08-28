@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Share } from "@capacitor/share";
 import type { Idea } from "../data/demo";
+import { fetchGeneratedClipFile } from "./api/generateClip";
 import { fetchGeneratedPoster } from "./api/generatePoster";
 import { renderHookCard } from "./hookCard";
 
@@ -92,16 +93,25 @@ async function posterFor(idea: Idea): Promise<Blob> {
   return (await fetchGeneratedPoster(hook)) ?? renderHookCard(hook);
 }
 
+async function clipFor(idea: Idea): Promise<File | null> {
+  const hook = idea.packHooks?.[0]?.trim() || idea.title;
+  const script =
+    idea.script?.trim() || idea.packCaption?.trim() || idea.description.trim();
+  return fetchGeneratedClipFile(hook, 6, script);
+}
+
 export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
   try {
-    const image = idea ? await posterFor(idea) : await renderHookCard(text);
-    const file = new File([image], "clapshot.png", { type: image.type || "image/png" });
+    const clip = idea ? await clipFor(idea) : null;
+    const blob = clip ?? (idea ? await posterFor(idea) : await renderHookCard(text));
+    const name = clip ? "clapshot.mp4" : "clapshot.png";
+    const file = clip ?? new File([blob], name, { type: blob.type || "image/png" });
     const payload = { text, files: [file], title: "Clapshot" };
     if (typeof navigator !== "undefined" && navigator.canShare?.(payload)) {
       await navigator.share(payload);
       return true;
     }
-    downloadBlob(image, "clapshot.png");
+    downloadBlob(blob, name);
   } catch {
     // Text-only fallback still opens X.
   }

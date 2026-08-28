@@ -26,7 +26,13 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
 
   async function handleShare(destination: ShareDestination) {
     setLoadingDest(destination);
-    setNotice(null);
+    setNotice(
+      destination === "x"
+        ? locale === "fr"
+          ? "Clip en cours…"
+          : "Rendering clip…"
+        : null,
+    );
     const ok = await sharePack(idea, destination);
     setLoadingDest(null);
     setNotice(ok ? tr("share.success") : tr("share.failed"));
