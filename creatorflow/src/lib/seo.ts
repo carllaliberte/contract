@@ -1,4 +1,4 @@
-const SITE_ORIGIN = "https://carllaliberte.github.io/contract/creatorflow";
+const SITE_ORIGIN = "https://carllaliberte.github.io/contract/clapshot";
 const ROBOTS_META = "robots";
 const INDEX_ROBOTS = "index, follow";
 const APP_ROBOTS = "noindex, nofollow";
@@ -7,8 +7,8 @@ const FAQ_SCRIPT_ID = "cf-faq-jsonld";
 export const SEO = {
   siteOrigin: SITE_ORIGIN,
   canonicalUrl: `${SITE_ORIGIN}/`,
-  faviconPath: "/contract/creatorflow/favicon.svg",
-  manifestPath: "/contract/creatorflow/manifest.webmanifest",
+  faviconPath: "/contract/clapshot/favicon.svg",
+  manifestPath: "/contract/clapshot/manifest.webmanifest",
 } as const;
 
 export type FaqItem = {
