@@ -29,7 +29,7 @@ export function useScriptPackFlow() {
     return AGENT_PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
   }
 
-  async function submitPreview(idea: Idea, options: ScriptGenerateOptions) {
+  async function submitPreview(idea: Idea, options: ScriptGenerateOptions): Promise<boolean> {
     if (!canUseAiGeneration(options.format)) {
       throw new Error("LIMIT_REACHED");
     }
@@ -39,9 +39,10 @@ export function useScriptPackFlow() {
       const result = await previewScript(idea.id, options);
       if (result) {
         setPackPreview({ idea, pack: result.pack, provider: result.provider });
-      } else {
-        setNotice(tr("pack.queuedOffline"));
+        return true;
       }
+      setNotice(tr("pack.queuedOffline"));
+      return false;
     } catch (error) {
       if (error instanceof Error && error.message === "LIMIT_REACHED") {
         throw error;
@@ -59,6 +60,7 @@ export function useScriptPackFlow() {
       } else {
         setNotice(tr("script.apiError"));
       }
+      return false;
     } finally {
       setGeneratingId(null);
     }
@@ -96,20 +98,20 @@ export type ScriptPackFlowPaywallHandler = (format: ScriptFormat) => void;
 export async function runScriptPreviewWithPaywall(
   idea: Idea,
   options: ScriptGenerateOptions,
-  submitPreview: (idea: Idea, options: ScriptGenerateOptions) => Promise<void>,
+  submitPreview: (idea: Idea, options: ScriptGenerateOptions) => Promise<boolean>,
   onPaywall: ScriptPackFlowPaywallHandler,
-): Promise<void> {
+): Promise<boolean> {
   if (!canUseAiGeneration(options.format)) {
     onPaywall(options.format);
-    return;
+    return false;
   }
   try {
-    await submitPreview(idea, options);
+    return await submitPreview(idea, options);
   } catch (error) {
     if (error instanceof Error && error.message === "LIMIT_REACHED") {
       onPaywall(options.format);
-    } else {
-      throw error;
+      return false;
     }
+    throw error;
   }
 }
