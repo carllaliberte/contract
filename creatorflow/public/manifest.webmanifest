@@ -2,23 +2,23 @@
   "name": "Clapshot — Publiez plus de contenu",
   "short_name": "Clapshot",
   "description": "Structurez vos idées, générez vos scripts et publiez plus régulièrement sur YouTube, TikTok et Reels.",
-  "start_url": "/contract/creatorflow/",
-  "scope": "/contract/creatorflow/",
-  "id": "/contract/creatorflow/",
+  "start_url": "/contract/clapshot/",
+  "scope": "/contract/clapshot/",
+  "id": "/contract/clapshot/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
+  "background_color": "#0a0908",
+  "theme_color": "#0a0908",
   "lang": "fr",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/contract/creatorflow/favicon.svg",
+      "src": "/contract/clapshot/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/contract/creatorflow/favicon.svg",
+      "src": "/contract/clapshot/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
