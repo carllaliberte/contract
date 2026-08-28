@@ -30,6 +30,7 @@ fi
 
 echo "=== Deploying Edge Functions ==="
 "$CLI" functions deploy generate-script --no-verify-jwt
+"$CLI" functions deploy generate-poster --no-verify-jwt
 "$CLI" functions deploy auth-apple --no-verify-jwt
 "$CLI" functions deploy health --no-verify-jwt
 
@@ -38,10 +39,11 @@ if [[ -n "${XAI_API_KEY:-}" ]]; then
   "$CLI" secrets set \
     "XAI_API_KEY=${XAI_API_KEY}" \
     "XAI_MODEL=${XAI_MODEL:-grok-4.5}" \
+    "XAI_IMAGE_MODEL=${XAI_IMAGE_MODEL:-grok-imagine-image-2.0}" \
     "APPLE_CLIENT_ID=${APPLE_CLIENT_ID:-com.carllaliberte.creatorflow}"
 else
   echo "Skip secrets (set XAI_API_KEY env to configure):"
-  echo "  supabase secrets set XAI_API_KEY=... XAI_MODEL=grok-4.5 APPLE_CLIENT_ID=com.carllaliberte.creatorflow"
+  echo "  supabase secrets set XAI_API_KEY=... XAI_MODEL=grok-4.5 XAI_IMAGE_MODEL=grok-imagine-image-2.0 APPLE_CLIENT_ID=com.carllaliberte.creatorflow"
 fi
 
 echo "Done."
