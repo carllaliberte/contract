@@ -4,6 +4,7 @@ import { resolveGenerateScriptUrl } from "./base";
 const DEMO_ID_KEY = "cf-demo-id";
 const TIMEOUT_MS = 120_000;
 const cache = new Map<string, File>();
+const inflight = new Map<string, Promise<File | null>>();
 const missUntil = new Map<string, number>();
 
 export function clampClipDuration(seconds: number): number {
