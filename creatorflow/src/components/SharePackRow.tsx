@@ -1,9 +1,12 @@
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useIdeas } from "../context/IdeasContext";
 import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
-import { fetchGeneratedClip } from "../lib/api/generateClip";
+import {
+  fetchGeneratedClip,
+  prefetchGeneratedClip,
+} from "../lib/api/generateClip";
 import { sharePack, sharePackHasContent, type ShareDestination } from "../lib/sharePack";
 import { Button } from "./ui";
 
@@ -11,6 +14,13 @@ type SharePackRowProps = {
   idea: Idea;
   className?: string;
 };
+
+function clipArgs(idea: Idea) {
+  const hook = idea.packHooks?.[0]?.trim() || idea.title;
+  const script =
+    idea.script?.trim() || idea.packCaption?.trim() || idea.description.trim();
+  return { hook, script };
+}
 
 export function SharePackRow({ idea, className }: SharePackRowProps) {
   const { tr, locale } = useI18n();
@@ -22,6 +32,13 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     idea.status !== "published",
   );
 
+  const { hook, script } = clipArgs(idea);
+
+  useEffect(() => {
+    if (!hook && !script) return;
+    void prefetchGeneratedClip(hook, 6, script);
+  }, [hook, script]);
+
   if (!sharePackHasContent(idea)) return null;
 
   async function handleShare(destination: ShareDestination) {
@@ -29,8 +46,8 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     setNotice(
       destination === "x"
         ? locale === "fr"
-          ? "Clip en cours…"
-          : "Rendering clip…"
+          ? "Clip en cours… le mp4 part sur X."
+          : "Rendering the clip… the mp4 goes to X."
         : null,
     );
     const ok = await sharePack(idea, destination);
@@ -47,9 +64,7 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
   }
 
   async function handleClip(seconds: 6 | 15) {
-    const hook = idea.packHooks?.[0]?.trim() || idea.title;
-    const script =
-      idea.script?.trim() || idea.packCaption?.trim() || idea.description.trim();
+    const { hook, script } = clipArgs(idea);
     setClipBusy(seconds);
     setNotice(null);
     const url = await fetchGeneratedClip(hook, seconds, script);
