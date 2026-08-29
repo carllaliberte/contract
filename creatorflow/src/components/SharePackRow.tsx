@@ -32,12 +32,20 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     idea.status !== "published",
   );
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
   const { hook, script } = clipArgs(idea);
 
   useEffect(() => {
     if (!hook && !script) return;
     void prefetchGeneratedClip(hook, 6, script);
   }, [hook, script]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   if (!sharePackHasContent(idea)) return null;
 
@@ -73,7 +81,10 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
       setNotice(locale === "fr" ? "Clip pas encore branché." : "Clip is not wired yet.");
       return;
     }
-    window.open(url, "_blank", "noopener,noreferrer");
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
   }
 
   function handleMarkPublished() {
@@ -85,6 +96,18 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
 
   return (
     <div className={className}>
+      {previewUrl ? (
+        <video
+          src={previewUrl}
+          className="mb-3 w-full rounded-2xl bg-black"
+          style={{ aspectRatio: "9 / 16", maxHeight: 420 }}
+          playsInline
+          muted
+          autoPlay
+          loop
+          controls
+        />
+      ) : null}
       <Button
         type="button"
         className="h-14 w-full rounded-full bg-foreground text-base font-semibold text-background hover:bg-foreground/90"
