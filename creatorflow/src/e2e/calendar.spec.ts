@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures";
 
 test.describe("Calendar", () => {
   test.beforeEach(async ({ page, demoApp }) => {
-    await page.getByRole("link", { name: /Calendrier|Calendar/i }).click();
+    await page.goto("./app/calendrier");
     await page.waitForURL(/\/app\/calendrier/);
   });
 
@@ -15,4 +15,4 @@ test.describe("Calendar", () => {
   test("shows scheduled demo ideas in the grid", async ({ page }) => {
     await expect(page.getByText(/Routine créateur 60 secondes|Routine creator/i)).toBeVisible();
   });
-});
+}
