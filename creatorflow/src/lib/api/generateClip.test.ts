@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { clampClipDuration, clipRequestKey } from "./generateClip";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clampClipDuration, clipRequestKey, fetchGeneratedClipFile } from "./generateClip";
+
+vi.mock("../hookClip", () => ({
+  renderHookClip: vi.fn(async () =>
+    new File([new Uint8Array([0, 0, 1, 2])], "clapshot.mp4", { type: "video/mp4" }),
+  ),
+}));
+
+import { renderHookClip } from "../hookClip";
 
 describe("clampClipDuration", () => {
   it("keeps the clip at 6s or 15s", () => {
@@ -19,5 +27,22 @@ describe("clipRequestKey", () => {
     expect(clipRequestKey("One tap.", 6, "Publish")).not.toBe(
       clipRequestKey("One tap.", 15, "Publish"),
     );
+  });
+});
+
+describe("fetchGeneratedClipFile", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("falls back to a local clip when generate-clip is missing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ code: "NOT_FOUND" }), { status: 404 })),
+    );
+    const file = await fetchGeneratedClipFile("One tap.", 6, "Publish on X");
+    expect(file?.name).toBe("clapshot.mp4");
+    expect(renderHookClip).toHaveBeenCalled();
   });
 });
