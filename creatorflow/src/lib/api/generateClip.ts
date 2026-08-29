@@ -1,4 +1,5 @@
 import { peekAuthToken, getAuthToken } from "../auth/session";
+import { renderHookClip } from "../hookClip";
 import { resolveGenerateScriptUrl } from "./base";
 
 const DEMO_ID_KEY = "cf-demo-id";
@@ -87,7 +88,7 @@ export function prefetchGeneratedClip(
   duration = 6,
   script = "",
 ): Promise<File | null> {
-  return fetchGeneratedClipFile(hook, duration, script);
+  return fetchGeneratedClipFile(hook, duration, script, { allowLocal: false });
 }
 
 export async function fetchGeneratedClip(
@@ -103,6 +104,7 @@ export async function fetchGeneratedClipFile(
   hook: string,
   duration = 6,
   script = "",
+  opts?: { allowLocal?: boolean },
 ): Promise<File | null> {
   const key = clipRequestKey(hook, duration, script);
   const hit = cache.get(key);
@@ -111,11 +113,23 @@ export async function fetchGeneratedClipFile(
   if (blocked && blocked > Date.now()) return null;
   const pending = inflight.get(key);
   if (pending) return pending;
-  const job = loadClip(hook, duration, script).then((file) => {
-    if (file) cache.set(key, file);
-    else missUntil.set(key, Date.now() + 20_000);
+  const allowLocal = opts?.allowLocal !== false;
+  const job = (async () => {
+    const remote = await loadClip(hook, duration, script);
+    if (remote) {
+      cache.set(key, remote);
+      return remote;
+    }
+    if (!allowLocal) return null;
+    const local = await renderHookClip(hook, duration, script);
+    if (local) {
+      cache.set(key, local);
+      return local;
+    }
+    missUntil.set(key, Date.now() + 20_000);
+    return null;
+  })().finally(() => {
     inflight.delete(key);
-    return file;
   });
   inflight.set(key, job);
   return job;
