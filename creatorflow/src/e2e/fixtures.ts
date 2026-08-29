@@ -40,10 +40,10 @@ async function enterDemoFromLanding(page: Page) {
 
 export async function addIdea(page: Page, title: string, description?: string) {
   await page.getByRole("button", { name: /nouvelle idée|new idea/i }).click();
+  const prompt = page.getByLabel(/prompt|description/i);
+  await expect(prompt).toBeVisible();
+  if (description) await prompt.fill(description);
   await page.getByLabel(/titre|title/i).fill(title);
-  if (description) {
-    await page.getByLabel(/description/i).fill(description);
-  }
   await page.getByRole("button", { name: /^Ajouter$|^Add$/i }).click();
   await expect
     .poll(async () => {
