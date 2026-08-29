@@ -80,6 +80,8 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 function downloadBlob(blob: Blob, name: string) {
+  const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isiOS) return;
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
