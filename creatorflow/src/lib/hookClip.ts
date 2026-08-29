@@ -1,6 +1,8 @@
 const WIDTH = 720;
 const HEIGHT = 1280;
-const FPS = 30;
+const FPS = 24;
+const VIDEO_BITRATE = 1_000_000;
+const KEYFRAME_MS = 1_000;
 
 const MIME_CANDIDATES = [
   "video/mp4;codecs=avc1.42E01E",
@@ -10,11 +12,33 @@ const MIME_CANDIDATES = [
   "video/webm",
 ];
 
+export const CLIP_ENCODER = {
+  width: WIDTH,
+  height: HEIGHT,
+  fps: FPS,
+  videoBitsPerSecond: VIDEO_BITRATE,
+  keyframeMs: KEYFRAME_MS,
+} as const;
+
 export function pickClipMimeType(
   isTypeSupported: (type: string) => boolean = (type) =>
     typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type),
 ): string {
   return MIME_CANDIDATES.find((type) => isTypeSupported(type)) ?? "";
+}
+
+export function clipRecorderOptions(mime: string): MediaRecorderOptions[] {
+  const rates = {
+    videoBitsPerSecond: VIDEO_BITRATE,
+    bitsPerSecond: VIDEO_BITRATE,
+  };
+  const attempts: MediaRecorderOptions[] = [];
+  if (mime) attempts.push({ mimeType: mime, ...rates });
+  attempts.push(rates);
+  if (mime) attempts.push({ mimeType: mime, videoBitsPerSecond: VIDEO_BITRATE });
+  if (mime) attempts.push({ mimeType: mime });
+  attempts.push({});
+  return attempts;
 }
 
 function clampDuration(seconds: number): number {
@@ -125,6 +149,17 @@ function fileFromChunks(chunks: BlobPart[], mime: string): File | null {
   return new File([blob], `clapshot.${ext}`, { type });
 }
 
+function openRecorder(stream: MediaStream, mime: string): MediaRecorder | null {
+  for (const options of clipRecorderOptions(mime)) {
+    try {
+      return new MediaRecorder(stream, options);
+    } catch {
+      // Safari rejects some bitrate + codec combos.
+    }
+  }
+  return null;
+}
+
 export async function renderHookClip(
   hook: string,
   duration = 6,
@@ -149,19 +184,11 @@ export async function renderHookClip(
   }
 
   const mime = pickClipMimeType();
-  let recorder: MediaRecorder;
-  try {
-    recorder = mime
-      ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2_500_000 })
-      : new MediaRecorder(stream, { videoBitsPerSecond: 2_500_000 });
-  } catch {
-    try {
-      recorder = new MediaRecorder(stream);
-    } catch {
-      stream.getTracks().forEach((track) => track.stop());
-      canvas.remove();
-      return null;
-    }
+  const recorder = openRecorder(stream, mime);
+  if (!recorder) {
+    stream.getTracks().forEach((track) => track.stop());
+    canvas.remove();
+    return null;
   }
 
   const chunks: BlobPart[] = [];
@@ -172,6 +199,11 @@ export async function renderHookClip(
   const videoTrack = stream.getVideoTracks()[0] as MediaStreamTrack & {
     requestFrame?: () => void;
   };
+  try {
+    void videoTrack.applyConstraints?.({ frameRate: FPS });
+  } catch {
+    // Constraints are best-effort on iOS.
+  }
   const startedAt = performance.now();
   let ticking = true;
   const tick = () => {
@@ -213,7 +245,7 @@ export async function renderHookClip(
   });
 
   try {
-    recorder.start(250);
+    recorder.start(KEYFRAME_MS);
     requestAnimationFrame(tick);
     return await recorded;
   } catch {
