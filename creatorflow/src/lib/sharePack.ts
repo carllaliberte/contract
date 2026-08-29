@@ -104,19 +104,28 @@ export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
   if (!idea) return false;
   const clip = await clipFor(idea);
   if (!clip) return false;
+
+  await copyToClipboard(text);
+
+  const payload = { text, files: [clip], title: "Clapshot" };
   try {
-    const payload = { text, files: [clip], title: "Clapshot" };
-    if (typeof navigator !== "undefined" && navigator.canShare?.(payload)) {
-      await navigator.share(payload);
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      const canFiles =
+        typeof navigator.canShare !== "function" ||
+        navigator.canShare(payload) ||
+        navigator.canShare({ files: [clip] });
+      if (canFiles) {
+        await navigator.share(payload);
+        return true;
+      }
+      await navigator.share({ files: [clip], text });
       return true;
     }
-    downloadBlob(clip, "clapshot.mp4");
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") return true;
-    downloadBlob(clip, "clapshot.mp4");
   }
-  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(url, Capacitor.isNativePlatform() ? "_system" : "_blank", "noopener,noreferrer");
+
+  downloadBlob(clip, clip.name);
   return true;
 }
 

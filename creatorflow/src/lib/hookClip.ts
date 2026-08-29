@@ -6,6 +6,7 @@ const FPS = 30;
 
 const MIME_CANDIDATES = [
   "video/mp4;codecs=avc1.42E01E",
+  "video/mp4;codecs=avc1",
   "video/mp4",
   "video/webm;codecs=vp9",
   "video/webm",
@@ -45,9 +46,9 @@ function drawFrame(
   hook: string,
 ) {
   const p = Math.min(1, Math.max(0, t / duration));
-  const zoom = 1.05 + Math.sin(p * Math.PI) * 0.08;
-  const driftX = Math.sin(p * Math.PI * 2) * 18;
-  const driftY = Math.cos(p * Math.PI) * 10;
+  const zoom = 1.08 + p * 0.22;
+  const driftX = Math.sin(p * Math.PI * 2) * 24;
+  const driftY = Math.cos(p * Math.PI) * 14;
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = "#070707";
@@ -89,6 +90,32 @@ function drawFrame(
   ctx.restore();
 }
 
+function captureCanvas(canvas: HTMLCanvasElement): MediaStream | null {
+  const stream = canvas.captureStream?.(FPS);
+  return stream && stream.getVideoTracks().length > 0 ? stream : null;
+}
+
+function attachSilentAudio(stream: MediaStream): AudioContext | null {
+  const AudioCtx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) return null;
+  try {
+    const ctx = new AudioCtx();
+    const dest = ctx.createMediaStreamDestination();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.0001;
+    osc.connect(gain);
+    gain.connect(dest);
+    osc.start();
+    dest.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+    return ctx;
+  } catch {
+    return null;
+  }
+}
+
 export async function renderHookClip(
   hook: string,
   duration = 6,
@@ -105,7 +132,9 @@ export async function renderHookClip(
   if (!ctx) return null;
 
   drawFrame(ctx, 0, seconds, hook);
-  const stream = canvas.captureStream(FPS);
+  const stream = captureCanvas(canvas);
+  if (!stream) return null;
+  const audioCtx = attachSilentAudio(stream);
   const mime = pickClipMimeType();
   let recorder: MediaRecorder;
   try {
@@ -116,6 +145,8 @@ export async function renderHookClip(
     try {
       recorder = new MediaRecorder(stream);
     } catch {
+      stream.getTracks().forEach((track) => track.stop());
+      void audioCtx?.close();
       return null;
     }
   }
@@ -132,23 +163,25 @@ export async function renderHookClip(
     };
   });
 
+  const videoTrack = stream.getVideoTracks()[0] as MediaStreamTrack & {
+    requestFrame?: () => void;
+  };
   const startedAt = performance.now();
-  let frame = 0;
   const tick = () => {
     const elapsed = (performance.now() - startedAt) / 1000;
     drawFrame(ctx, Math.min(elapsed, seconds), seconds, hook);
-    frame += 1;
+    videoTrack?.requestFrame?.();
     if (elapsed < seconds && recorder.state === "recording") {
       requestAnimationFrame(tick);
     }
   };
 
   try {
-    recorder.start(200);
+    if (audioCtx?.state === "suspended") await audioCtx.resume();
+    recorder.start(250);
     requestAnimationFrame(tick);
-    await new Promise((resolve) => window.setTimeout(resolve, seconds * 1000));
+    await new Promise((resolve) => window.setTimeout(resolve, seconds * 1000 + 80));
     if (recorder.state === "recording") recorder.stop();
-    stream.getTracks().forEach((track) => track.stop());
     const blob = await stopped;
     if (!blob.size) return null;
     const type = blob.type.startsWith("video/") ? blob.type : "video/mp4";
@@ -156,9 +189,9 @@ export async function renderHookClip(
     return new File([blob], `clapshot.${ext}`, { type });
   } catch {
     if (recorder.state === "recording") recorder.stop();
-    stream.getTracks().forEach((track) => track.stop());
     return null;
   } finally {
-    void frame;
+    stream.getTracks().forEach((track) => track.stop());
+    void audioCtx?.close();
   }
 }
