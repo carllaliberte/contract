@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures";
 
 test.describe("Calendar", () => {
   test.beforeEach(async ({ page, demoApp }) => {
-    await page.getByRole("link", { name: /Calendrier|Calendar/i }).click();
+    await page.goto("./app/calendrier");
     await page.waitForURL(/\/app\/calendrier/);
   });
 

@@ -135,13 +135,7 @@ export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
 
   void copyToClipboard(text);
   downloadBlob(clip, clip.name);
-  if (isIOS()) return false;
-  window.open(
-    `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`,
-    "_blank",
-    "noopener,noreferrer",
-  );
-  return true;
+  return false;
 }
 
 export async function shareViaSystemShare(title: string, text: string): Promise<boolean> {

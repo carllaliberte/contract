@@ -3,7 +3,7 @@ import { renderHookClip } from "../hookClip";
 import { resolveGenerateScriptUrl } from "./base";
 
 const DEMO_ID_KEY = "cf-demo-id";
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = 4_000;
 const REMOTE_GRACE_MS = 2_500;
 const REMOTE_DOWN_MS = 10 * 60_000;
 const cache = new Map<string, File>();
