@@ -4,10 +4,13 @@ import { resolveGenerateScriptUrl } from "./base";
 
 const DEMO_ID_KEY = "cf-demo-id";
 const TIMEOUT_MS = 120_000;
+const REMOTE_GRACE_MS = 2_500;
+const REMOTE_DOWN_MS = 10 * 60_000;
 const cache = new Map<string, File>();
 const remoteInflight = new Map<string, Promise<File | null>>();
 const localInflight = new Map<string, Promise<File | null>>();
 const missUntil = new Map<string, number>();
+let remoteDeadUntil = 0;
 
 export function clampClipDuration(seconds: number): number {
   return Math.min(15, Math.max(6, Math.round(seconds)));
@@ -15,6 +18,22 @@ export function clampClipDuration(seconds: number): number {
 
 export function clipRequestKey(hook: string, duration: number, script: string): string {
   return `${clampClipDuration(duration)}:${hook.trim()}|${script.trim().slice(0, 200)}`;
+}
+
+export function resetClipClientState() {
+  cache.clear();
+  remoteInflight.clear();
+  localInflight.clear();
+  missUntil.clear();
+  remoteDeadUntil = 0;
+}
+
+export function peekGeneratedClipFile(
+  hook: string,
+  duration = 6,
+  script = "",
+): File | null {
+  return cache.get(clipRequestKey(hook, duration, script)) ?? null;
 }
 
 function clipUrl(): string {
@@ -47,7 +66,16 @@ async function requestHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+function markRemoteDown() {
+  remoteDeadUntil = Date.now() + REMOTE_DOWN_MS;
+}
+
+function remoteIsDown() {
+  return Date.now() < remoteDeadUntil;
+}
+
 async function loadClip(hook: string, duration: number, script: string): Promise<File | null> {
+  if (remoteIsDown()) return null;
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -61,6 +89,10 @@ async function loadClip(hook: string, duration: number, script: string): Promise
       }),
       signal: controller.signal,
     });
+    if (res.status === 404 || res.status === 405 || res.status === 501) {
+      markRemoteDown();
+      return null;
+    }
     if (!res.ok) return null;
     const data = (await res.json()) as { url?: string; b64?: string; mime?: string };
     if (data.b64) {
@@ -88,6 +120,7 @@ function remoteClip(hook: string, duration: number, script: string): Promise<Fil
   const key = clipRequestKey(hook, duration, script);
   const hit = cache.get(key);
   if (hit) return Promise.resolve(hit);
+  if (remoteIsDown()) return Promise.resolve(null);
   const pending = remoteInflight.get(key);
   if (pending) return pending;
   const job = loadClip(hook, duration, script).then((file) => {
@@ -98,6 +131,31 @@ function remoteClip(hook: string, duration: number, script: string): Promise<Fil
   });
   remoteInflight.set(key, job);
   return job;
+}
+
+function localClip(hook: string, duration: number, script: string): Promise<File | null> {
+  const key = clipRequestKey(hook, duration, script);
+  const hit = cache.get(key);
+  if (hit) return Promise.resolve(hit);
+  const blocked = missUntil.get(key);
+  if (blocked && blocked > Date.now()) return Promise.resolve(null);
+  const pending = localInflight.get(key);
+  if (pending) return pending;
+  const job = renderHookClip(hook, duration, script).then((local) => {
+    if (local) cache.set(key, local);
+    else missUntil.set(key, Date.now() + 20_000);
+    return local;
+  }).finally(() => {
+    localInflight.delete(key);
+  });
+  localInflight.set(key, job);
+  return job;
+}
+
+function delay(ms: number): Promise<null> {
+  return new Promise((resolve) => {
+    window.setTimeout(() => resolve(null), ms);
+  });
 }
 
 export function prefetchGeneratedClip(
@@ -126,20 +184,18 @@ export async function fetchGeneratedClipFile(
   const key = clipRequestKey(hook, duration, script);
   const hit = cache.get(key);
   if (hit) return hit;
-  const remote = await remoteClip(hook, duration, script);
+
+  const allowLocal = opts?.allowLocal !== false;
+  // Start the booth before awaiting network so iOS keeps the tap gesture.
+  const localJob = allowLocal ? localClip(hook, duration, script) : null;
+  if (!allowLocal) return remoteClip(hook, duration, script);
+  if (remoteIsDown()) return localJob;
+
+  const remoteJob = remoteClip(hook, duration, script);
+  const remote = await Promise.race([remoteJob, delay(REMOTE_GRACE_MS)]);
   if (remote) return remote;
-  if (opts?.allowLocal === false) return null;
-  const blocked = missUntil.get(key);
-  if (blocked && blocked > Date.now()) return null;
-  const pending = localInflight.get(key);
-  if (pending) return pending;
-  const job = renderHookClip(hook, duration, script).then((local) => {
-    if (local) cache.set(key, local);
-    else missUntil.set(key, Date.now() + 20_000);
-    return local;
-  }).finally(() => {
-    localInflight.delete(key);
+  void remoteJob.then((file) => {
+    if (file) cache.set(key, file);
   });
-  localInflight.set(key, job);
-  return job;
+  return localJob;
 }

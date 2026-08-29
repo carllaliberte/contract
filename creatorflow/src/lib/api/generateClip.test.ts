@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { clampClipDuration, clipRequestKey, fetchGeneratedClipFile } from "./generateClip";
+import {
+  clampClipDuration,
+  clipRequestKey,
+  fetchGeneratedClipFile,
+  resetClipClientState,
+} from "./generateClip";
 
 vi.mock("../hookClip", () => ({
   renderHookClip: vi.fn(async () =>
@@ -32,6 +37,7 @@ describe("clipRequestKey", () => {
 
 describe("fetchGeneratedClipFile", () => {
   afterEach(() => {
+    resetClipClientState();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
@@ -56,6 +62,16 @@ describe("fetchGeneratedClipFile", () => {
     });
     expect(prefetch).toBeNull();
     const file = await fetchGeneratedClipFile("After prefetch.", 6, "Publish on X");
+    expect(file?.name).toBe("clapshot.mp4");
+    expect(renderHookClip).toHaveBeenCalled();
+  });
+
+  it("starts the local recorder without waiting out a hanging generate-clip", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    const file = await fetchGeneratedClipFile("Hang.", 6, "Publish on X");
     expect(file?.name).toBe("clapshot.mp4");
     expect(renderHookClip).toHaveBeenCalled();
   });
