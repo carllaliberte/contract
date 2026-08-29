@@ -79,9 +79,12 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
 function downloadBlob(blob: Blob, name: string) {
-  const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  if (isiOS) return;
+  if (isIOS()) return;
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -102,32 +105,42 @@ async function clipFor(idea: Idea): Promise<File | null> {
   return fetchGeneratedClipFile(hook, 6, script);
 }
 
+async function shareClip(clip: File, text: string): Promise<boolean> {
+  const payload = { text, files: [clip], title: "Clapshot" };
+  if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+    return false;
+  }
+  const canFiles =
+    typeof navigator.canShare !== "function" ||
+    navigator.canShare(payload) ||
+    navigator.canShare({ files: [clip] });
+  if (!canFiles) return false;
+  await navigator.share(payload);
+  return true;
+}
+
 export async function shareToX(text: string, idea?: Idea): Promise<boolean> {
   if (!idea) return false;
   const clip = await clipFor(idea);
   if (!clip) return false;
 
-  await copyToClipboard(text);
-
-  const payload = { text, files: [clip], title: "Clapshot" };
   try {
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      const canFiles =
-        typeof navigator.canShare !== "function" ||
-        navigator.canShare(payload) ||
-        navigator.canShare({ files: [clip] });
-      if (canFiles) {
-        await navigator.share(payload);
-        return true;
-      }
-      await navigator.share({ files: [clip], text });
+    if (await shareClip(clip, text)) {
+      void copyToClipboard(text);
       return true;
     }
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") return true;
   }
 
+  void copyToClipboard(text);
   downloadBlob(clip, clip.name);
+  if (isIOS()) return false;
+  window.open(
+    `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`,
+    "_blank",
+    "noopener,noreferrer",
+  );
   return true;
 }
 

@@ -1,5 +1,3 @@
-import { clampClipDuration } from "./api/generateClip";
-
 const WIDTH = 720;
 const HEIGHT = 1280;
 const FPS = 30;
@@ -17,6 +15,10 @@ export function pickClipMimeType(
     typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type),
 ): string {
   return MIME_CANDIDATES.find((type) => isTypeSupported(type)) ?? "";
+}
+
+function clampDuration(seconds: number): number {
+  return Math.min(15, Math.max(6, Math.round(seconds)));
 }
 
 function wrapText(
@@ -90,30 +92,37 @@ function drawFrame(
   ctx.restore();
 }
 
+function mountCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  canvas.setAttribute("aria-hidden", "true");
+  Object.assign(canvas.style, {
+    position: "fixed",
+    left: "0",
+    top: "0",
+    width: "36px",
+    height: "64px",
+    opacity: "0.02",
+    pointerEvents: "none",
+    zIndex: "-1",
+  });
+  document.body.appendChild(canvas);
+  return canvas;
+}
+
 function captureCanvas(canvas: HTMLCanvasElement): MediaStream | null {
   const stream = canvas.captureStream?.(FPS);
   return stream && stream.getVideoTracks().length > 0 ? stream : null;
 }
 
-function attachSilentAudio(stream: MediaStream): AudioContext | null {
-  const AudioCtx =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioCtx) return null;
-  try {
-    const ctx = new AudioCtx();
-    const dest = ctx.createMediaStreamDestination();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    gain.gain.value = 0.0001;
-    osc.connect(gain);
-    gain.connect(dest);
-    osc.start();
-    dest.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-    return ctx;
-  } catch {
-    return null;
-  }
+function fileFromChunks(chunks: BlobPart[], mime: string): File | null {
+  if (!chunks.length) return null;
+  const blob = new Blob(chunks, { type: mime || "video/mp4" });
+  if (!blob.size) return null;
+  const type = blob.type.startsWith("video/") ? blob.type : "video/mp4";
+  const ext = type.includes("webm") ? "webm" : "mp4";
+  return new File([blob], `clapshot.${ext}`, { type });
 }
 
 export async function renderHookClip(
@@ -124,17 +133,21 @@ export async function renderHookClip(
   if (typeof document === "undefined" || typeof MediaRecorder === "undefined") {
     return null;
   }
-  const seconds = clampClipDuration(duration);
-  const canvas = document.createElement("canvas");
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
+  const seconds = clampDuration(duration);
+  const canvas = mountCanvas();
   const ctx = canvas.getContext("2d", { alpha: false });
-  if (!ctx) return null;
+  if (!ctx) {
+    canvas.remove();
+    return null;
+  }
 
   drawFrame(ctx, 0, seconds, hook);
   const stream = captureCanvas(canvas);
-  if (!stream) return null;
-  const audioCtx = attachSilentAudio(stream);
+  if (!stream) {
+    canvas.remove();
+    return null;
+  }
+
   const mime = pickClipMimeType();
   let recorder: MediaRecorder;
   try {
@@ -146,7 +159,7 @@ export async function renderHookClip(
       recorder = new MediaRecorder(stream);
     } catch {
       stream.getTracks().forEach((track) => track.stop());
-      void audioCtx?.close();
+      canvas.remove();
       return null;
     }
   }
@@ -156,18 +169,13 @@ export async function renderHookClip(
     if (event.data.size > 0) chunks.push(event.data);
   };
 
-  const stopped = new Promise<Blob>((resolve, reject) => {
-    recorder.onerror = () => reject(new Error("recorder"));
-    recorder.onstop = () => {
-      resolve(new Blob(chunks, { type: recorder.mimeType || mime || "video/mp4" }));
-    };
-  });
-
   const videoTrack = stream.getVideoTracks()[0] as MediaStreamTrack & {
     requestFrame?: () => void;
   };
   const startedAt = performance.now();
+  let ticking = true;
   const tick = () => {
+    if (!ticking) return;
     const elapsed = (performance.now() - startedAt) / 1000;
     drawFrame(ctx, Math.min(elapsed, seconds), seconds, hook);
     videoTrack?.requestFrame?.();
@@ -176,22 +184,48 @@ export async function renderHookClip(
     }
   };
 
+  const recorded = new Promise<File | null>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      ticking = false;
+      resolve(fileFromChunks(chunks, recorder.mimeType || mime || "video/mp4"));
+    };
+    recorder.onerror = () => finish();
+    recorder.onstop = () => finish();
+    window.setTimeout(() => {
+      try {
+        if (recorder.state === "recording") {
+          try {
+            recorder.requestData();
+          } catch {
+            // Safari may not implement requestData.
+          }
+          recorder.stop();
+        }
+      } catch {
+        finish();
+        return;
+      }
+      window.setTimeout(finish, 800);
+    }, seconds * 1000 + 200);
+  });
+
   try {
-    if (audioCtx?.state === "suspended") await audioCtx.resume();
     recorder.start(250);
     requestAnimationFrame(tick);
-    await new Promise((resolve) => window.setTimeout(resolve, seconds * 1000 + 80));
-    if (recorder.state === "recording") recorder.stop();
-    const blob = await stopped;
-    if (!blob.size) return null;
-    const type = blob.type.startsWith("video/") ? blob.type : "video/mp4";
-    const ext = type.includes("webm") ? "webm" : "mp4";
-    return new File([blob], `clapshot.${ext}`, { type });
+    return await recorded;
   } catch {
-    if (recorder.state === "recording") recorder.stop();
-    return null;
+    try {
+      if (recorder.state === "recording") recorder.stop();
+    } catch {
+      // already dead
+    }
+    return fileFromChunks(chunks, recorder.mimeType || mime || "video/mp4");
   } finally {
+    ticking = false;
     stream.getTracks().forEach((track) => track.stop());
-    void audioCtx?.close();
+    canvas.remove();
   }
 }

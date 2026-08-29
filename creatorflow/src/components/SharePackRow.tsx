@@ -5,6 +5,7 @@ import type { Idea } from "../data/demo";
 import { useI18n } from "../i18n/context";
 import {
   fetchGeneratedClip,
+  peekGeneratedClipFile,
   prefetchGeneratedClip,
 } from "../lib/api/generateClip";
 import { sharePack, sharePackHasContent, type ShareDestination } from "../lib/sharePack";
@@ -49,6 +50,17 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
 
   if (!sharePackHasContent(idea)) return null;
 
+  function showReadyClip() {
+    const ready = peekGeneratedClipFile(hook, 6, script);
+    if (!ready) return false;
+    const url = URL.createObjectURL(ready);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
+    return true;
+  }
+
   async function handleShare(destination: ShareDestination) {
     setLoadingDest(destination);
     setNotice(
@@ -60,15 +72,19 @@ export function SharePackRow({ idea, className }: SharePackRowProps) {
     );
     const ok = await sharePack(idea, destination);
     setLoadingDest(null);
-    setNotice(
-      ok
-        ? tr("share.success")
-        : destination === "x"
-          ? tr("share.clipMissing")
-          : tr("share.failed"),
-    );
-    if (ok && idea.status !== "published") setCanMarkPublished(true);
-    window.setTimeout(() => setNotice(null), 4000);
+    if (ok) {
+      setNotice(tr("share.success"));
+      if (idea.status !== "published") setCanMarkPublished(true);
+    } else if (destination === "x" && showReadyClip()) {
+      setNotice(
+        locale === "fr"
+          ? "Clip prêt. Appuie encore sur Publier sur X."
+          : "Clip ready. Tap Publish on X again to send it.",
+      );
+    } else {
+      setNotice(destination === "x" ? tr("share.clipMissing") : tr("share.failed"));
+    }
+    window.setTimeout(() => setNotice(null), 6000);
   }
 
   async function handleClip(seconds: 6 | 15) {
