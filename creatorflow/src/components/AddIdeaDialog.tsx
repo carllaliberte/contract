@@ -93,6 +93,7 @@ export function AddIdeaDialog({ open, onClose }: AddIdeaDialogProps) {
             <textarea
               ref={promptRef}
               id="idea-desc"
+              aria-label={`${tr("idea.description")} description`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={tr("idea.descPlaceholder")}

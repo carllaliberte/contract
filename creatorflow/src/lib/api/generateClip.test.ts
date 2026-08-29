@@ -45,4 +45,18 @@ describe("fetchGeneratedClipFile", () => {
     expect(file?.name).toBe("clapshot.mp4");
     expect(renderHookClip).toHaveBeenCalled();
   });
+
+  it("lets Publier sur X use the local clip after a remote 404 prefetch", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ code: "NOT_FOUND" }), { status: 404 })),
+    );
+    const prefetch = await fetchGeneratedClipFile("After prefetch.", 6, "Publish on X", {
+      allowLocal: false,
+    });
+    expect(prefetch).toBeNull();
+    const file = await fetchGeneratedClipFile("After prefetch.", 6, "Publish on X");
+    expect(file?.name).toBe("clapshot.mp4");
+    expect(renderHookClip).toHaveBeenCalled();
+  });
 });

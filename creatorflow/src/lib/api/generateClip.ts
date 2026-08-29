@@ -5,7 +5,8 @@ import { resolveGenerateScriptUrl } from "./base";
 const DEMO_ID_KEY = "cf-demo-id";
 const TIMEOUT_MS = 120_000;
 const cache = new Map<string, File>();
-const inflight = new Map<string, Promise<File | null>>();
+const remoteInflight = new Map<string, Promise<File | null>>();
+const localInflight = new Map<string, Promise<File | null>>();
 const missUntil = new Map<string, number>();
 
 export function clampClipDuration(seconds: number): number {
@@ -83,6 +84,22 @@ async function loadClip(hook: string, duration: number, script: string): Promise
   }
 }
 
+function remoteClip(hook: string, duration: number, script: string): Promise<File | null> {
+  const key = clipRequestKey(hook, duration, script);
+  const hit = cache.get(key);
+  if (hit) return Promise.resolve(hit);
+  const pending = remoteInflight.get(key);
+  if (pending) return pending;
+  const job = loadClip(hook, duration, script).then((file) => {
+    if (file) cache.set(key, file);
+    return file;
+  }).finally(() => {
+    remoteInflight.delete(key);
+  });
+  remoteInflight.set(key, job);
+  return job;
+}
+
 export function prefetchGeneratedClip(
   hook: string,
   duration = 6,
@@ -109,28 +126,20 @@ export async function fetchGeneratedClipFile(
   const key = clipRequestKey(hook, duration, script);
   const hit = cache.get(key);
   if (hit) return hit;
+  const remote = await remoteClip(hook, duration, script);
+  if (remote) return remote;
+  if (opts?.allowLocal === false) return null;
   const blocked = missUntil.get(key);
   if (blocked && blocked > Date.now()) return null;
-  const pending = inflight.get(key);
+  const pending = localInflight.get(key);
   if (pending) return pending;
-  const allowLocal = opts?.allowLocal !== false;
-  const job = (async () => {
-    const remote = await loadClip(hook, duration, script);
-    if (remote) {
-      cache.set(key, remote);
-      return remote;
-    }
-    if (!allowLocal) return null;
-    const local = await renderHookClip(hook, duration, script);
-    if (local) {
-      cache.set(key, local);
-      return local;
-    }
-    missUntil.set(key, Date.now() + 20_000);
-    return null;
-  })().finally(() => {
-    inflight.delete(key);
+  const job = renderHookClip(hook, duration, script).then((local) => {
+    if (local) cache.set(key, local);
+    else missUntil.set(key, Date.now() + 20_000);
+    return local;
+  }).finally(() => {
+    localInflight.delete(key);
   });
-  inflight.set(key, job);
+  localInflight.set(key, job);
   return job;
 }
