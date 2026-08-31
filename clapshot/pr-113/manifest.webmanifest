@@ -1,0 +1,27 @@
+{
+  "name": "Clapshot — Publiez plus de contenu",
+  "short_name": "Clapshot",
+  "description": "Un script. Publier sur X. Instagram et TikTok restent disponibles.",
+  "start_url": "/contract/clapshot/",
+  "scope": "/contract/clapshot/",
+  "id": "/contract/clapshot/",
+  "display": "standalone",
+  "background_color": "#0a0908",
+  "theme_color": "#0a0908",
+  "lang": "fr",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/contract/clapshot/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/contract/clapshot/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
