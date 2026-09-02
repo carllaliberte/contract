@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Dispatch CI Clapshot
         if: inputs.pipeline == 'ci' || inputs.pipeline == 'ci-and-deploy'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
@@ -39,7 +39,7 @@ jobs:
 
       - name: Dispatch Deploy Clapshot
         if: inputs.pipeline == 'deploy'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
