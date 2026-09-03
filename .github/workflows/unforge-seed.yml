@@ -1,0 +1,297 @@
+# Seed UNFORGE seat labels + standing charter issues.
+# Does not rewrite ClapShot spec, LICENSE, or NOTICE.
+# Cannot enable repo Issues (no administration scope on GITHUB_TOKEN).
+# Cannot create a user-owned Project v2 as GITHUB_TOKEN / cursor[bot] —
+# Carl enables Issues + creates project UNFORGE once (see .github/UNFORGE-ASSIGN.md).
+name: UNFORGE seed
+
+on:
+  pull_request:
+    paths:
+      - ".github/unforge-labels.yml"
+      - ".github/UNFORGE-ASSIGN.md"
+      - ".github/workflows/unforge-seed.yml"
+      - "docs/UNFORGE.md"
+  workflow_dispatch:
+    inputs:
+      enable_issues:
+        description: Turn on repo Issues if they are off (needs administration)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: unforge-seed-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Seed labels, issues, and project hint
+        uses: actions/github-script@v9
+        env:
+          ENABLE_ISSUES: ${{ github.event_name != 'workflow_dispatch' && 'true' || github.event.inputs.enable_issues }}
+        with:
+          script: |
+            const fs = require('fs');
+            const yaml = fs.readFileSync('.github/unforge-labels.yml', 'utf8');
+            const labels = [];
+            let current = null;
+            for (const raw of yaml.split('\n')) {
+              const line = raw.replace(/\s+#.*$/, '');
+              const name = line.match(/^\s+-\s+name:\s+(.+)$/);
+              const color = line.match(/^\s+color:\s+"?([0-9A-Fa-f]{6})"?/);
+              const desc = line.match(/^\s+description:\s+"(.+)"\s*$/);
+              if (name) {
+                current = { name: name[1].trim(), color: '', description: '' };
+                labels.push(current);
+              } else if (current && color) current.color = color[1];
+              else if (current && desc) current.description = desc[1];
+            }
+            if (labels.length !== 7) {
+              throw new Error(`expected 7 UNFORGE labels, parsed ${labels.length}`);
+            }
+            for (const label of labels) {
+              if (!label.color || !label.description) {
+                throw new Error(`incomplete label parse: ${JSON.stringify(label)}`);
+              }
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const report = [];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner, repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description,
+                });
+                report.push(`label created: ${label.name}`);
+              } catch (err) {
+                const status = err.status || (err.response && err.response.status);
+                if (status === 422) {
+                  await github.rest.issues.updateLabel({
+                    owner, repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description,
+                  });
+                  report.push(`label updated: ${label.name}`);
+                } else {
+                  report.push(`label failed: ${label.name} (${status || err.message})`);
+                }
+              }
+            }
+
+            const enableIssues = process.env.ENABLE_ISSUES !== 'false';
+            let issuesOn = false;
+            try {
+              const { data: repoInfo } = await github.rest.repos.get({ owner, repo });
+              issuesOn = !!repoInfo.has_issues;
+              if (!issuesOn && enableIssues) {
+                await github.rest.repos.update({ owner, repo, has_issues: true });
+                issuesOn = true;
+                report.push('issues: enabled');
+              } else if (!issuesOn) {
+                report.push('issues: still disabled (admin must enable Settings → General → Issues)');
+              } else {
+                report.push('issues: already enabled');
+              }
+            } catch (err) {
+              report.push(`issues enable failed: ${err.message}`);
+            }
+
+            const charters = [
+              {
+                title: '[Quantum] UNFORGE charter — QC last word',
+                labels: ['quantum'],
+                body: [
+                  '**Grok Bot agent:** Quantum',
+                  '',
+                  'Standing JOIN UNFORGE charter. Do not close. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  '- QC last word on physics / post / Imagine. Greens **writes / post / mux**.',
+                  '- Physics clash → Quantum. Quantum is not a substitute for Carl. **Judgment = Carl.**',
+                  '- Holds: ClapShot Imagine stays closed (Experiments ≠ Imagine); mux/post HARD STOP; Banner ER-bridge HOLD; bio empty waits Carl.',
+                  '- Does not reopen AgentBus `#74`. Does not replace Carl.',
+                  '',
+                  'Project column: **Hold** (standing).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+              {
+                title: '[Grok Expert] UNFORGE charter — taste + assignment',
+                labels: ['grok-expert'],
+                body: [
+                  '**Grok Bot agent:** Grok Expert',
+                  '',
+                  'Standing JOIN UNFORGE charter. Do not close. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  '- Taste + assignment. Explore before lock (SpaceXAI Experiments map — docs only). Not an unbounded prototype seat.',
+                  '- Do **not** rename this seat to Figma Bro, Motion God, or Experiments. Experiments ≠ Imagine. ClapShot Imagine stays closed.',
+                  '- Does not green a write, post, or mux. Repo waits on Quantum after taste. **Judgment = Carl.**',
+                  '',
+                  'Project column: **Hold** (standing).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+              {
+                title: '[X] UNFORGE charter — @MetavArmy verify only',
+                labels: ['x-verify'],
+                body: [
+                  '**Grok Bot agent:** X',
+                  '',
+                  'Standing JOIN UNFORGE charter. Do not close. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  '- Verify only as @MetavArmy.',
+                  '- No X post / pin / delete without Quantum green.',
+                  '- No X action from the UNFORGE GitHub operating-layer PR.',
+                  '',
+                  'Project column: **Hold** (standing).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+              {
+                title: '[Files] UNFORGE charter — iPhone / attach / masters',
+                labels: ['files'],
+                body: [
+                  '**Grok Bot agent:** Files',
+                  '',
+                  'Standing JOIN UNFORGE charter. Do not close. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  '- iPhone / attach / masters.',
+                  '- Never delete masters.',
+                  '- Mux only after Quantum green. Imagine/mux/post HARD STOP still holds.',
+                  '',
+                  'Project column: **Hold** (standing).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+              {
+                title: '[Security] UNFORGE charter — defense only',
+                labels: ['security'],
+                body: [
+                  '**Grok Bot agent:** Security',
+                  '',
+                  'Standing JOIN UNFORGE charter. Do not close. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  '- Defense only (secret hygiene, vulnerability path).',
+                  '- No offense, exploits, or attack PoCs.',
+                  '',
+                  'Project column: **Hold** (standing).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+              {
+                title: '[Legal] UNFORGE charter — copyright flags',
+                labels: ['legal'],
+                body: [
+                  '**Grok Bot agent:** Legal',
+                  '',
+                  'Standing JOIN UNFORGE charter. Do not close. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  '- Copyright flags first. Not legal advice.',
+                  '- Reports to Carl (not Quantum).',
+                  '- No LICENSE / NOTICE changes. Do not mix film licenses into ClapShot LICENSE.',
+                  '',
+                  'Project column: **Hold** (standing).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+              {
+                title: 'UNFORGE GitHub lane — Cloud Agent PRs after Quantum green',
+                labels: ['repo'],
+                body: [
+                  '**Grok Bot agent:** Repo',
+                  '',
+                  'Meta issue for the GitHub lane. Do not close while UNFORGE is on GitHub. Do not assign a fake bot GitHub account. Human assignee is a real GitHub user (Carl).',
+                  '',
+                  'Repo (`carllaliberte/contract`) is the GitHub executor. It was off UNFORGE; Carl ordered UNFORGE on GitHub.',
+                  '',
+                  'Write path: **Grok Expert taste → Quantum green → Repo Cloud Agent PR**.',
+                  '',
+                  '- Email stays OFF UNFORGE.',
+                  '- DELETE-CANDIDATE (do not restore): New Agent, New Bot.',
+                  '- Do not pull Heavy / Picture / Encode / Symphonie / Specs / Code.',
+                  '- SpaceXAI map is docs only (Experiments↔Grok Expert, Devbot↔Repo+Cloud Agents, assets↔Files, judgment↔Carl+Quantum).',
+                  '- Holds stay: Imagine closed (Experiments ≠ Imagine); mux/post HARD STOP; Banner ER-bridge HOLD; bio waits Carl; no X post/pin/delete; no checkout on a user machine.',
+                  '- Grok Expert ASSIGNMENT GO with those two HOLDs (Imagine, user machine). Judgment = Carl.',
+                  '- Does not reopen `#74`. Does not rewrite ClapShot spec, LICENSE, or NOTICE. Legal flags first.',
+                  '',
+                  'Project column: **Taste** (lane procedure).',
+                  'Clock: America/Montreal.',
+                  'See docs/UNFORGE.md and .github/UNFORGE-ASSIGN.md.',
+                ].join('\n'),
+              },
+            ];
+
+            if (issuesOn) {
+              const existing = [];
+              for (let page = 1; page <= 10; page++) {
+                const { data } = await github.rest.issues.listForRepo({
+                  owner, repo, state: 'open', per_page: 100, page,
+                });
+                existing.push(...data);
+                if (data.length < 100) break;
+              }
+              const titles = new Set(existing.filter((i) => !i.pull_request).map((i) => i.title));
+              for (const issue of charters) {
+                if (titles.has(issue.title)) {
+                  report.push(`issue exists: ${issue.title}`);
+                  continue;
+                }
+                try {
+                  const { data: created } = await github.rest.issues.create({
+                    owner, repo,
+                    title: issue.title,
+                    body: issue.body,
+                    labels: issue.labels,
+                  });
+                  report.push(`issue created: #${created.number} ${issue.title}`);
+                } catch (err) {
+                  report.push(`issue failed: ${issue.title} (${err.message})`);
+                }
+              }
+            } else {
+              report.push('issues skipped: repo Issues are off');
+            }
+
+            report.push('project UNFORGE: cursor[bot] cannot create a user-owned Project v2. Carl runs: gh project create --owner carllaliberte --title UNFORGE');
+            report.push('columns: Hold / Taste / Quantum-green / In PR / Done');
+
+            const body = [
+              '## UNFORGE seed',
+              '',
+              '```',
+              ...report,
+              '```',
+              '',
+              'Roster: `docs/UNFORGE.md`. Assignment: `.github/UNFORGE-ASSIGN.md`.',
+              'No X actions. No secrets. ClapShot LICENSE / product spec untouched.',
+            ].join('\n');
+
+            core.info(report.join('\n'));
+
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

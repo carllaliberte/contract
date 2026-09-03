@@ -8,8 +8,9 @@
 - [ ] API / Supabase (serves Clapshot only)
 - [ ] CI / workflows
 - [ ] Docs
+- [ ] UNFORGE GitHub lane (operating layer — taste → Quantum green → Repo)
 
-This PR does **not** reopen Quantum, `#74`, `#75`, META, or Dependabot.
+This PR does **not** reopen Quantum AgentBus, `#74`, `#75`, META, or Dependabot.
 
 ## Test plan
 

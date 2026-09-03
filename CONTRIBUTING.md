@@ -8,8 +8,9 @@ Read [`docs/PRODUCT_LANE.md`](docs/PRODUCT_LANE.md) first.
 
 1. The first screen is frozen (`#82`). Do not restyle it in a drive-by PR.
 2. Never commit secrets — [`docs/SECRETS.md`](docs/SECRETS.md) and [`SECURITY.md`](SECURITY.md).
-3. One lane. Do not open Quantum, META, or Dependabot work next to a Clapshot PR.
+3. One lane. Do not open Quantum AgentBus, META, or Dependabot work next to a Clapshot PR.
 4. Prefer small pull requests that serve **idée → pack → tourner**.
+5. UNFORGE GitHub writes follow [`docs/UNFORGE.md`](docs/UNFORGE.md): Grok Expert taste → Quantum green → Repo PR. That is the GitHub operating layer, not a second product, and it does not reopen `#74`.
 
 ## Development setup
 

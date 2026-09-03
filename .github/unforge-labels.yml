@@ -1,0 +1,24 @@
+# UNFORGE seat labels — source of truth for .github/workflows/unforge-seed.yml
+# Names match JOIN + GitHub seats in docs/UNFORGE.md. Do not invent extra seats.
+labels:
+  - name: quantum
+    color: "6E56CF"
+    description: "Quantum — QC last word; greens writes/post/mux"
+  - name: grok-expert
+    color: "E5A50A"
+    description: "Grok Expert — taste + assignment"
+  - name: repo
+    color: "0969DA"
+    description: "Repo — GitHub executor after taste + Quantum green"
+  - name: files
+    color: "1A7F37"
+    description: "Files — iPhone/attach/masters; never delete masters"
+  - name: x-verify
+    color: "1B1F23"
+    description: "X (@MetavArmy) — verify only; no post without Quantum green"
+  - name: security
+    color: "CF222E"
+    description: "Security — defense only"
+  - name: legal
+    color: "8250DF"
+    description: "Legal — copyright flags; reports to Carl; not legal advice"

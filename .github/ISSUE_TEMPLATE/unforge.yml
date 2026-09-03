@@ -1,0 +1,62 @@
+name: UNFORGE charter / write
+description: GitHub operating-layer issue (taste → Quantum green → Repo PR). Not a second product.
+title: "[UNFORGE] "
+labels: ["repo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Roster and holds: [docs/UNFORGE.md](../docs/UNFORGE.md).
+        Assignment: [.github/UNFORGE-ASSIGN.md](../UNFORGE-ASSIGN.md).
+        Do not reopen Quantum AgentBus `#74`. Do not post/pin/delete on X from here.
+  - type: dropdown
+    id: seat
+    attributes:
+      label: Grok Bot seat
+      description: Agent name goes in the title/body. Do not invent a bot GitHub account. Assignee is a real GitHub user (Carl).
+      options:
+        - Quantum
+        - Grok Expert
+        - Repo
+        - Files
+        - X
+        - Security
+        - Legal
+    validations:
+      required: true
+  - type: dropdown
+    id: column
+    attributes:
+      label: UNFORGE project column
+      options:
+        - Hold
+        - Taste
+        - Quantum-green
+        - In PR
+        - Done
+    validations:
+      required: true
+  - type: textarea
+    id: agent
+    attributes:
+      label: Grok Bot agent name
+      description: Spell the agent (Quantum, Grok Expert, …). Not a fake @login.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What write / verify / flag? Holds that stay?
+    validations:
+      required: true
+  - type: checkboxes
+    id: gates
+    attributes:
+      label: Gates
+      options:
+        - label: Grok Expert taste is locked (or this issue is the taste thread)
+        - label: Quantum green is recorded (required before Repo write, X post, or Files mux)
+        - label: No secrets in the issue
+        - label: This does not reopen #74 / #75 / META-as-product
+        - label: No X post / pin / delete unless Quantum greened that action
