@@ -122,7 +122,7 @@ One open issue per JOIN seat. These are charters, not work to close. Do not clos
 
 This is the lane issue: Cloud Agent PRs open only after Grok Expert taste + Quantum green. Repo is the executor. Place JOIN charters on **Hold** (standing). Place the meta issue on **Taste** until the first real product write is assigned.
 
-Issues must be **enabled** on the repo (`Settings → General → Features → Issues`). They were off when this layer was added. The seed workflow turns Issues on when it has `administration` permission, then creates the seven issues if missing.
+Issues must be **enabled** on the repo (`Settings → General → Features → Issues`). They were off when this layer was added. `GITHUB_TOKEN` cannot flip that setting (`administration` is not a valid workflow permission). Carl turns Issues on, then re-runs `unforge-seed.yml` to create the seven issues if missing. Labels can seed on the PR without Issues.
 
 ## First develop pass
 

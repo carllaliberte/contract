@@ -1,7 +1,8 @@
 # Seed UNFORGE seat labels + standing charter issues.
 # Does not rewrite ClapShot spec, LICENSE, or NOTICE.
+# Cannot enable repo Issues (no administration scope on GITHUB_TOKEN).
 # Cannot create a user-owned Project v2 as GITHUB_TOKEN / cursor[bot] —
-# Carl creates project UNFORGE once (see .github/UNFORGE-ASSIGN.md).
+# Carl enables Issues + creates project UNFORGE once (see .github/UNFORGE-ASSIGN.md).
 name: UNFORGE seed
 
 on:
@@ -22,7 +23,6 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
-  administration: write
 
 concurrency:
   group: unforge-seed-${{ github.repository }}
