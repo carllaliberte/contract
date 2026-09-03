@@ -6,19 +6,29 @@ Clock: **America/Montreal**.
 
 This map is GitHub mechanics only. It does not rewrite ClapShot product spec, `LICENSE`, or NOTICE. It does not reopen `#74`.
 
+Grok Expert **ASSIGNMENT GO** with two HOLDs (canonical text: [`docs/UNFORGE.md`](../docs/UNFORGE.md)):
+
+| | Status |
+| --- | --- |
+| This PR (docs + labels + project + issues) | **GO** |
+| HOLD 1 — Imagine | **HOLD** — Experiments ≠ Imagine. ClapShot Imagine stays closed. Grok Expert tastes; not an unbounded prototype seat. |
+| HOLD 2 — User machine | **HOLD** — Do not check out onto a user machine. Cloud Agent / GitHub only. |
+
+Do **not** rename any seat to Figma Bro, Motion God, or Experiments. SpaceXAI analog is docs-only. **Judgment = Carl.** Quantum is QC last word on physics / post / Imagine, not a substitute for Carl. Legal flags first. No `LICENSE` / NOTICE changes.
+
 ## Seat labels
 
 Create these labels if missing (names are the seat keys). Do not invent extra seats.
 
 | Label | Grok Bot agent | Use on |
 | --- | --- | --- |
-| `quantum` | Quantum | QC, greens, physics clash, Imagine/mux/post hold questions |
-| `grok-expert` | Grok Expert | Taste, assignment, explore-before-lock |
+| `quantum` | Quantum | QC last word on physics / post / Imagine — not a substitute for Carl |
+| `grok-expert` | Grok Expert | Taste + assignment. Not Experiments-the-seat. Not Imagine. |
 | `repo` | Repo | Cloud Agent PRs, this repo, docs/CI that execute a green |
 | `files` | Files | iPhone / attach / masters / mux (mux still needs Quantum green) |
 | `x-verify` | X (`@MetavArmy`) | Verify-only threads. Never “please post”. |
 | `security` | Security | Defense only |
-| `legal` | Legal | Copyright flags (not legal advice) |
+| `legal` | Legal | Copyright flags first (not legal advice). No LICENSE / NOTICE edits. |
 
 Source of truth for color / description: [`.github/unforge-labels.yml`](unforge-labels.yml). Seed job: [`.github/workflows/unforge-seed.yml`](workflows/unforge-seed.yml).
 
@@ -39,11 +49,11 @@ GitHub assignees must be real GitHub users. Today that is `@carllaliberte`.
 Hold  →  Taste  →  Quantum-green  →  In PR  →  Done
 ```
 
-1. **Hold** — work is blocked, or it sits on a standing hold (Imagine/mux/post HARD STOP, Banner ER-bridge HOLD, bio waits Carl, no X post/pin/delete).
-2. **Taste** — Grok Expert explores, then locks assignment (label + what Repo may write).
-3. **Quantum-green** — Quantum QC. Last word on the write / post / mux. Physics clash stops here.
-4. **In PR** — Repo (Cloud Agent) opens a **small** PR against `main` on `carllaliberte/contract` **only after** taste + Quantum green.
-5. **Done** — Carl merges (or Carl closes). Judgment between versions stays with Carl + Quantum.
+1. **Hold** — work is blocked, or it sits on a standing hold (Imagine HARD STOP, Banner ER-bridge HOLD, bio waits Carl, no X post/pin/delete, no user-machine checkout).
+2. **Taste** — Grok Expert explores **inside the assignment**, then locks (label + what Repo may write). Not an unbounded prototype seat. Not Imagine.
+3. **Quantum-green** — Quantum QC last word on physics / post / Imagine. Not a substitute for Carl. Physics clash stops here.
+4. **In PR** — Repo (Cloud Agent on GitHub, not a user machine) opens a **small** PR against `main` on `carllaliberte/contract` **only after** taste + Quantum green.
+5. **Done** — **Carl** judges and merges (or Carl closes). Quantum does not replace Carl.
 
 Repo does not start a Cloud Agent because a label exists. Repo starts a Cloud Agent because Grok Expert locked taste and Quantum greened the write.
 
@@ -54,7 +64,7 @@ Repo does not start a Cloud Agent because a label exists. Repo starts a Cloud Ag
 | Taste | Grok Expert | Label `grok-expert`. Comment “taste: lock” + scope. |
 | Green | Quantum | Label `quantum`. Comment “Quantum green” on the issue (or on the intended PR). |
 | Open PR | Repo / Cloud Agent | Label `repo`. PR body names both greens. |
-| Review | Carl (`@carllaliberte` via CODEOWNERS) | Human merge. Legal flags go to Carl (`legal`). |
+| Review / judgment | Carl (`@carllaliberte` via CODEOWNERS) | **Judgment = Carl.** Human merge. Legal flags go to Carl first (`legal`). |
 | Defense pass | Security | Label `security` when the change touches secrets, auth, or attack surface. |
 | Asset pass | Files | Label `files` when masters / mux / iPhone attach are in scope. Mux still waits Quantum. |
 | X pass | X | Label `x-verify` for verify-only. No post / pin / delete without a separate Quantum green. |
@@ -67,9 +77,11 @@ CODEOWNERS already routes every path to `@carllaliberte`. UNFORGE does not repla
 - Seat labels
 - “Grok Expert taste: …” and “Quantum green: …” (link the issue / comment)
 - Lane checkbox: UNFORGE GitHub layer **or** ClapShot product — not a second app
-- Holds still in force
+- Holds still in force (Imagine closed; no user-machine checkout; no seat rename to Figma Bro / Motion God / Experiments)
+- Legal flags first; no `LICENSE` / NOTICE changes
 - No secrets
 - No X post / pin / delete unless Quantum greened that action in writing
+- Cloud Agent / GitHub only — do not check out onto a user machine
 
 ## GitHub Project: UNFORGE
 
@@ -126,11 +138,15 @@ Issues must be **enabled** on the repo (`Settings → General → Features → I
 
 ## First develop pass
 
-This pass is docs + labels + project + standing issues only.
+This pass is docs + labels + project + standing issues only. Grok Expert **GO** with Imagine HOLD + user-machine HOLD.
 
 - Keep PRs small
 - English in repo files is OK
 - No X actions
 - No secrets
-- No film-license text in ClapShot `LICENSE`
+- Legal flags first — no `LICENSE` / NOTICE changes, no film-license text in ClapShot `LICENSE`
 - Do not delete anything
+- Do not rename seats to Figma Bro, Motion God, or Experiments
+- Do not open Imagine; Experiments ≠ Imagine
+- Do not check out onto a user machine
+- Judgment = Carl; Quantum is QC, not a substitute
