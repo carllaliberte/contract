@@ -74,6 +74,7 @@ gh workflow run deploy-creatorflow.yml --ref main
 | [`SECURITY.md`](SECURITY.md) | Vulnerability reporting |
 | [`docs/SECRETS.md`](docs/SECRETS.md) | Public `VITE_*` vs secrets |
 | [`docs/GHA_ORCHESTRATION.md`](docs/GHA_ORCHESTRATION.md) | ClapShot CI → deploy |
+| [`docs/UNFORGE.md`](docs/UNFORGE.md) | UNFORGE GitHub operating layer (Grok Bot roster). Does not reopen AgentBus `#74`. |
 
 ## Environment (ClapShot)
 

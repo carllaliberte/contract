@@ -18,13 +18,14 @@ Repo files in this PR provide the **in-repo** half; the steps below are **Settin
 | Secret scan | [`.github/workflows/secret-scan.yml`](../.github/workflows/secret-scan.yml) | TruffleHog on PR/push |
 | Secret hygiene | [`.github/workflows/secret-hygiene.yml`](../.github/workflows/secret-hygiene.yml) | Path / pattern guards |
 
-Related ops docs: [`SECRETS.md`](SECRETS.md), [`GHA_ORCHESTRATION.md`](GHA_ORCHESTRATION.md), [`TRUFFLEHOG.md`](TRUFFLEHOG.md).
+Related ops docs: [`SECRETS.md`](SECRETS.md), [`GHA_ORCHESTRATION.md`](GHA_ORCHESTRATION.md), [`TRUFFLEHOG.md`](TRUFFLEHOG.md), [`UNFORGE.md`](UNFORGE.md).
 
 ## Admin checklist (GitHub UI)
 
 ### 1. General
 
-- [ ] **Settings → General → Features**: Issues, Projects (optional), Discussions (optional)
+- [ ] **Settings → General → Features**: Issues (required for UNFORGE charter issues), Projects, Discussions (optional)
+- [ ] Create user project **UNFORGE** linked to this repo — columns Hold / Taste / Quantum-green / In PR / Done ([`.github/UNFORGE-ASSIGN.md`](../.github/UNFORGE-ASSIGN.md))
 - [ ] **Settings → General → Pull Requests**: allow squash merge; consider disabling merge commits for a linear history
 - [ ] Confirm **Homepage** / description on the repo match the live apps
 
