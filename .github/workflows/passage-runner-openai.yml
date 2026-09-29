@@ -1,0 +1,129 @@
+# Mega-Giga passage diagnostic (Maximum-First / PR #715 alignment)
+#
+# Priority path:
+#   GitHub Actions → RUNNER_REACHED=true → OPENAI_API_KEY → OpenAI → receipt → MEASURED
+#
+# This is NOT an Acorn Cortex, NOT LIVE, NOT human authority.
+# Runner failure and application/OpenAI failure are separate jobs.
+# No continue-on-error. No synthetic RUNNER_REACHED without a step.
+#
+# Absolute target remains carllaliberte/Acorn-Global when reachable.
+# This workflow lands on the reachable execution surface to repair the passage.
+
+name: Passage runner → OpenAI MEASURED
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/passage-runner-openai.yml"
+      - "scripts/passage/**"
+      - "docs/passage/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/passage-runner-openai.yml"
+      - "scripts/passage/**"
+      - "docs/passage/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: passage-runner-openai-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------------------------
+  # PHASE: RUNNER_REACHED (absolute priority)
+  # No checkout. No npm. No node project. No OpenAI. No deployment.
+  # -------------------------------------------------------------------------
+  runner_reach:
+    name: RUNNER_REACHED
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      reached: ${{ steps.reach.outputs.reached }}
+    steps:
+      - name: RUNNER_REACHED
+        id: reach
+        run: |
+          set -euo pipefail
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "RUNNER_REACHED=true"
+          echo "runner_os=${RUNNER_OS}"
+          echo "runner_arch=${RUNNER_ARCH}"
+          echo "github_sha=${GITHUB_SHA}"
+          echo "github_run_id=${GITHUB_RUN_ID}"
+          echo "timestamp=${TS}"
+          uname -a
+          {
+            echo "### RUNNER_REACHED proof"
+            echo ""
+            echo '```'
+            echo "RUNNER_REACHED=true"
+            echo "runner_os=${RUNNER_OS}"
+            echo "runner_arch=${RUNNER_ARCH}"
+            echo "github_sha=${GITHUB_SHA}"
+            echo "github_run_id=${GITHUB_RUN_ID}"
+            echo "timestamp=${TS}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "reached=true" >> "$GITHUB_OUTPUT"
+
+  # -------------------------------------------------------------------------
+  # PHASE: OpenAI AFTER runner (application layer — distinct failure class)
+  # -------------------------------------------------------------------------
+  openai_measure:
+    name: OpenAI MEASURED
+    needs: runner_reach
+    if: needs.runner_reach.result == 'success' && needs.runner_reach.outputs.reached == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout passage scripts
+        uses: actions/checkout@v7
+
+      - name: Setup Node (passage probe only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Passage unit tests (no network OpenAI)
+        run: node --test scripts/passage/*.test.mjs
+
+      - name: OpenAI secret presence (yes/no only)
+        id: secret
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${OPENAI_API_KEY:-}" ]; then
+            echo "openai_secret_present=yes"
+            echo "present=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "openai_secret_present=no"
+            echo "present=no" >> "$GITHUB_OUTPUT"
+            echo "::error::OPENAI_SECRET_MISSING — application failure (runner already reached)"
+            exit 2
+          fi
+
+      - name: OpenAI request → response → measure → receipt
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          node scripts/passage/openai-probe.mjs | tee passage-openai.log
+          {
+            echo "### OpenAI MEASURED receipt"
+            echo ""
+            echo '```json'
+            sed -n '/RECEIPT_BEGIN/,/RECEIPT_END/p' passage-openai.log | sed '1d;$d'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
