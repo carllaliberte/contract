@@ -2,18 +2,38 @@
 /**
  * OpenAI probe — runs ONLY after RUNNER_REACHED=true.
  * Prints secret presence as yes/no only. Never prints the key.
- * Emits a secret-free receipt JSON on success (MEASURED).
+ * Emits a secret-free receipt. truth_level comes from the receipt, never a hardcoded MEASURED.
  */
 
 import { buildReceipt } from "./receipt.mjs";
 import { getProviderAdapter } from "./provider-adapter.mjs";
-import { secretPresentLabel, PASSAGE_CONTRACT } from "./contracts.mjs";
+import {
+  secretPresentLabel,
+  PASSAGE_CONTRACT,
+  stopRequested,
+  humanAuthorized,
+} from "./contracts.mjs";
 
 function env(name, fallback = "") {
   return process.env[name] ?? fallback;
 }
 
 async function main() {
+  const gateEnv = {
+    PASSAGE_STOP: env("PASSAGE_STOP"),
+    ACORN_STOP: env("ACORN_STOP"),
+    PASSAGE_HUMAN_AUTHORIZATION: env("PASSAGE_HUMAN_AUTHORIZATION"),
+  };
+  const stopped = stopRequested(gateEnv);
+  const authorized = humanAuthorized(gateEnv);
+  console.log(`stop_requested=${stopped ? "yes" : "no"}`);
+  console.log(`human_authorized=${authorized ? "yes" : "no"}`);
+
+  if (stopped) {
+    console.error("STOP_DOMINANT — external provider call refused");
+    process.exit(5);
+  }
+
   const apiKey = env("OPENAI_API_KEY");
   const present = secretPresentLabel(apiKey);
   console.log(`openai_secret_present=${present}`);
@@ -21,6 +41,11 @@ async function main() {
   if (present !== "yes") {
     console.error("OPENAI_SECRET_MISSING — application failure (not runner failure)");
     process.exit(2);
+  }
+
+  if (!authorized) {
+    console.error("HOLD_HUMAN — external provider call refused");
+    process.exit(6);
   }
 
   const model = env("OPENAI_MODEL", "gpt-4o-mini");
@@ -57,13 +82,17 @@ async function main() {
     http_status: result.http_status,
     latency_ms: result.latency_ms,
     response_observed: result.response_observed,
-    truth_level: "MEASURED",
+    observation_mode: result.observation_mode,
+    observation_witness: result.observation_witness,
+    error_code: result.error_code,
+    stop_requested: stopped,
+    human_authorized: authorized,
   });
 
   console.log("RECEIPT_BEGIN");
   console.log(JSON.stringify(receipt, null, 2));
   console.log("RECEIPT_END");
-  console.log("truth_level=MEASURED");
+  console.log(`truth_level=${receipt.truth_level}`);
 }
 
 main().catch((err) => {
