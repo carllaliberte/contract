@@ -1,9 +1,12 @@
 # Mega-Giga passage diagnostic (Maximum-First / PR #715 alignment)
 #
 # Priority path:
-#   GitHub Actions → RUNNER_REACHED=true → OPENAI_API_KEY → OpenAI → receipt → MEASURED
+#   GitHub Actions → RUNNER_REACHED → head SHA asserted
+#   → STOP → secret → HOLD_HUMAN → provider → receipt
+# MEASURED only when the adapter used global fetch and HTTP succeeded.
+# HOLD_HUMAN refuses the call unless PASSAGE_HUMAN_AUTHORIZATION=yes.
 #
-# This is NOT an Acorn Cortex, NOT LIVE, NOT human authority.
+# This is NOT an Acorn Cortex, NOT LIVE, NOT a second runtime.
 # Runner failure and application/OpenAI failure are separate jobs.
 # No continue-on-error. No synthetic RUNNER_REACHED without a step.
 #
