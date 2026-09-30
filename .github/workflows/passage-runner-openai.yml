@@ -1,9 +1,12 @@
 # Mega-Giga passage diagnostic (Maximum-First / PR #715 alignment)
 #
 # Priority path:
-#   GitHub Actions → RUNNER_REACHED=true → OPENAI_API_KEY → OpenAI → receipt → MEASURED
+#   GitHub Actions → RUNNER_REACHED → head SHA asserted
+#   → STOP → secret → HOLD_HUMAN → provider → receipt
+# MEASURED only when the adapter used global fetch and HTTP succeeded.
+# HOLD_HUMAN refuses the call unless PASSAGE_HUMAN_AUTHORIZATION=yes.
 #
-# This is NOT an Acorn Cortex, NOT LIVE, NOT human authority.
+# This is NOT an Acorn Cortex, NOT LIVE, NOT a second runtime.
 # Runner failure and application/OpenAI failure are separate jobs.
 # No continue-on-error. No synthetic RUNNER_REACHED without a step.
 #
@@ -47,13 +50,24 @@ jobs:
     steps:
       - name: RUNNER_REACHED
         id: reach
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if [ "${GITHUB_SHA}" = "${HEAD_SHA}" ]; then
+            SHA_RELATION="github_sha_equals_head"
+          else
+            SHA_RELATION="github_sha_differs_from_head"
+          fi
           echo "RUNNER_REACHED=true"
           echo "runner_os=${RUNNER_OS}"
           echo "runner_arch=${RUNNER_ARCH}"
+          echo "event_name=${EVENT_NAME}"
           echo "github_sha=${GITHUB_SHA}"
+          echo "head_sha=${HEAD_SHA}"
+          echo "sha_relation=${SHA_RELATION}"
           echo "github_run_id=${GITHUB_RUN_ID}"
           echo "timestamp=${TS}"
           uname -a
@@ -64,10 +78,17 @@ jobs:
             echo "RUNNER_REACHED=true"
             echo "runner_os=${RUNNER_OS}"
             echo "runner_arch=${RUNNER_ARCH}"
+            echo "event_name=${EVENT_NAME}"
             echo "github_sha=${GITHUB_SHA}"
+            echo "head_sha=${HEAD_SHA}"
+            echo "sha_relation=${SHA_RELATION}"
             echo "github_run_id=${GITHUB_RUN_ID}"
             echo "timestamp=${TS}"
             echo '```'
+            echo ""
+            echo "On pull_request, github.sha is the synthetic merge commit."
+            echo "Tests must run on head_sha. A push to main that does not touch"
+            echo "scripts/passage, docs/passage, or this workflow file does not start this workflow."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "reached=true" >> "$GITHUB_OUTPUT"
 
@@ -83,6 +104,22 @@ jobs:
     steps:
       - name: Checkout passage scripts
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Assert tested SHA is the head SHA
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "expected_sha=${EXPECTED_SHA}"
+          echo "tested_sha=${ACTUAL}"
+          echo "github_sha=${GITHUB_SHA}"
+          if [ "${ACTUAL}" != "${EXPECTED_SHA}" ]; then
+            echo "::error::tested SHA ${ACTUAL} != expected head SHA ${EXPECTED_SHA}"
+            exit 1
+          fi
 
       - name: Setup Node (passage probe only)
         uses: actions/setup-node@v4
@@ -113,10 +150,12 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           GITHUB_WORKFLOW: ${{ github.workflow }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PASSAGE_STOP: ${{ vars.PASSAGE_STOP }}
+          PASSAGE_HUMAN_AUTHORIZATION: ${{ vars.PASSAGE_HUMAN_AUTHORIZATION }}
         run: |
           set -euo pipefail
           node scripts/passage/openai-probe.mjs | tee passage-openai.log

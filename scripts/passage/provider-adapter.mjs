@@ -5,6 +5,8 @@
  * Cortex / authority / STOP / HOLD are never implemented here.
  */
 
+import { NETWORK_OBSERVATION } from "./contracts.mjs";
+
 /**
  * @typedef {object} ProviderRequest
  * @property {string} model
@@ -33,6 +35,9 @@
 export const openaiAdapter = {
   id: "openai",
   async invoke(req, env) {
+    const observation_mode = env.fetchImpl ? "injected" : "network";
+    const observation_witness =
+      observation_mode === "network" ? NETWORK_OBSERVATION : undefined;
     const fetchImpl = env.fetchImpl ?? globalThis.fetch;
     if (!env.apiKey) {
       return {
@@ -41,6 +46,8 @@ export const openaiAdapter = {
         http_status: 0,
         latency_ms: 0,
         response_observed: false,
+        observation_mode,
+        observation_witness,
         error_code: "OPENAI_SECRET_MISSING",
         error_kind: "application_secret",
       };
@@ -74,6 +81,8 @@ export const openaiAdapter = {
           http_status,
           latency_ms,
           response_observed,
+          observation_mode,
+          observation_witness,
           error_code: "OPENAI_HTTP_FAILURE",
           error_kind: "application_provider",
         };
@@ -84,6 +93,8 @@ export const openaiAdapter = {
         http_status,
         latency_ms,
         response_observed,
+        observation_mode,
+        observation_witness,
       };
     } catch {
       return {
@@ -92,6 +103,8 @@ export const openaiAdapter = {
         http_status,
         latency_ms: Date.now() - started,
         response_observed: false,
+        observation_mode,
+        observation_witness,
         error_code: "OPENAI_TRANSPORT_FAILURE",
         error_kind: "application_provider",
       };
