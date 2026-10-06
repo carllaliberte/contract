@@ -26,13 +26,13 @@
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^7.1.6",
     "@capacitor-community/apple-sign-in": "^7.1.0",
-    "@capacitor/android": "^8.5.0",
-    "@capacitor/core": "^8.5.0",
-    "@capacitor/filesystem": "^8.1.3",
-    "@capacitor/ios": "^8.5.0",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/ios": "^8.5.2",
     "@capacitor/preferences": "^8.0.1",
-    "@capacitor/share": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.3",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/status-bar": "^8.0.4",
     "@capgo/capacitor-updater": "^8.51.15",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -44,7 +44,7 @@
     "react-router-dom": "^7.6.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.0",
+    "@capacitor/cli": "^8.5.2",
     "@playwright/test": "^1.55.0",
     "@tailwindcss/vite": "^4.1.8",
     "@testing-library/jest-dom": "^7.0.1",
